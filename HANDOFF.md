@@ -1,11 +1,13 @@
 # CricLife — Handoff
 
 **Date:** 2026-08-01
-**Written by:** Claude (Cowork session) → for a fresh Claude Code session
-**State:** Planning complete. Phase 0 scaffolded. **Nothing has ever been
-installed, compiled or run.**
+**Written by:** Claude Code (laptop session) → for continuation on another
+device/session (e.g. mobile cloud co-work)
+**State:** Phase 0 done, verified, and deployed. Deployment + domain setup is
+most of the way through. Phase 1 (the rules engine) has **not** started.
 
-Read this file, then `CLAUDE.md`, then start at § 6.
+Read this file, then `CLAUDE.md`. Skip straight to **§ 2** for what to do next
+— § 1 and § 8 are background/history if you want it.
 
 ---
 
@@ -13,49 +15,168 @@ Read this file, then `CLAUDE.md`, then start at § 6.
 
 A mobile-first PWA for scoring cricket matches. One person scores from a phone
 on a screen that never scrolls; anyone can watch live on a public link; every
-match is archived into player stats and rankings.
-
-Constraints the owner set:
-
-- Web app on mobile, **no app stores**
-- Futuristic, dynamic, very visual, **dark + light mode**
-- **Everything on free tiers**
-- Overs per innings configurable
-- Players set their own playing role
-- Scoring rights are a transferable, revocable token multiple people can hold
-- Ranks page: global by default, filterable by any set of teams
-- **Minimum scrolling while scoring**
+match is archived into player stats and rankings. Runs entirely on free tiers.
 
 Decisions already locked in are logged in `docs/13-OPEN-QUESTIONS.md` § A and § E.
 
 ---
 
-## 2. What exists
+## 2. Continue here — exact next step
+
+We're mid-way through the Phase 0 deployment/account-setup checklist,
+working through it live in chat, one browser step at a time. **Pick up at
+Resend.**
+
+### Immediately next: Resend (magic-link email)
+
+1. Sign up at <https://resend.com> (free: 3,000 emails/month, 100/day)
+2. Verify a sending domain, or use Resend's onboarding/test sender to start
+3. Create an API key
+4. **Do not paste the API key into chat.** Go directly into the Supabase
+   dashboard (**criclife-prod → Project Settings → Authentication → SMTP
+   Settings**) and enter it there yourself:
+   - Host `smtp.resend.com`, Port `465`
+   - Username `resend`
+   - Password: the Resend API key
+   - Sender: `CricLife <noreply@yourdomain>`
+5. Repeat for `criclife-staging` if you want staging to send real emails too
+   (optional — staging can usually just use Supabase's rate-limited default).
+
+### After Resend: GitHub secrets + keepalive
+
+1. On GitHub → `rachitg36/criclife` → **Settings → Secrets and variables →
+   Actions**, add:
+   | Secret | Value |
+   |---|---|
+   | `SUPABASE_URL` | `https://tljbwnbjwgdpmdhvttai.supabase.co` |
+   | `SUPABASE_ANON_KEY` | the `criclife-prod` publishable key (see § 4 below) |
+2. Run it once manually to confirm: **Actions → Supabase keepalive → Run
+   workflow**. (The workflow file already exists at
+   `.github/workflows/keepalive.yml` — nothing to write, just needs the
+   secrets and a manual trigger.)
+
+### After that: Phase 0 is fully done. Start Phase 1.
+
+> Start Phase 1: build the pure cricket rules engine in `src/engine/` per
+> `docs/04-RULES-ENGINE.md`, with the full test suite from § 12 of that doc.
+> First confirm Phase 0's acceptance criteria in `docs/12-ROADMAP.md` — they
+> should all be checked off by this point.
+
+Or: `/phase 1` — but note the last time this was tried (before deployment was
+finished), the answer was "stop and do deployment setup first," which is the
+work this file documents. This time it should be a clean go-ahead.
+
+---
+
+## 3. If starting from a fresh clone (e.g. a new cloud environment)
+
+```bash
+git clone https://github.com/rachitg36/criclife.git
+cd criclife
+npm install
+```
+
+`.env.local` is gitignored and won't exist in a fresh clone. Recreate it:
+
+```bash
+cp .env.example .env.local
+```
+
+Then edit `.env.local` with the real values (safe to write directly — these
+are publishable/anon-tier keys, meant to be exposed in the browser):
+
+```
+VITE_SUPABASE_URL=https://tljbwnbjwgdpmdhvttai.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_oyHY2XoW3H2sk3ckL8JyQA_FLYJD6OM
+VITE_APP_ENV=local
+VITE_PUBLIC_URL=http://localhost:5173
+```
+
+Then verify everything is still green:
+
+```bash
+npm run typecheck && npm run lint && npm run test && npm run build && npm run size
+```
+
+(`npm run test:e2e` needs Playwright browsers: `npx playwright install --with-deps`.)
+
+To redeploy after any change: `npm run deploy` (builds, then `wrangler
+deploy`). First time on a new machine, run `npx wrangler login` first
+(browser-based auth, opens dash.cloudflare.com).
+
+---
+
+## 4. Live infrastructure reference
+
+| Thing | Value |
+|---|---|
+| Deployed app | `https://criclife.geminirachit.workers.dev` |
+| GitHub repo | `https://github.com/rachitg36/criclife` (public) |
+| is-a.dev PR | [is-a-dev/register#45746](https://github.com/is-a-dev/register/pull/45746) — pending merge |
+| Supabase `criclife-prod` | Project ID `tljbwnbjwgdpmdhvttai`, region `eu-central-1` (Frankfurt — kept as-is despite docs recommending Mumbai/Singapore) |
+| Supabase `criclife-prod` publishable key | `sb_publishable_oyHY2XoW3H2sk3ckL8JyQA_FLYJD6OM` |
+| Supabase `criclife-staging` | Project ID `mkzgwwqkwcjcggxuavlr` |
+| Supabase `criclife-staging` publishable key | `sb_publishable_AOlNgi5MClWG1zHMbtofaA_v-Zb0XsE` |
+| Phone auth | Disabled on both Supabase projects (confirmed) |
+| Google OAuth | **Deferred to Phase 2** — no login UI exists yet to wire it into |
+
+These are publishable/anon-tier credentials, safe to keep in plain text here
+and in `.env.local`. **Never** put a Supabase personal access token, service
+role key, or Resend API key in this file or in chat — those go directly into
+the relevant dashboard, never through an assistant.
+
+---
+
+## 5. What exists in code
 
 ### Documentation — complete, 15 files in `docs/`
 
-`docs/README.md` is the index. All 15 are written, cross-checked for
-consistency, and internally linked. They are the spec.
+`docs/README.md` is the index. The three that matter most:
+`04-RULES-ENGINE.md`, `03-ROLES-PERMISSIONS.md`, `05-SCORER-VIEW.md`.
 
-The three that matter most: `04-RULES-ENGINE.md`, `03-ROLES-PERMISSIONS.md`,
-`05-SCORER-VIEW.md`.
+### Code — Phase 0, verified and deployed
 
-### Code — Phase 0 scaffold, 87 files
+Everything below is confirmed working (not just written) via
+`npm run typecheck/lint/test/build/size` and `npm run test:e2e` (45 tests,
+4 viewports + desktop, including the no-scroll gate) — all green.
 
 | Area | Status |
 |---|---|
-| Vite + React 19 + TS strict config | written |
-| Tailwind v4 + full design token layer | written |
-| Theme system: dark/light/auto, no-flash script, View Transition wipe | written |
-| Zustand `uiStore` with persistence | written |
-| Router with all 39 routes, guards stubbed, code split | written |
-| UI primitives: Button Card Skeleton CountUp Aurora LivePill ThemeToggle | written |
-| Layouts: Root, App (tab bar), Public, **Scoring (no-scroll shell)** | written |
-| `lib/`: env, supabase, Dexie, theme, haptics, format, cn, sw | written |
-| PWA manifest, generated icons, Workbox config | written |
-| GitHub Actions: CI + **Supabase keepalive** | written |
-| Vitest setup + 2 unit test files | written |
-| Playwright config + no-scroll gate + smoke tests | written |
+| Vite + React 19 + TS strict config | verified |
+| Tailwind v4 + full design token layer | verified |
+| Theme system: dark/light/auto, no-flash script, View Transition wipe | verified |
+| Zustand `uiStore` with persistence | verified |
+| Router with all 39 routes, guards stubbed, code split | verified |
+| UI primitives: Button Card Skeleton CountUp Aurora LivePill ThemeToggle | verified |
+| Layouts: Root, App (tab bar), Public, **Scoring (no-scroll shell)** | verified |
+| `lib/`: env, supabase, Dexie, theme, haptics, format, cn, sw | verified |
+| PWA manifest, generated icons, Workbox config, service worker registered | verified |
+| GitHub Actions: CI + **Supabase keepalive** | written, keepalive not yet run |
+| Vitest setup + unit tests | verified (23 passing) |
+| Playwright e2e + no-scroll gate + smoke tests | verified (45 passing) |
+| Cloudflare Workers deploy (`wrangler.jsonc`) | verified, live |
+
+### Fixes made to get Phase 0 green (see git log for details)
+
+- `tsconfig.app.json`/`tsconfig.node.json`: added `skipLibCheck: true`
+  (Playwright/Workbox type declarations assumed DOM lib that `tsconfig.node`
+  didn't have)
+- `src/lib/theme.ts`: `prefer-const` lint fix
+- `src/app/providers/`: split `queryClient` into its own file (fast-refresh
+  lint rule)
+- `.env.local` didn't exist — `src/lib/env.ts` throws at module load without
+  it, blanking the entire app silently. Created it; also lengthened the
+  placeholder anon key in `.env.example` since the original was too short to
+  pass its own Zod validation.
+- `npm run size` budget was measuring the wrong thing (globbed every route's
+  JS, not just the audience route's). Fixed the `size-limit` config, and
+  found `dexie` was leaking into the eager `vendor-data` chunk via
+  `vite.config.ts`'s `manualChunks` — removed it, made `OfflinePage` lazy.
+  Audience route now 158 kB brotli vs. 180 kB budget.
+- Cloudflare retired the "Pages" dashboard flow (git-integration + Framework
+  preset UI) in favor of unified Workers. Added `wrangler.jsonc`, deployed
+  via CLI instead. Subdomain shape changed from `<project>.pages.dev` to
+  `<worker>.<account>.workers.dev` — all docs updated to match.
 
 ### Working screens (once it runs)
 
@@ -67,71 +188,30 @@ The three that matter most: `04-RULES-ENGINE.md`, `03-ROLES-PERMISSIONS.md`,
 
 ---
 
-## 3. ⚠️ What is NOT verified
-
-**I had no npm registry access.** This is the single most important thing to
-know. I could not run:
-
-- `npm install`
-- `npm run typecheck`
-- `npm run lint`
-- `npm run build`
-- `npm run test`
-
-### What I *did* verify
-
-- All 43 source files' internal imports resolve to real files
-- All JSON and YAML parses (tsconfig files are JSONC — comments are valid)
-- Braces and parens balance in every `.ts`/`.tsx`
-- Route paths in `router.tsx` match `docs/11-SCREENS-AND-ROUTES.md`
-- Generated icons render correctly (visually inspected)
-
-### Expect to fix
-
-Dependency versions in `package.json` are best-effort, not resolved against the
-registry. Some are probably wrong. Likely trouble spots, in rough order:
-
-1. **Version pins** — Tailwind v4 + `@tailwindcss/vite`, `motion` v12 import
-   path (`motion/react`), React Router v7 API surface.
-2. **`exactOptionalPropertyTypes` + `noUncheckedIndexedAccess`** are both on.
-   These are strict and will surface errors I could not see. I pre-fixed the
-   ones I could predict (see `Placeholder.tsx`, `theme.ts`, `format.ts`).
-3. **`erasableSyntaxOnly`** requires TS 5.8+. Fine on ~5.9 but worth knowing.
-4. **`virtual:pwa-register`** types come from `vite-plugin-pwa/client` in
-   `tsconfig.app.json` types array — verify that resolves.
-5. **Tailwind v4 `@theme inline`** syntax in `globals.css` — v4 is CSS-first
-   config, no `tailwind.config.js`. Confirm the token bridge actually generates
-   the utilities being used.
-
-**Do not assume the scaffold is correct. Assume it is 90% correct.**
-
----
-
-## 4. Missing on purpose
+## 6. Missing on purpose
 
 | Thing | Why |
 |---|---|
-| `src/engine/` | Phase 1. ESLint purity rules already written and waiting. |
-| `supabase/migrations/` | Phase 2. Schema fully specced in `docs/02-DATA-MODEL.md`. |
+| `src/engine/` | Phase 1 — not started. ESLint purity rules already written and waiting. |
+| `supabase/migrations/` | Phase 2. Schema fully specced in `docs/02-DATA-MODEL.md`. Both cloud projects exist but are empty. |
 | `src/types/database.ts` | Placeholder. Regenerate after migrations exist. |
 | `public/fonts/*.woff2` | Not committed. See `public/fonts/README.md`. App falls back to system font. |
-| `.env.local` | Copy `.env.example`. Placeholders work until Supabase exists. |
 | Husky hooks | `prepare` script references husky but `.husky/` isn't initialised. Run `npx husky init` or drop the script. |
+| Google OAuth | Deferred to Phase 2 — needs a Google Cloud OAuth client, and there's no login UI yet to use it. |
 
 ---
 
-## 5. Human-only tasks still outstanding
+## 7. Human-only tasks — status
 
-Claude Code cannot do these — they need a browser and the owner's accounts.
-Full steps in `SETUP.md`.
-
-- [x] Deployed to Cloudflare Workers (Static Assets) — live at `criclife.geminirachit.workers.dev`
-      (Cloudflare retired the old Pages dashboard flow; deployed via Wrangler CLI, see `wrangler.jsonc`)
-- [x] is-a.dev PR opened: [is-a-dev/register#45746](https://github.com/is-a-dev/register/pull/45746) — pending merge
-- [ ] Supabase projects `criclife-prod` + `criclife-staging`; **disable phone auth**
-- [ ] Resend account, wired as Supabase custom SMTP
-- [x] Pushed to GitHub as a **public** repo — <https://github.com/rachitg36/criclife>
-- [ ] Add `SUPABASE_URL` + `SUPABASE_ANON_KEY` repo secrets, run the keepalive workflow once
+- [x] Deploy to Cloudflare Workers — live at `criclife.geminirachit.workers.dev`
+- [x] Push to GitHub as a public repo
+- [x] Open the is-a.dev PR — pending merge
+- [x] Create both Supabase projects
+- [x] Disable phone auth on both
+- [ ] **← Resend account, wired as custom SMTP (in progress, see § 2)**
+- [ ] Add `SUPABASE_URL` / `SUPABASE_ANON_KEY` as GitHub Actions secrets
+- [ ] Run the keepalive workflow once manually
+- [ ] (Optional, deferred) Google OAuth client
 
 > The keepalive matters. Free Supabase projects pause after 7 idle days and need
 > a manual dashboard click plus a 60s cold start to wake. For a league playing
@@ -139,31 +219,7 @@ Full steps in `SETUP.md`.
 
 ---
 
-## 6. Start here in Claude Code
-
-```
-cd "D:\Claud\Cricket Normal"
-claude
-```
-
-Then paste this:
-
-> Read HANDOFF.md and CLAUDE.md. Then finish Phase 0: run npm install, fix any
-> dependency version or TypeScript strict-mode errors in the scaffold, and get
-> typecheck, lint, test and build all passing. Report what you had to change.
-
-Or use the bundled command: `/verify-scaffold`
-
-### After Phase 0 is green
-
-> Start Phase 1: build the pure cricket rules engine in src/engine/ per
-> docs/04-RULES-ENGINE.md, with the full test suite from § 12 of that doc.
-
-Or: `/phase 1`
-
----
-
-## 7. Decisions worth not re-litigating
+## 8. Decisions worth not re-litigating
 
 Reasoning is in `docs/13-OPEN-QUESTIONS.md` § A. Short version:
 
@@ -171,7 +227,7 @@ Reasoning is in `docs/13-OPEN-QUESTIONS.md` § A. Short version:
 |---|---|
 | PWA, not React Native | No app stores wanted; one codebase serves phone, laptop and the TV at the ground |
 | Supabase over Firebase | The scoring token is a row-level auth problem — that's what Postgres RLS is for. Rankings are aggregate SQL. |
-| Cloudflare (Workers Static Assets) over Vercel | Vercel Hobby is non-commercial and caps at 100 GB, then **pauses your site**. Terrible failure mode for live scores. Note: Cloudflare's product was "Pages" when this was written; it's since merged into Workers — see `docs/14-FREE-TIER-PLAN.md`. |
+| Cloudflare (Workers Static Assets) over Vercel | Vercel Hobby is non-commercial and caps at 100 GB, then **pauses your site**. Terrible failure mode for live scores. Note: Cloudflare's product was "Pages" when this was originally written; it's since merged into Workers — see `docs/14-FREE-TIER-PLAN.md`. |
 | Rules engine before UI | Only part where a mistake is expensive to undo, and it needs no design decisions |
 | Undo by replay, not reversal | Reversal logic is where scoring apps get subtly wrong. 130 rows replays in ~15ms. |
 | Append-only delivery log | Disputed scores are the #1 social problem in amateur cricket |
@@ -185,7 +241,7 @@ historic matches (B9).
 
 ---
 
-## 8. Things I'd want a second opinion on
+## 9. Things I'd want a second opinion on
 
 Genuine uncertainty, not false modesty:
 
@@ -202,19 +258,21 @@ Genuine uncertainty, not false modesty:
 
 ---
 
-## 9. File map
+## 10. File map
 
 ```
 Cricket Normal/
 ├─ CLAUDE.md              ← project memory, auto-loaded by Claude Code
 ├─ HANDOFF.md             ← this file
 ├─ README.md              ← public-facing overview
-├─ SETUP.md               ← the human account steps
+├─ SETUP.md               ← the human account steps (detailed version of § 2 above)
+├─ wrangler.jsonc         ← Cloudflare Workers static-assets deploy config
 ├─ .claude/
+│  ├─ launch.json         ← preview server config (npm run preview on :4173)
 │  ├─ settings.json       ← permission allowlist
 │  └─ commands/           ← /verify-scaffold, /phase, /check
 ├─ docs/                  ← 15 planning docs, README.md is the index
-├─ src/                   ← Phase 0 scaffold
+├─ src/                   ← Phase 0 scaffold (src/engine/ doesn't exist yet — Phase 1)
 ├─ tests/                 ← unit + e2e
 ├─ public/                ← icons, manifest assets, fonts README
 ├─ scripts/               ← generate-icons.py
