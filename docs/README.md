@@ -2,10 +2,10 @@
 
 > A futuristic, mobile-first, real-time cricket scoring and statistics web app.
 
-**Status:** Planning phase. No code written yet.
+**Status:** Phase 0 deployed, git initialized.
 **Last updated:** 2026-08-01
 **Runs at $0/month** — see [14-FREE-TIER-PLAN](./14-FREE-TIER-PLAN.md)
-**Domains:** `criclife.pages.dev` (Cloudflare Pages) · `criclife.is-a.dev` (verified available)
+**Domains:** `criclife.geminirachit.workers.dev` (Cloudflare Workers, live) · `criclife.is-a.dev` (pending PR)
 
 ---
 

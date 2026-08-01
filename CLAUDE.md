@@ -39,7 +39,7 @@ npm run icons          # regenerate PWA icons (python3 + Pillow)
 7. **No hardcoded colours.** Everything comes from `src/styles/tokens.css`.
    Both dark and light must work.
 8. **Stay on free tiers.** Before adding a dependency or service, check
-   `docs/14-FREE-TIER-PLAN.md`. Cloudflare Pages, not Vercel.
+   `docs/14-FREE-TIER-PLAN.md`. Cloudflare Workers (Static Assets), not Vercel.
 
 ## Build order — do not skip ahead
 
@@ -96,7 +96,8 @@ picking one — the docs may need updating too.
 
 I cannot do these; they need a browser and your accounts. `SETUP.md` has steps.
 
-- Create the Cloudflare Pages project named `criclife` (reserves the subdomain)
+- ~~Deploy to Cloudflare~~ — done, live at `criclife.geminirachit.workers.dev`
+  (Cloudflare Workers Static Assets, not Pages — see `docs/14-FREE-TIER-PLAN.md`)
 - Open the is-a.dev PR for `criclife.is-a.dev`
 - Create the two Supabase projects, disable phone auth
 - Wire Resend as custom SMTP

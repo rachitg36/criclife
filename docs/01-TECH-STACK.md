@@ -28,7 +28,7 @@ recommended stack and why each piece earns its place.
 | Realtime | **Supabase Realtime (Postgres changes + Broadcast)** | Push deliveries to audience in <1s |
 | Auth | **Supabase Auth** — magic link + Google | No password to remember at a cricket ground. *Phone OTP dropped — Twilio costs money, see [14](./14-FREE-TIER-PLAN.md).* |
 | Email (magic links) | **Resend** free tier as Supabase custom SMTP | Supabase's built-in sender is rate-limited to a handful per hour |
-| Hosting | **Cloudflare Pages** | Unlimited bandwidth, commercial use permitted on free, never pauses your site. *Chosen over Vercel — see [14](./14-FREE-TIER-PLAN.md) § 4.1.* |
+| Hosting | **Cloudflare Workers (Static Assets)** | Unlimited bandwidth, commercial use permitted on free, never pauses your site. *Chosen over Vercel — see [14](./14-FREE-TIER-PLAN.md) § 4.1. Live at `criclife.geminirachit.workers.dev`.* |
 | Testing | **Vitest** + **React Testing Library** + **Playwright** | Rules engine gets exhaustive unit tests |
 | Errors | **Sentry** | Ball-entry failures must never be silent |
 

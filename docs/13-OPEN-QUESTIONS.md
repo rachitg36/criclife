@@ -80,12 +80,16 @@ aren't empty on day one? If so, we should design the importer in Phase 2.
 
 ### B10. Domain and branding — ✅ ANSWERED: CricLife, free domains
 Name is **CricLife**. Domains are free:
-- `criclife.pages.dev` — Cloudflare Pages, claimed when you create the project
-- `criclife.is-a.dev` — **verified available on 2026-08-01**, free forever
+- ~~`criclife.pages.dev` — Cloudflare Pages~~ **Superseded, 2026-08-01:**
+  Cloudflare retired the Pages dashboard flow; deployed instead to
+  **`criclife.geminirachit.workers.dev`** (Cloudflare Workers Static Assets —
+  same free tier, new product/subdomain shape). See
+  [14-FREE-TIER-PLAN](./14-FREE-TIER-PLAN.md) § 1.
+- `criclife.is-a.dev` — **verified available on 2026-08-01**, free forever, PR not yet opened
 
 Supabase does *not* provide a website URL (only `<ref>.supabase.co` for the API).
-Firebase Hosting would give `criclife.web.app`, but Cloudflare Pages is the
-better free host. Full comparison in
+Firebase Hosting would give `criclife.web.app`, but Cloudflare's free static
+hosting is the better host. Full comparison in
 [14-FREE-TIER-PLAN](./14-FREE-TIER-PLAN.md) § 1.
 
 ---
@@ -105,10 +109,11 @@ better free host. Full comparison in
 
 ## D. My recommended immediate next step
 
-~~Answer B1, B3, B5 and B10.~~ **Done.** Start **Phase 0**, beginning with the
-free-tier checklist in [14-FREE-TIER-PLAN](./14-FREE-TIER-PLAN.md) § 7 —
-specifically, create the Cloudflare Pages project named `criclife` today to
-reserve the subdomain before someone else takes it.
+~~Answer B1, B3, B5 and B10.~~ **Done.** ~~Start **Phase 0**...~~ **Done** —
+deployed to `criclife.geminirachit.workers.dev`, repo public at
+[github.com/rachitg36/criclife](https://github.com/rachitg36/criclife). See
+the free-tier checklist in [14-FREE-TIER-PLAN](./14-FREE-TIER-PLAN.md) § 7 for
+what's still outstanding (Supabase, Resend, the is-a.dev PR).
 
 Then **Phase 1 (the rules engine)**. It's the only part where a mistake is
 expensive to undo, it needs no design decisions, and it can be built and fully
@@ -124,8 +129,8 @@ tested before a single pixel exists.
 | **B3 Tenancy** | One league, possibly growing | Single tenant. No `league_id`, no per-league admins, no moderation tooling in v1. Schema doesn't preclude adding it. |
 | **B5 Audience** | Public, no login | `anon` SELECT policies as specced. Public slug URLs. Anonymous viewers don't count toward the 50k MAU auth limit — helpful for staying free. |
 | **B7 Language** | English only | No i18n. Removed from Phase 0. |
-| **B10 Name/domain** | **CricLife**, on `criclife.pages.dev` + `criclife.is-a.dev` | Both free. Hosting moved from Vercel to Cloudflare Pages. New doc 14 covers the whole free-tier plan. |
-| **Budget** (implied) | Everything on free tiers | Four changes: Cloudflare Pages over Vercel; keepalive cron for the 7-day Supabase pause; no phone OTP (Resend SMTP instead); plain table over MV. First paid upgrade would be Supabase Pro at $25/mo, triggered at ~200 concurrent viewers. |
+| **B10 Name/domain** | **CricLife**, on `criclife.geminirachit.workers.dev` + `criclife.is-a.dev` | Both free. Hosting moved from Vercel to Cloudflare (Pages, then superseded by Workers Static Assets — see 14 § 1). New doc 14 covers the whole free-tier plan. |
+| **Budget** (implied) | Everything on free tiers | Four changes: Cloudflare over Vercel; keepalive cron for the 7-day Supabase pause; no phone OTP (Resend SMTP instead); plain table over MV. First paid upgrade would be Supabase Pro at $25/mo, triggered at ~200 concurrent viewers. |
 
 ### Still open, none blocking
 

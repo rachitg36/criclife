@@ -11,55 +11,56 @@ and the trigger points where you'd eventually have to pay.
 
 ## 1. Your question: can Supabase or Firebase give me a free URL?
 
-Short answer: **Firebase can, Supabase cannot — but Cloudflare Pages does it
-better than either.**
+Short answer: **Firebase can, Supabase cannot — but Cloudflare's free static
+hosting does it better than either.**
+
+> **Update, 2026-08-01 (deployed):** Cloudflare retired the standalone
+> "Pages" product's git-integration onboarding. Static sites are now deployed
+> as **Workers with Static Assets** (via the `wrangler` CLI — see
+> `wrangler.jsonc` in the repo root), and the free subdomain shape changed
+> from `<project>.pages.dev` to **`<worker-name>.<account-name>.workers.dev`**.
+> For this project that's **`criclife.geminirachit.workers.dev`** — actually
+> deployed and confirmed working. Everything below that references
+> `criclife.pages.dev` should be read as this domain instead. The underlying
+> economics (free, unlimited bandwidth, commercial use allowed, never pauses)
+> are unchanged — only the product name and subdomain shape moved.
 
 | Service | Gives you a website URL? | What you actually get |
 |---|---|---|
 | **Supabase** | ❌ **No** | You get `<ref>.supabase.co` — that's your **API and database endpoint only**. Supabase has no static site hosting product. You cannot put your React app there. |
 | **Firebase** | ✅ Yes | Firebase Hosting gives `<project>.web.app` and `<project>.firebaseapp.com` free. But you'd only use Firebase Hosting, not Firebase's database — which means running two vendors for no benefit. |
-| **Cloudflare Pages** | ✅ Yes | `<project>.pages.dev` free, **unlimited bandwidth**, commercial use allowed. |
+| **Cloudflare Workers (Static Assets)** | ✅ Yes | `<worker>.<account>.workers.dev` free, **unlimited bandwidth**, commercial use allowed. (Formerly "Cloudflare Pages" / `<project>.pages.dev` — same free tier, new product name and subdomain shape.) |
 | **Netlify** | ✅ Yes | `<name>.netlify.app`, 100 GB/month cap. |
 | **Vercel** | ✅ Yes | `<name>.vercel.app`, 100 GB/month cap, **Hobby tier is non-commercial only** per their ToS. |
 
 ### Recommendation
 
 ```
-Frontend  →  Cloudflare Pages   →  criclife.pages.dev        (free, instant)
-Backend   →  Supabase           →  <ref>.supabase.co         (free, API only)
-Nice name →  is-a.dev           →  criclife.is-a.dev         (free, ~1 day)
+Frontend  →  Cloudflare Workers →  criclife.geminirachit.workers.dev  (free, deployed)
+Backend   →  Supabase           →  <ref>.supabase.co                 (free, API only)
+Nice name →  is-a.dev           →  criclife.is-a.dev                 (free, ~1 day)
 ```
 
 **Both of your URLs are free and permanent.** You point `criclife.is-a.dev` at
-`criclife.pages.dev` with a CNAME record, and share the nicer one.
+`criclife.geminirachit.workers.dev` with a CNAME record, and share the nicer one.
 
 ### Domain availability — checked today (2026-08-01)
 
 | Domain | Status | How to get it | Cost |
 |---|---|---|---|
 | **`criclife.is-a.dev`** | ✅ **CONFIRMED AVAILABLE** — verified against the is-a.dev registry | Open a PR on `github.com/is-a-dev/register` adding a JSON file with your CNAME. Merged usually within a day. | Free forever |
-| **`criclife.pages.dev`** | Claimed automatically when you name your Cloudflare Pages project `criclife`. Globally unique, first-come. | Create the Pages project — takes 2 minutes. **Do this early to reserve the name.** | Free forever |
+| **`criclife.geminirachit.workers.dev`** | ✅ **Deployed and live.** Namespaced under the Cloudflare account (`geminirachit`), so — unlike the old Pages subdomain — there's no risk of someone else globally squatting the `criclife` name. | Already done via `npm run deploy` (Wrangler CLI). | Free forever |
 | `criclife.web.app` | Available if you create a Firebase project named `criclife` | Not recommended — you'd be splitting vendors | Free |
 | `criclife.com` | Almost certainly taken or premium | — | Paid |
 | `criclife.in` | Worth checking if you ever want a real domain | Registrar | ~₹700/yr |
 
-**Fallbacks if `criclife` is already taken on Pages:** `criclifeapp`,
-`criclife-league`, `getcriclife`, `criclife-io`. Note that the Pages subdomain
-and the is-a.dev subdomain are independent — you can have an ugly
-`criclifeapp.pages.dev` under the hood and still share the clean
-`criclife.is-a.dev`.
-
-> **Action item, do this first:** create the Cloudflare Pages project named
-> `criclife` before writing any code, purely to reserve the subdomain. An empty
-> project costs nothing.
-
 ### Caveat you should know
 
 A free subdomain is a great on-ramp and a poor foundation for anything you can't
-afford to lose. `is-a.dev` and `pages.dev` are both run by real organisations
+afford to lose. `is-a.dev` and `workers.dev` are both run by real organisations
 with good track records, but you don't own them. If CricLife becomes something
-you depend on, buy `criclife.in` for ~₹700/year and point it at the same Pages
-project — a 5-minute change, and every install keeps working if you add it as a
+you depend on, buy `criclife.in` for ~₹700/year and point it at the same Worker
+— a 5-minute change, and every install keeps working if you add it as a
 custom domain rather than replacing the old one.
 
 ---
@@ -68,7 +69,7 @@ custom domain rather than replacing the old one.
 
 | Layer | Service | Free tier | Cost |
 |---|---|---|---|
-| **Hosting / CDN** | **Cloudflare Pages** | Unlimited bandwidth, unlimited sites, 500 builds/mo, commercial use OK | **$0** |
+| **Hosting / CDN** | **Cloudflare Workers (Static Assets)** | Unlimited bandwidth, unlimited sites, commercial use OK | **$0** |
 | **Database + API + Auth + Realtime + Storage** | **Supabase Free** | 500 MB DB, 1 GB storage, 5 GB egress, 50k MAU, 200 concurrent realtime connections, 2M realtime messages/mo, 500k edge fn invocations, unlimited API requests, 2 projects | **$0** |
 | **Transactional email** (magic links) | **Resend Free** | 3,000 emails/mo, 100/day | **$0** |
 | **Source control + CI** | **GitHub** (public repo) | Unlimited Actions minutes on public repos | **$0** |
@@ -78,7 +79,7 @@ custom domain rather than replacing the old one.
 | **Web push** | Self-hosted VAPID | No service required — it's a browser standard | **$0** |
 | **Fonts** | Self-hosted Inter + Geist (OFL licence) | — | **$0** |
 | **Icons** | Lucide (ISC licence) | — | **$0** |
-| **Domain** | `criclife.pages.dev` + `criclife.is-a.dev` | — | **$0** |
+| **Domain** | `criclife.geminirachit.workers.dev` + `criclife.is-a.dev` | — | **$0** |
 | | | **TOTAL** | **$0 / month** |
 
 ---
@@ -110,7 +111,7 @@ here is close to tight.
 
 ## 4. The four changes required to stay free
 
-### 4.1 Cloudflare Pages instead of Vercel ⚠️ *changed from doc 01*
+### 4.1 Cloudflare Workers (Static Assets) instead of Vercel ⚠️ *changed from doc 01*
 
 Two reasons:
 1. **Vercel's Hobby tier is non-commercial only.** A club league with no revenue
@@ -122,6 +123,11 @@ Two reasons:
    mid-match is the worst possible failure.
 
 Vite builds to static files, so deployment is identical either way. No lock-in.
+
+> Cloudflare's "Pages" product has since been folded into Workers (Static
+> Assets) — same free tier, deployed via `wrangler deploy` using the
+> `wrangler.jsonc` in the repo root rather than the old git-integration
+> dashboard flow.
 
 ### 4.2 A keepalive cron to prevent the 7-day pause ⚠️ *new*
 
@@ -208,7 +214,7 @@ In order of what you'd hit:
 | 5 | **> 500 MB database** (~50 years away) | Writes fail | Supabase Pro (8 GB) | included above |
 
 **Realistically: one $25/month Supabase Pro subscription covers you all the way
-to a few hundred teams.** Cloudflare Pages stays free essentially forever.
+to a few hundred teams.** Cloudflare Workers stays free essentially forever.
 
 A cheap intermediate step before paying: cap the realtime fan-out by having the
 audience view poll every 3 seconds instead of subscribing when viewer count
@@ -218,15 +224,15 @@ exceeds a threshold. Slightly less magical, dramatically cheaper.
 
 ## 7. Free-tier checklist for Phase 0
 
-- [ ] Create Cloudflare Pages project named **`criclife`** → reserves `criclife.pages.dev`
-- [ ] Open the is-a.dev PR for **`criclife.is-a.dev`** → CNAME to `criclife.pages.dev`
+- [x] Deploy to Cloudflare Workers (Static Assets) named **`criclife`** → live at `criclife.geminirachit.workers.dev`
+- [ ] Open the is-a.dev PR for **`criclife.is-a.dev`** → CNAME to `criclife.geminirachit.workers.dev`
 - [ ] Create Supabase project `criclife-prod` (choose the region nearest your league)
 - [ ] Create Supabase project `criclife-staging` (that's your 2 free projects used)
 - [ ] Sign up Resend, verify a sending domain, wire it as Supabase custom SMTP
 - [ ] **Disable phone auth** in the Supabase dashboard
-- [ ] Add `.github/workflows/keepalive.yml`
-- [ ] Make the GitHub repo **public**
-- [ ] Enable Cloudflare Web Analytics on the Pages project
+- [x] Add `.github/workflows/keepalive.yml` (written; needs `SUPABASE_URL`/`SUPABASE_ANON_KEY` secrets once Supabase exists, then run once manually)
+- [x] Make the GitHub repo **public**
+- [ ] Enable Cloudflare Web Analytics on the Worker
 - [ ] Create the Sentry project (Developer plan)
 - [ ] Generate VAPID keys for web push, store as Supabase secrets
 - [ ] Self-host Inter + Geist in `public/fonts/`
@@ -241,7 +247,7 @@ These supersede what's written elsewhere. Everything not listed is unchanged.
 
 | Doc | Was | Now |
 |---|---|---|
-| 01 § Tech Stack | Hosting: Vercel | **Hosting: Cloudflare Pages** |
+| 01 § Tech Stack | Hosting: Vercel | **Hosting: Cloudflare Workers (Static Assets)**, live at `criclife.geminirachit.workers.dev` |
 | 01 § Tech Stack | Auth: magic link + Google + phone OTP | **magic link (Resend SMTP) + Google.** No phone OTP. |
 | 02 § 7 | `player_career_stats` MATERIALIZED VIEW | **plain table**, rewritten by edge function |
 | 09 § 7 | `og_image` edge function in v1 | **Deferred to Phase 9.** Static OG image in v1. |

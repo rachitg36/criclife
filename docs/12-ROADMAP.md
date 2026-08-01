@@ -13,8 +13,8 @@ everything else is a view over it, and a wrong engine poisons every screen.
 
 **Do these first — they reserve names and cost nothing:**
 
-- [ ] Create Cloudflare Pages project named **`criclife`** → reserves `criclife.pages.dev`
-- [ ] Open the is-a.dev PR for **`criclife.is-a.dev`** (confirmed available) → CNAME to the Pages project
+- [x] Deploy to Cloudflare Workers (Static Assets) named **`criclife`** → live at `criclife.geminirachit.workers.dev`
+- [ ] Open the is-a.dev PR for **`criclife.is-a.dev`** (confirmed available) → CNAME to the Worker
 - [ ] Supabase projects `criclife-prod` + `criclife-staging` (your 2 free projects)
 - [ ] Resend account → verify sender → wire as Supabase custom SMTP; **disable phone auth**
 - [ ] `.github/workflows/keepalive.yml` — prevents the 7-day Supabase pause
@@ -38,7 +38,7 @@ everything else is a view over it, and a wrong engine poisons every screen.
 - [ ] PWA manifest + service worker; installs to home screen
 - [ ] Self-hosted Inter + Geist in `public/fonts/`
 
-**Done when:** the app installs on a phone from `criclife.pages.dev`, shows an
+**Done when:** the app installs on a phone from `criclife.geminirachit.workers.dev`, shows an
 empty themed shell, the dark/light toggle animates correctly, and the keepalive
 workflow has run at least once.
 

@@ -125,11 +125,12 @@ registry. Some are probably wrong. Likely trouble spots, in rough order:
 Claude Code cannot do these — they need a browser and the owner's accounts.
 Full steps in `SETUP.md`.
 
-- [ ] Cloudflare Pages project named **`criclife`** ← do first, it reserves the subdomain
-- [ ] is-a.dev PR for **`criclife.is-a.dev`** (verified available 2026-08-01)
+- [x] Deployed to Cloudflare Workers (Static Assets) — live at `criclife.geminirachit.workers.dev`
+      (Cloudflare retired the old Pages dashboard flow; deployed via Wrangler CLI, see `wrangler.jsonc`)
+- [ ] is-a.dev PR for **`criclife.is-a.dev`** (verified available 2026-08-01) → CNAME to `criclife.geminirachit.workers.dev`
 - [ ] Supabase projects `criclife-prod` + `criclife-staging`; **disable phone auth**
 - [ ] Resend account, wired as Supabase custom SMTP
-- [ ] Push to GitHub as a **public** repo
+- [x] Pushed to GitHub as a **public** repo — <https://github.com/rachitg36/criclife>
 - [ ] Add `SUPABASE_URL` + `SUPABASE_ANON_KEY` repo secrets, run the keepalive workflow once
 
 > The keepalive matters. Free Supabase projects pause after 7 idle days and need
@@ -170,7 +171,7 @@ Reasoning is in `docs/13-OPEN-QUESTIONS.md` § A. Short version:
 |---|---|
 | PWA, not React Native | No app stores wanted; one codebase serves phone, laptop and the TV at the ground |
 | Supabase over Firebase | The scoring token is a row-level auth problem — that's what Postgres RLS is for. Rankings are aggregate SQL. |
-| Cloudflare Pages over Vercel | Vercel Hobby is non-commercial and caps at 100 GB, then **pauses your site**. Terrible failure mode for live scores. |
+| Cloudflare (Workers Static Assets) over Vercel | Vercel Hobby is non-commercial and caps at 100 GB, then **pauses your site**. Terrible failure mode for live scores. Note: Cloudflare's product was "Pages" when this was written; it's since merged into Workers — see `docs/14-FREE-TIER-PLAN.md`. |
 | Rules engine before UI | Only part where a mistake is expensive to undo, and it needs no design decisions |
 | Undo by replay, not reversal | Reversal logic is where scoring apps get subtly wrong. 130 rows replays in ~15ms. |
 | Append-only delivery log | Disputed scores are the #1 social problem in amateur cricket |

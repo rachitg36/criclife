@@ -43,22 +43,29 @@ VITE_PUBLIC_URL=http://localhost:5173
 
 ## 2. Reserve your free domains — **do this first**
 
-Both are free and permanent. `criclife.pages.dev` is first-come, so claim it
-before someone else does.
+> **Update, 2026-08-01:** Cloudflare retired the old "Pages" dashboard flow
+> (git-integration onboarding with a Framework preset picker). Static sites
+> now deploy as **Workers with Static Assets**, and the free subdomain is
+> `<worker-name>.<account-name>.workers.dev` instead of `<project>.pages.dev`.
+> **This step is done** — deployed via the Wrangler CLI to
+> `criclife.geminirachit.workers.dev`. Steps below are kept for reference /
+> redeploying from scratch.
 
-### 2a. Cloudflare Pages → `criclife.pages.dev`
+### 2a. Cloudflare Workers (Static Assets) → `criclife.<account>.workers.dev`
 
 1. Sign up at <https://dash.cloudflare.com> (free, no card).
-2. **Workers & Pages → Create → Pages → Connect to Git**.
-3. Pick this repo (push it to GitHub first — see step 5).
-4. Build settings:
-   - Framework preset: **Vite**
-   - Build command: `npm run build`
-   - Build output directory: `dist`
-   - Node version: `22`
-5. Project name: **`criclife`** ← this is what claims the subdomain.
-6. Add environment variables (Settings → Environment variables), same keys as
-   `.env.local` but with your real production values.
+2. Install Wrangler as a dev dependency (already done: `npm install -D wrangler`).
+3. `wrangler.jsonc` in the repo root configures static asset serving from
+   `dist/` with SPA fallback — no dashboard project-creation step needed.
+4. `npx wrangler login` — opens a browser tab to authorize.
+5. `npm run deploy` — runs `vite build` then `wrangler deploy`. Prints the
+   live URL on success.
+6. Environment variables for production Supabase values: since this repo has
+   no CI/CD wiring yet, `.env.local`'s values get baked into the build at
+   deploy time (Vite inlines `VITE_`-prefixed vars at build, not runtime).
+   Once real Supabase credentials exist, update `.env.local` before running
+   `npm run deploy` again, or wire a GitHub Actions workflow that injects them
+   from repo secrets.
 
 ### 2b. is-a.dev → `criclife.is-a.dev`
 
@@ -70,14 +77,15 @@ Verified available on 2026-08-01.
 ```json
 {
   "owner": { "username": "your-github-username", "email": "rachitpublic@gmail.com" },
-  "record": { "CNAME": "criclife.pages.dev" }
+  "record": { "CNAME": "criclife.geminirachit.workers.dev" }
 }
 ```
 
 3. Open a PR. Usually merged within a day.
-4. Once merged, add `criclife.is-a.dev` as a **custom domain** on the Pages
-   project (Settings → Custom domains). Keep `criclife.pages.dev` working too —
-   never replace it, or installed PWAs break.
+4. Once merged, add `criclife.is-a.dev` as a **custom domain** on the Worker
+   (Workers & Pages → criclife → Settings → Domains & Routes). Keep
+   `criclife.geminirachit.workers.dev` working too — never replace it, or
+   installed PWAs break.
 
 ---
 
@@ -118,17 +126,9 @@ not meant for production.
 
 ## 5. GitHub — public repo + the keepalive cron
 
-```bash
-git init
-git add .
-git commit -m "Phase 0: foundations"
-git branch -M main
-git remote add origin https://github.com/<you>/criclife.git
-git push -u origin main
-```
-
-Make the repo **public** — Actions minutes are unlimited on public repos
-(private gets 2,000/month).
+**Done** — repo is live and public at
+<https://github.com/rachitg36/criclife>. Actions minutes are unlimited on
+public repos (private gets 2,000/month).
 
 Then add repository secrets (**Settings → Secrets and variables → Actions**):
 
@@ -167,7 +167,7 @@ npm rm @fontsource-variable/inter geist
 
 - **Sentry** (free: 5,000 errors/month) → create a project, put the DSN in
   `VITE_SENTRY_DSN`. Wiring lands in Phase 9.
-- **Cloudflare Web Analytics** → enable on the Pages project. Free, unlimited,
+- **Cloudflare Web Analytics** → enable on the Worker. Free, unlimited,
   cookie-free, so no cookie banner on the audience view.
 
 ---
@@ -184,15 +184,15 @@ npm run test:e2e      # Playwright — includes the no-scroll gate
 
 Phase 0 acceptance criteria from `docs/12-ROADMAP.md`:
 
-- [ ] `criclife.pages.dev` reserved and deploying
+- [x] `criclife.geminirachit.workers.dev` deployed and live
 - [ ] `criclife.is-a.dev` PR opened
 - [ ] Both Supabase projects created, phone auth disabled
 - [ ] Resend wired as custom SMTP
 - [ ] Keepalive workflow has run successfully at least once
-- [ ] Repo is public, CI green
+- [x] Repo is public (CI status not yet checked)
 - [ ] App installs to a phone home screen from the deployed URL
-- [ ] Dark/light toggle animates correctly, no flash on reload
-- [ ] The no-scroll E2E test passes at all four viewports
+- [x] Dark/light toggle animates correctly, no flash on reload (verified locally + on the deployed URL)
+- [x] The no-scroll E2E test passes at all four viewports
 
 ---
 

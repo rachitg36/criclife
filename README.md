@@ -3,8 +3,8 @@
 > Futuristic, mobile-first, real-time cricket scoring, statistics and rankings.
 > Installable PWA. Runs on free tiers.
 
-**Status:** Phase 0 complete — foundations scaffolded.
-**Live:** `criclife.pages.dev` · `criclife.is-a.dev` *(pending setup)*
+**Status:** Phase 0 complete — foundations scaffolded and deployed.
+**Live:** `criclife.geminirachit.workers.dev` · `criclife.is-a.dev` *(pending PR)*
 
 ---
 
@@ -71,7 +71,7 @@ The three that matter most:
 
 ## Architecture in one paragraph
 
-React 19 + Vite PWA on Cloudflare Pages, Supabase (Postgres + RLS + Realtime +
+React 19 + Vite PWA on Cloudflare Workers (Static Assets), Supabase (Postgres + RLS + Realtime +
 Auth) as the backend. The **cricket rules engine in `src/engine/` is pure** — no
 React, no network, no DOM, no ambient time — and every score in the app is a
 projection of the append-only `deliveries` log through it. Scoring writes to
