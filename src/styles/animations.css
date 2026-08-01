@@ -1,0 +1,194 @@
+/* ============================================================
+   CricLife — Animation primitives
+   docs/08-DESIGN-SYSTEM.md § 5
+   Everything here is GPU-composited (transform / opacity / filter)
+   and is neutralised by prefers-reduced-motion or Calm mode.
+   ============================================================ */
+
+/* Registered so the aurora angle can be animated by the compositor. */
+@property --aurora-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@keyframes aurora-spin {
+  to {
+    --aurora-angle: 360deg;
+  }
+}
+
+@keyframes shimmer-sweep {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes wicket-shake {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-8px);
+  }
+  40% {
+    transform: translateX(8px);
+  }
+  60% {
+    transform: translateX(-6px);
+  }
+  80% {
+    transform: translateX(6px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes vignette-flash {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ── Aurora background ──────────────────────────────────────
+   One element, GPU only. Sits behind the hero. Paused when the
+   tab is hidden (handled in JS) and under reduced motion.       */
+.aurora {
+  position: absolute;
+  inset: -30%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(80px);
+  opacity: 0.35;
+  background:
+    conic-gradient(
+      from var(--aurora-angle) at 30% 40%,
+      var(--accent),
+      transparent 40%,
+      var(--run-six) 65%,
+      transparent 85%
+    ),
+    conic-gradient(
+      from calc(var(--aurora-angle) * -0.6) at 70% 60%,
+      var(--run-four),
+      transparent 45%,
+      var(--accent) 70%,
+      transparent 90%
+    );
+  animation: aurora-spin 24s linear infinite;
+  will-change: filter;
+}
+
+[data-theme='light'] .aurora {
+  opacity: 0.18;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora {
+    animation: none;
+  }
+}
+
+/* ── Skeleton loader ─────────────────────────────────────── */
+.skeleton {
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+/* ── Metallic rim for rank podium cards ──────────────────── */
+.rim-gold,
+.rim-silver,
+.rim-bronze {
+  position: relative;
+  overflow: hidden;
+}
+.rim-gold::after,
+.rim-silver::after,
+.rim-bronze::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.rim-gold::after {
+  background: var(--gold);
+}
+.rim-silver::after {
+  background: var(--silver);
+}
+.rim-bronze::after {
+  background: var(--bronze);
+}
+
+/* ── Wicket reaction ─────────────────────────────────────── */
+.shake-wicket {
+  animation: wicket-shake 150ms var(--ease-out) 1;
+}
+
+.vignette-wicket {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, var(--wicket) 140%);
+  animation: vignette-flash 600ms var(--ease-out) 1 forwards;
+}
+
+/* ── View Transition: circular theme wipe ────────────────── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 2;
+}

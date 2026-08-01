@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-accent="cyan">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0"
+    />
+    <meta name="theme-color" content="#05070d" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f6f8fc" media="(prefers-color-scheme: light)" />
+
+    <title>CricLife — Live Cricket Scoring</title>
+    <meta
+      name="description"
+      content="Score cricket matches from your phone. Live scores, full stats and player rankings."
+    />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CricLife" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="CricLife — Live Cricket Scoring" />
+    <meta
+      property="og:description"
+      content="Score cricket matches from your phone. Live scores, full stats and player rankings."
+    />
+    <meta property="og:image" content="/og-default.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Self-hosted fonts. See docs/14-FREE-TIER-PLAN.md § 5. -->
+    <link
+      rel="preload"
+      href="/fonts/inter-variable.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/geist-variable.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <style>
+      @font-face {
+        font-family: 'Inter';
+        src: url('/fonts/inter-variable.woff2') format('woff2-variations');
+        font-weight: 100 900;
+        font-display: swap;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'Geist';
+        src: url('/fonts/geist-variable.woff2') format('woff2-variations');
+        font-weight: 100 900;
+        font-display: swap;
+        font-style: normal;
+      }
+      /* Painted before React mounts so there is no white flash. */
+      html {
+        background: #05070d;
+      }
+      html[data-theme='light'] {
+        background: #f6f8fc;
+      }
+    </style>
+
+    <!--
+      BLOCKING theme script. Must run before any CSS paints, or the user sees
+      a flash of the wrong theme. Keep it inline, keep it tiny, keep it first.
+      Mirrors src/lib/theme.ts — change both together.
+      docs/08-DESIGN-SYSTEM.md § 2.
+    -->
+    <script>
+      (function () {
+        try {
+          var root = document.documentElement;
+          var theme = localStorage.getItem('criclife.theme') || 'system';
+          var isDark =
+            theme === 'dark' ||
+            (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          root.dataset.theme = isDark ? 'dark' : 'light';
+          root.dataset.accent = localStorage.getItem('criclife.accent') || 'cyan';
+          if (localStorage.getItem('criclife.calm') === 'true') root.dataset.calm = 'true';
+        } catch (e) {
+          /* private mode — fall back to the dark default already on <html> */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <div style="padding: 24px; font-family: system-ui; color: #f2f5ff">
+        <h1>CricLife needs JavaScript</h1>
+        <p>Please enable JavaScript to view live scores.</p>
+      </div>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

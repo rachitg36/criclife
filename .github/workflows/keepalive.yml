@@ -1,0 +1,43 @@
+# Supabase keepalive
+#
+# Free Supabase projects PAUSE after 7 days with no database activity, and
+# waking one needs a manual dashboard click plus up to 60s of cold start.
+# For a league that plays every other weekend that would bite at the worst
+# possible moment — right as someone opens the app to score.
+#
+# This pings the database every 3 days. Free, and it never pauses.
+# docs/14-FREE-TIER-PLAN.md § 4.2
+#
+# Required repository secrets:
+#   SUPABASE_URL       https://<ref>.supabase.co
+#   SUPABASE_ANON_KEY  the anon/public key (safe to store, RLS protects data)
+
+name: Supabase keepalive
+
+on:
+  schedule:
+    - cron: '0 6 */3 * *' # every 3 days, 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Touch the database
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o /tmp/body.txt -w '%{http_code}' \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/app_settings?select=id&limit=1")
+
+          echo "HTTP $status"
+          cat /tmp/body.txt
+
+          # 200 = fine. 404/400 also prove the DB answered, which is all we
+          # need before the tables exist in Phase 2.
+          if [ "$status" -ge 500 ] || [ "$status" -eq 000 ]; then
+            echo "::error::Supabase did not respond — the project may be paused."
+            exit 1
+          fi

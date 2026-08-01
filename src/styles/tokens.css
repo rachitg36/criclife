@@ -1,0 +1,198 @@
+/* ============================================================
+   CricLife — Design Tokens
+   Source of truth: docs/08-DESIGN-SYSTEM.md § 2
+   Dark is the base theme. Light is a real second theme, not an
+   inversion. Do not hardcode a colour anywhere else in the app.
+   ============================================================ */
+
+:root {
+  /* ── Surfaces (dark, default) ───────────────────────────── */
+  --bg-base: #05070d;
+  --bg-sunken: #03050a;
+  --surface-1: #0b1020;
+  --surface-2: #121a30;
+  --surface-3: #1a2440;
+  --surface-glass: rgb(18 26 48 / 0.55);
+  --surface-glass-strong: rgb(18 26 48 / 0.8);
+
+  /* ── Borders & lines ────────────────────────────────────── */
+  --border-subtle: rgb(255 255 255 / 0.06);
+  --border-default: rgb(255 255 255 / 0.11);
+  --border-strong: rgb(255 255 255 / 0.2);
+  --border-glow: color-mix(in oklch, var(--accent) 45%, transparent);
+
+  /* ── Text ───────────────────────────────────────────────── */
+  --text-primary: #f2f5ff;
+  --text-secondary: #a5b0cc;
+  --text-tertiary: #6b7899;
+  --text-inverse: #05070d;
+
+  /* ── Accent — user-selectable, overridden by batting team ── */
+  --accent: #22d3ee;
+  --accent-hover: #67e8f9;
+  --accent-muted: color-mix(in oklch, var(--accent) 18%, transparent);
+  --accent-glow: color-mix(in oklch, var(--accent) 55%, transparent);
+  --accent-fg: #04141a;
+
+  /* ── Semantic ───────────────────────────────────────────── */
+  --run-dot: #6b7899;
+  --run-single: #a5b0cc;
+  --run-four: #38bdf8;
+  --run-six: #a855f7;
+  --wicket: #f43f5e;
+  --extra: #fbbf24;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f43f5e;
+  --info: #38bdf8;
+  --live: #ef4444;
+
+  /* ── Rank metals ────────────────────────────────────────── */
+  --gold: linear-gradient(135deg, #fde68a, #f59e0b, #fbbf24);
+  --silver: linear-gradient(135deg, #e5e7eb, #9ca3af, #d1d5db);
+  --bronze: linear-gradient(135deg, #fcd9b6, #b45309, #d97706);
+
+  /* ── Elevation — glow-based in dark ─────────────────────── */
+  --glow-sm: 0 0 0 1px var(--border-subtle), 0 2px 8px rgb(0 0 0 / 0.4);
+  --glow-md:
+    0 0 0 1px var(--border-default), 0 8px 24px rgb(0 0 0 / 0.5),
+    0 0 32px -8px var(--accent-glow);
+  --glow-lg:
+    0 0 0 1px var(--border-strong), 0 16px 48px rgb(0 0 0 / 0.6),
+    0 0 64px -12px var(--accent-glow);
+
+  /* ── Radii ──────────────────────────────────────────────── */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-full: 999px;
+
+  /* ── Motion ─────────────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-slow: 400ms;
+
+  /* ── Spacing (4px base) ─────────────────────────────────── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+
+  /* ── Typography ─────────────────────────────────────────── */
+  --font-display: 'Geist', 'Space Grotesk', system-ui, sans-serif;
+  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* Fluid scale: clamp(min, preferred, max) between 375px and 768px */
+  --text-display-xl: clamp(3.5rem, 3rem + 4vw, 5.25rem); /* 56 → 84 */
+  --text-display-lg: clamp(2.75rem, 2.4rem + 2.4vw, 3.5rem); /* 44 → 56 */
+  --text-display-md: clamp(2rem, 1.8rem + 1.2vw, 2.375rem); /* 32 → 38 */
+  --text-heading-lg: 1.5rem;
+  --text-heading-md: 1.1875rem;
+  --text-heading-sm: 1rem;
+  --text-body: 0.9375rem;
+  --text-body-sm: 0.8125rem;
+  --text-label: 0.6875rem;
+
+  /* ── Layout ─────────────────────────────────────────────── */
+  --tabbar-h: 56px;
+  --content-max: 1080px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg-base: #f6f8fc;
+  --bg-sunken: #eaeef6;
+  --surface-1: #ffffff;
+  --surface-2: #ffffff;
+  --surface-3: #ffffff;
+  --surface-glass: rgb(255 255 255 / 0.72);
+  --surface-glass-strong: rgb(255 255 255 / 0.92);
+
+  --border-subtle: rgb(9 15 33 / 0.06);
+  --border-default: rgb(9 15 33 / 0.11);
+  --border-strong: rgb(9 15 33 / 0.18);
+
+  --text-primary: #0a1020;
+  --text-secondary: #48546f;
+  --text-tertiary: #7b869e;
+  --text-inverse: #ffffff;
+
+  --accent: #0891b2;
+  --accent-hover: #0e7490;
+  --accent-fg: #ffffff;
+  --run-four: #0284c7;
+  --run-six: #7c3aed;
+  --wicket: #e11d48;
+  --live: #dc2626;
+
+  /* Light mode uses real shadows, not glows. */
+  --glow-sm: 0 1px 2px rgb(9 15 33 / 0.06), 0 0 0 1px var(--border-subtle);
+  --glow-md: 0 4px 16px rgb(9 15 33 / 0.08), 0 0 0 1px var(--border-default);
+  --glow-lg: 0 12px 40px rgb(9 15 33 / 0.12), 0 0 0 1px var(--border-default);
+
+  color-scheme: light;
+}
+
+/* ── Accent presets (profiles.accent_pref) ────────────────── */
+[data-accent='cyan'] {
+  --accent: #22d3ee;
+  --accent-fg: #04141a;
+}
+[data-accent='violet'] {
+  --accent: #a855f7;
+  --accent-fg: #1a0524;
+}
+[data-accent='lime'] {
+  --accent: #a3e635;
+  --accent-fg: #131f04;
+}
+[data-accent='amber'] {
+  --accent: #fbbf24;
+  --accent-fg: #1f1503;
+}
+[data-accent='rose'] {
+  --accent: #fb7185;
+  --accent-fg: #1f0409;
+}
+[data-accent='azure'] {
+  --accent: #38bdf8;
+  --accent-fg: #04121f;
+}
+
+[data-theme='light'][data-accent='cyan'] {
+  --accent: #0891b2;
+  --accent-fg: #fff;
+}
+[data-theme='light'][data-accent='violet'] {
+  --accent: #7c3aed;
+  --accent-fg: #fff;
+}
+[data-theme='light'][data-accent='lime'] {
+  --accent: #4d7c0f;
+  --accent-fg: #fff;
+}
+[data-theme='light'][data-accent='amber'] {
+  --accent: #b45309;
+  --accent-fg: #fff;
+}
+[data-theme='light'][data-accent='rose'] {
+  --accent: #e11d48;
+  --accent-fg: #fff;
+}
+[data-theme='light'][data-accent='azure'] {
+  --accent: #0284c7;
+  --accent-fg: #fff;
+}

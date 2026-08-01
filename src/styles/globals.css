@@ -1,0 +1,240 @@
+@import 'tailwindcss';
+@import './tokens.css';
+@import './animations.css';
+
+/* ============================================================
+   Tailwind v4 theme bridge — maps our CSS variables to Tailwind
+   utilities so you can write `bg-surface-1` / `text-secondary`.
+   ============================================================ */
+@theme inline {
+  --color-bg-base: var(--bg-base);
+  --color-bg-sunken: var(--bg-sunken);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-glass: var(--surface-glass);
+  --color-glass-strong: var(--surface-glass-strong);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-tertiary: var(--text-tertiary);
+  --color-inverse: var(--text-inverse);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-muted: var(--accent-muted);
+  --color-accent-fg: var(--accent-fg);
+
+  --color-run-dot: var(--run-dot);
+  --color-run-four: var(--run-four);
+  --color-run-six: var(--run-six);
+  --color-wicket: var(--wicket);
+  --color-extra: var(--extra);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-live: var(--live);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+
+  --font-display: var(--font-display);
+  --font-ui: var(--font-ui);
+  --font-mono: var(--font-mono);
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: var(--text-body);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Kills the 300ms tap delay and double-tap zoom app-wide. */
+    touch-action: manipulation;
+    overscroll-behavior-y: none;
+  }
+
+  /* Scores must never jitter as digits change. Non-negotiable. */
+  .tnum,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0;
+    letter-spacing: -0.015em;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--r-sm);
+  }
+
+  ::selection {
+    background: var(--accent-muted);
+    color: var(--text-primary);
+  }
+
+  /* Thin, unobtrusive scrollbars where scrolling IS allowed. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+}
+
+/* ============================================================
+   Signature components (docs/08 § 4)
+   ============================================================ */
+@layer components {
+  .panel {
+    position: relative;
+    background: var(--surface-glass);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid var(--border-default);
+    border-radius: var(--r-lg);
+    box-shadow: var(--glow-md);
+  }
+
+  /* 1px top highlight — reads as a light source above the card. */
+  .panel::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.14), transparent);
+    pointer-events: none;
+  }
+  [data-theme='light'] .panel::before {
+    display: none;
+  }
+
+  .label-overline {
+    font-size: var(--text-label);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  /* Live pill — the pulsing dot. */
+  .live-dot {
+    position: relative;
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--r-full);
+    background: var(--live);
+  }
+  .live-dot::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: var(--r-full);
+    border: 1px solid var(--live);
+    animation: pulse-ring 1.2s var(--ease-out) infinite;
+  }
+}
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+@layer utilities {
+  /* The scoring shell. See docs/05-SCORER-VIEW.md § 3.
+     If anything inside this ever overflows, the design is wrong. */
+  .no-scroll-shell {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+    padding-top: var(--safe-t);
+    padding-bottom: var(--safe-b);
+  }
+
+  .safe-bottom {
+    padding-bottom: max(var(--sp-4), var(--safe-b));
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 24px -6px var(--accent-glow);
+  }
+
+  .press {
+    transition:
+      transform var(--dur-fast) var(--ease-out),
+      background-color var(--dur-fast) var(--ease-out);
+  }
+  .press:active {
+    transform: scale(0.94);
+  }
+}
+
+/* ============================================================
+   Reduced motion — OS preference AND the in-app Calm mode toggle.
+   Both must fully neutralise animation. docs/08 § 5.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+[data-calm='true'] *,
+[data-calm='true'] *::before,
+[data-calm='true'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 150ms !important;
+}
