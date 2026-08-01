@@ -127,7 +127,7 @@ Full steps in `SETUP.md`.
 
 - [x] Deployed to Cloudflare Workers (Static Assets) — live at `criclife.geminirachit.workers.dev`
       (Cloudflare retired the old Pages dashboard flow; deployed via Wrangler CLI, see `wrangler.jsonc`)
-- [ ] is-a.dev PR for **`criclife.is-a.dev`** (verified available 2026-08-01) → CNAME to `criclife.geminirachit.workers.dev`
+- [x] is-a.dev PR opened: [is-a-dev/register#45746](https://github.com/is-a-dev/register/pull/45746) — pending merge
 - [ ] Supabase projects `criclife-prod` + `criclife-staging`; **disable phone auth**
 - [ ] Resend account, wired as Supabase custom SMTP
 - [x] Pushed to GitHub as a **public** repo — <https://github.com/rachitg36/criclife>

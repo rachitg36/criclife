@@ -14,7 +14,7 @@ everything else is a view over it, and a wrong engine poisons every screen.
 **Do these first — they reserve names and cost nothing:**
 
 - [x] Deploy to Cloudflare Workers (Static Assets) named **`criclife`** → live at `criclife.geminirachit.workers.dev`
-- [ ] Open the is-a.dev PR for **`criclife.is-a.dev`** (confirmed available) → CNAME to the Worker
+- [x] Open the is-a.dev PR for **`criclife.is-a.dev`** — [is-a-dev/register#45746](https://github.com/is-a-dev/register/pull/45746), pending merge
 - [ ] Supabase projects `criclife-prod` + `criclife-staging` (your 2 free projects)
 - [ ] Resend account → verify sender → wire as Supabase custom SMTP; **disable phone auth**
 - [ ] `.github/workflows/keepalive.yml` — prevents the 7-day Supabase pause

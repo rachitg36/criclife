@@ -69,23 +69,20 @@ VITE_PUBLIC_URL=http://localhost:5173
 
 ### 2b. is-a.dev → `criclife.is-a.dev`
 
-Verified available on 2026-08-01.
-
-1. Fork <https://github.com/is-a-dev/register>.
-2. Add `domains/criclife.json`:
+**Done** — PR opened: [is-a-dev/register#45746](https://github.com/is-a-dev/register/pull/45746).
+Usually merged within a day. `domains/criclife.json` in that PR:
 
 ```json
 {
-  "owner": { "username": "your-github-username", "email": "rachitpublic@gmail.com" },
-  "record": { "CNAME": "criclife.geminirachit.workers.dev" }
+  "owner": { "username": "rachitg36", "email": "rachitpublic@gmail.com" },
+  "records": { "CNAME": "criclife.geminirachit.workers.dev" }
 }
 ```
 
-3. Open a PR. Usually merged within a day.
-4. Once merged, add `criclife.is-a.dev` as a **custom domain** on the Worker
-   (Workers & Pages → criclife → Settings → Domains & Routes). Keep
-   `criclife.geminirachit.workers.dev` working too — never replace it, or
-   installed PWAs break.
+Once merged, add `criclife.is-a.dev` as a **custom domain** on the Worker
+(Workers & Pages → criclife → Settings → Domains & Routes). Keep
+`criclife.geminirachit.workers.dev` working too — never replace it, or
+installed PWAs break.
 
 ---
 
@@ -185,7 +182,7 @@ npm run test:e2e      # Playwright — includes the no-scroll gate
 Phase 0 acceptance criteria from `docs/12-ROADMAP.md`:
 
 - [x] `criclife.geminirachit.workers.dev` deployed and live
-- [ ] `criclife.is-a.dev` PR opened
+- [x] `criclife.is-a.dev` PR opened — [#45746](https://github.com/is-a-dev/register/pull/45746), pending merge
 - [ ] Both Supabase projects created, phone auth disabled
 - [ ] Resend wired as custom SMTP
 - [ ] Keepalive workflow has run successfully at least once

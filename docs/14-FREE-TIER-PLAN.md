@@ -225,7 +225,7 @@ exceeds a threshold. Slightly less magical, dramatically cheaper.
 ## 7. Free-tier checklist for Phase 0
 
 - [x] Deploy to Cloudflare Workers (Static Assets) named **`criclife`** → live at `criclife.geminirachit.workers.dev`
-- [ ] Open the is-a.dev PR for **`criclife.is-a.dev`** → CNAME to `criclife.geminirachit.workers.dev`
+- [x] Open the is-a.dev PR — [is-a-dev/register#45746](https://github.com/is-a-dev/register/pull/45746), pending merge
 - [ ] Create Supabase project `criclife-prod` (choose the region nearest your league)
 - [ ] Create Supabase project `criclife-staging` (that's your 2 free projects used)
 - [ ] Sign up Resend, verify a sending domain, wire it as Supabase custom SMTP
