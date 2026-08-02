@@ -79,9 +79,16 @@ export default defineConfig({
       output: {
         manualChunks: {
           // Keep the scoring pad out of the audience bundle and vice versa.
+          // @supabase/supabase-js is deliberately NOT grouped here — it's
+          // only reachable from the lazy-loaded auth pages (AuthedOutlet),
+          // and forcing it into an eager chunk alongside react-query blew
+          // the audience route's 180KB budget by 30KB+. Same lesson as
+          // dexie before it (see HANDOFF.md): let Rollup's automatic
+          // splitting follow the real import graph instead of a static
+          // package-to-chunk grouping.
           'vendor-react': ['react', 'react-dom', 'react-router'],
           'vendor-motion': ['motion'],
-          'vendor-data': ['@supabase/supabase-js', '@tanstack/react-query'],
+          'vendor-data': ['@tanstack/react-query'],
         },
       },
     },

@@ -94,7 +94,12 @@
         "!dist/assets/AdminRoute-*.js",
         "!dist/assets/RanksRoute-*.js",
         "!dist/assets/AppearanceSettings-*.js",
-        "!dist/assets/OfflinePage-*.js"
+        "!dist/assets/OfflinePage-*.js",
+        "!dist/assets/AuthedOutlet-*.js",
+        "!dist/assets/LoginPage-*.js",
+        "!dist/assets/AuthCallbackPage-*.js",
+        "!dist/assets/OnboardingPage-*.js",
+        "!dist/assets/supabase-*.js"
       ],
       "limit": "180 kB"
     }

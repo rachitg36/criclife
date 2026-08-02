@@ -1,13 +1,21 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Phase 0 smoke', () => {
-  test('home renders and the app shell is present', async ({ page }) => {
+  // `/` is `authed` per docs/11-SCREENS-AND-ROUTES.md § 2 — Phase 2 wired
+  // real `RequireAuth`, so an anonymous visit now redirects to /login instead
+  // of rendering the home shell directly.
+  test('home redirects an anonymous visitor to /login', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByText('CricLife').first()).toBeVisible();
-    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+    await expect(page.getByPlaceholder('you@example.com')).toBeVisible();
   });
 
-  test('theme toggle switches between dark and light', async ({ page }) => {
+  // The theme toggle only lives on Home and /settings/appearance
+  // (docs/11 § 2, § 9), both `authed` routes. Exercising the toggle now needs
+  // a real signed-in session, which needs a live Supabase project — one of
+  // the "needs a human" setup steps in CLAUDE.md, not yet provisioned. Skipped
+  // until that exists; see HANDOFF.md.
+  test.skip('theme toggle switches between dark and light', async ({ page }) => {
     await page.goto('/');
 
     await page.getByRole('radio', { name: 'Light' }).click();
@@ -17,7 +25,9 @@ test.describe('Phase 0 smoke', () => {
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   });
 
-  test('the chosen theme survives a reload with no flash of the wrong theme', async ({ page }) => {
+  test.skip('the chosen theme survives a reload with no flash of the wrong theme', async ({
+    page,
+  }) => {
     await page.goto('/');
     await page.getByRole('radio', { name: 'Light' }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
@@ -27,7 +37,7 @@ test.describe('Phase 0 smoke', () => {
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   });
 
-  test('accent colour persists', async ({ page }) => {
+  test.skip('accent colour persists', async ({ page }) => {
     await page.goto('/settings/appearance');
     await page.getByRole('button', { name: 'violet' }).click();
     await expect(page.locator('html')).toHaveAttribute('data-accent', 'violet');

@@ -15,11 +15,22 @@ import { ErrorPage } from '@/features/system/ErrorPage';
 
 /* ── Code split points. docs/09-ARCHITECTURE.md § 6 ───────────
    The audience bundle must not contain the scoring pad, and the
-   scorer bundle must not contain the charts.                     */
+   scorer bundle must not contain the charts. Auth pages are split
+   the same way — the audience route must not pull in supabase-js
+   via AuthProvider (see AuthedOutlet, providers/index.tsx).        */
 const ScorerRoute = lazy(() => import('@/features/scoring/ScorerRoute'));
 const AudienceRoute = lazy(() => import('@/features/audience/AudienceRoute'));
 const RanksRoute = lazy(() => import('@/features/ranks/RanksRoute'));
 const AdminRoute = lazy(() => import('@/features/admin/AdminRoute'));
+const LoginPage = lazy(() =>
+  import('@/features/auth/LoginPage').then((m) => ({ default: m.LoginPage }))
+);
+const AuthCallbackPage = lazy(() =>
+  import('@/features/auth/AuthCallbackPage').then((m) => ({ default: m.AuthCallbackPage }))
+);
+const OnboardingPage = lazy(() =>
+  import('@/features/auth/OnboardingPage').then((m) => ({ default: m.OnboardingPage }))
+);
 
 const stub = (title: string, phase: number, doc?: string, description?: string) => ({
   element: <Placeholder title={title} phase={phase} doc={doc} description={description} />,
@@ -30,14 +41,6 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     errorElement: <ErrorPage />,
     children: [
-      /* ── Auth & onboarding (Phase 2) ───────────────────── */
-      { path: '/login', ...stub('Sign in', 2, '11-SCREENS-AND-ROUTES.md', 'Magic link + Google.') },
-      { path: '/auth/callback', ...stub('Signing you in…', 2) },
-      {
-        path: '/onboarding',
-        ...stub('Welcome to CricLife', 2, '11-SCREENS-AND-ROUTES.md', 'Name, role, first team.'),
-      },
-
       /* ── Audience — PUBLIC, no auth (Phase 7) ──────────── */
       {
         element: <PublicLayout />,
@@ -80,82 +83,113 @@ export const router = createBrowserRouter([
         ],
       },
 
-      /* ── Authenticated app shell ───────────────────────── */
+      /* ── Everything that needs a session — AuthProvider is scoped
+             here, not globally, so the audience bundle stays auth-free. ── */
       {
-        element: (
-          <RequireAuth>
-            <AppLayout />
-          </RequireAuth>
-        ),
+        lazy: async () => {
+          const m = await import('./layouts/AuthedOutlet');
+          return { Component: m.AuthedOutlet };
+        },
         children: [
-          { index: true, element: <HomePage /> },
-
-          /* Teams (Phase 3) */
-          { path: '/teams', ...stub('Teams', 3, '11-SCREENS-AND-ROUTES.md') },
-          { path: '/teams/new', ...stub('Create a team', 3) },
-          { path: '/teams/:teamId/add-player', ...stub('Add a player', 3) },
-          { path: '/teams/:teamId/settings', ...stub('Team settings', 3) },
-
-          /* Players (Phase 3) */
+          { path: '/login', element: <LoginPage /> },
+          { path: '/auth/callback', element: <AuthCallbackPage /> },
           {
-            path: '/players/:playerId/edit',
-            ...stub(
-              'Edit your player profile',
-              3,
-              '03-ROLES-PERMISSIONS.md',
-              'Set your own playing role, batting hand and bowling style.'
+            path: '/onboarding',
+            element: (
+              <RequireAuth>
+                <OnboardingPage />
+              </RequireAuth>
             ),
           },
-          { path: '/players/claim', ...stub('Claim your player record', 3) },
 
-          /* Matches (Phases 4–6) */
-          { path: '/matches', ...stub('Matches', 4) },
+          /* ── Authenticated app shell ───────────────────── */
           {
-            path: '/matches/new',
-            ...stub('New match', 4, '11-SCREENS-AND-ROUTES.md', 'Overs per innings is set here.'),
-          },
-          { path: '/matches/:matchId', ...stub('Match hub', 4) },
-          { path: '/matches/:matchId/setup', ...stub('Toss & playing XI', 4) },
-          {
-            path: '/matches/:matchId/rights',
-            ...stub(
-              'Scoring Rights Map',
-              4,
-              '03-ROLES-PERMISSIONS.md',
-              'Who can score right now — issue, pass, revoke.'
+            element: (
+              <RequireAuth>
+                <AppLayout />
+              </RequireAuth>
             ),
-          },
-          { path: '/matches/:matchId/settings', ...stub('Match settings', 4) },
-          {
-            path: '/matches/:matchId/review',
-            ...stub('Review tray', 6, '05-SCORER-VIEW.md', 'Offline balls the server rejected.'),
+            children: [
+              { index: true, element: <HomePage /> },
+
+              /* Teams (Phase 3) */
+              { path: '/teams', ...stub('Teams', 3, '11-SCREENS-AND-ROUTES.md') },
+              { path: '/teams/new', ...stub('Create a team', 3) },
+              { path: '/teams/:teamId/add-player', ...stub('Add a player', 3) },
+              { path: '/teams/:teamId/settings', ...stub('Team settings', 3) },
+
+              /* Players (Phase 3) */
+              {
+                path: '/players/:playerId/edit',
+                ...stub(
+                  'Edit your player profile',
+                  3,
+                  '03-ROLES-PERMISSIONS.md',
+                  'Set your own playing role, batting hand and bowling style.'
+                ),
+              },
+              { path: '/players/claim', ...stub('Claim your player record', 3) },
+
+              /* Matches (Phases 4–6) */
+              { path: '/matches', ...stub('Matches', 4) },
+              {
+                path: '/matches/new',
+                ...stub(
+                  'New match',
+                  4,
+                  '11-SCREENS-AND-ROUTES.md',
+                  'Overs per innings is set here.'
+                ),
+              },
+              { path: '/matches/:matchId', ...stub('Match hub', 4) },
+              { path: '/matches/:matchId/setup', ...stub('Toss & playing XI', 4) },
+              {
+                path: '/matches/:matchId/rights',
+                ...stub(
+                  'Scoring Rights Map',
+                  4,
+                  '03-ROLES-PERMISSIONS.md',
+                  'Who can score right now — issue, pass, revoke.'
+                ),
+              },
+              { path: '/matches/:matchId/settings', ...stub('Match settings', 4) },
+              {
+                path: '/matches/:matchId/review',
+                ...stub(
+                  'Review tray',
+                  6,
+                  '05-SCORER-VIEW.md',
+                  'Offline balls the server rejected.'
+                ),
+              },
+
+              /* Settings (Phase 9, appearance ships in Phase 0) */
+              { path: '/settings', ...stub('Settings', 9) },
+              { path: '/settings/profile', ...stub('Your profile', 3) },
+              {
+                path: '/settings/appearance',
+                lazy: async () => {
+                  const m = await import('@/features/settings/AppearanceSettings');
+                  return { Component: m.AppearanceSettings };
+                },
+              },
+              { path: '/settings/scoring', ...stub('Scoring preferences', 5) },
+              { path: '/settings/notifications', ...stub('Notifications', 9) },
+              { path: '/settings/data', ...stub('Data & storage', 9) },
+              { path: '/settings/about', ...stub('About CricLife', 9) },
+            ],
           },
 
-          /* Settings (Phase 9, appearance ships in Phase 0) */
-          { path: '/settings', ...stub('Settings', 9) },
-          { path: '/settings/profile', ...stub('Your profile', 3) },
+          /* ── Admin (Phase 9) ───────────────────────────── */
           {
-            path: '/settings/appearance',
-            lazy: async () => {
-              const m = await import('@/features/settings/AppearanceSettings');
-              return { Component: m.AppearanceSettings };
-            },
+            element: (
+              <RequireSuperAdmin>
+                <AppLayout />
+              </RequireSuperAdmin>
+            ),
+            children: [{ path: '/admin/*', element: <AdminRoute /> }],
           },
-          { path: '/settings/scoring', ...stub('Scoring preferences', 5) },
-          { path: '/settings/notifications', ...stub('Notifications', 9) },
-          { path: '/settings/data', ...stub('Data & storage', 9) },
-          { path: '/settings/about', ...stub('About CricLife', 9) },
         ],
-      },
-
-      /* ── Admin (Phase 9) ───────────────────────────────── */
-      {
-        element: (
-          <RequireSuperAdmin>
-            <AppLayout />
-          </RequireSuperAdmin>
-        ),
-        children: [{ path: '/admin/*', element: <AdminRoute /> }],
       },
 
       /* ── System ────────────────────────────────────────── */
