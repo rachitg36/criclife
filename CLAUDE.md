@@ -3,9 +3,10 @@
 Mobile-first PWA for scoring cricket matches, with live audience view, player
 stats and rankings. React 19 + Vite + Supabase. Runs entirely on free tiers.
 
-**Current state: Phase 0 complete** — verified, deployed to
-`criclife.geminirachit.workers.dev`, CI green. Next is Phase 1 (the rules
-engine). Read `HANDOFF.md` for the full picture.
+**Current state: Phase 1 complete** — the pure rules engine is built and
+tested (220 unit tests, 100% coverage on `src/engine`). Deployed at
+`criclife.geminirachit.workers.dev`. Next is Phase 2 (data layer and auth).
+Read `HANDOFF.md` for the full picture.
 
 ## Commands
 
@@ -49,17 +50,23 @@ Phases are in `docs/12-ROADMAP.md`, each with acceptance criteria.
 **Phase 1 (the rules engine) comes before any feature UI.** It has no visible
 output and it is tempting to skip. Don't. A wrong engine poisons every screen.
 
-Current: Phase 0 → next: Phase 1.
+Current: Phase 1 done → next: Phase 2 (data layer & auth).
+
+Four spec conflicts surfaced while building the engine and are recorded under
+"Phase 1 doc follow-ups" in `docs/12-ROADMAP.md`. `docs/04` should be amended
+before Phase 5 builds a UI on top of those behaviours.
 
 ## Layout
 
 ```
 docs/          15 planning docs — README.md is the index
-src/engine/    PURE rules engine (Phase 1, does not exist yet)
+src/engine/    PURE rules engine — types config state dismissals strike
+               inningsEnd result applyDelivery replay scorecard projections
+               commentary
 src/app/       router, providers, layouts, guards
 src/features/  home · settings · scoring · audience · ranks · admin · system
 src/components/ui/   Button Card Skeleton CountUp Aurora LivePill ThemeToggle
-src/lib/       env supabase db(Dexie) theme haptics format cn sw
+src/lib/       env supabase db(Dexie) theme haptics format cn sw session
 src/stores/    zustand — uiStore
 src/styles/    tokens.css globals.css animations.css
 tests/         unit (vitest) + e2e (playwright)

@@ -57,21 +57,53 @@ workflow has run at least once.
 ## Phase 1 — The rules engine
 *Goal: cricket, correctly, with no UI at all.*
 
-- [ ] `src/engine/types.ts` — MatchState, InningsState, DeliveryInput
-- [ ] `config.ts` — defaults + the 6 built-in rules profiles
-- [ ] `applyDelivery.ts` — the 13-step algorithm from [04](./04-RULES-ENGINE.md) §4
-- [ ] `strike.ts`, `dismissals.ts`, `inningsEnd.ts`, `result.ts`
-- [ ] `replay.ts` — fold a `Delivery[]` into `MatchState`
-- [ ] `scorecard.ts`, `projections.ts`, `commentary.ts`
-- [ ] Unit tests for every row of the §5.2 legality table
-- [ ] Property tests (fast-check) for the invariants in §12
-- [ ] **Three full real-match fixtures replayed to a byte-identical scorecard**
+- [x] `src/engine/types.ts` — MatchState, InningsState, DeliveryInput
+- [x] `config.ts` — defaults + the 6 built-in rules profiles
+- [x] `applyDelivery.ts` — the 13-step algorithm from [04](./04-RULES-ENGINE.md) §4
+- [x] `strike.ts`, `dismissals.ts`, `inningsEnd.ts`, `result.ts`
+- [x] `replay.ts` — fold a `Delivery[]` into `MatchState`
+- [x] `scorecard.ts`, `projections.ts`, `commentary.ts`
+- [x] Unit tests for every row of the §5.2 legality table
+- [x] Property tests (fast-check) for the invariants in §12
+- [x] **Three full real-match fixtures replayed to a byte-identical scorecard**
 
 **Done when:** 100% branch coverage on `src/engine`, all three fixtures pass,
 and `applyDelivery` runs in under 1ms.
 
 > This phase has no visible output. Resist the urge to skip it. Every hour here
 > saves five later.
+
+> **Status 2026-08-02: complete.** 220 unit tests, 100% statements / branches /
+> functions / lines on `src/engine` (enforced by a threshold in
+> `vitest.config.ts`, so it cannot silently regress). All three fixtures replay
+> byte-identically. `applyDelivery` median is well under 1ms.
+>
+> Four spec conflicts surfaced while implementing — see § "Phase 1 doc
+> follow-ups" below. None block Phase 2, but `docs/04` should be amended.
+
+### Phase 1 doc follow-ups
+
+Found while implementing; the engine follows the spec as written in each case
+except where noted, so these are doc decisions rather than code bugs.
+
+1. **Bowled on a free hit.** § 4 step 8 and `docs/10`'s error table both say
+   reject with `ILLEGAL_DISMISSAL`; § 12's case table says "not out, runs
+   stand". Implemented as **reject** (two docs to one, and the pad disables
+   the button anyway). § 12 needs amending.
+2. **A `penalty` counts as a legal ball.** § 4 step 2's formula makes
+   `isLegal` true for anything that is not a wide or no-ball, so a penalty
+   award ticks the over along. That is wrong under the Laws — penalty runs are
+   awarded, not bowled. Implemented as written and pinned by a test; a
+   one-word fix once the doc is decided.
+3. **Byes run off a no-ball do not rotate the strike.** § 6's formula uses
+   `runsBatter` for the no-ball case, but § 4 step 3 folds byes taken off a
+   no-ball into `runsExtras`, so they never register as crossings.
+4. **Commentary asks for a "random" phrase** (§ 11) but the engine must be
+   deterministic. Phrases are chosen by hashing `clientDeliveryId` — varied
+   across balls, identical on replay.
+
+Also unused in v1: `config.noBallFreeHitOnAllNoBalls`, because `DeliveryInput`
+carries no front-foot/back-foot distinction to switch on.
 
 ---
 
