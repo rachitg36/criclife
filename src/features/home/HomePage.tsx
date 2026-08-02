@@ -50,7 +50,10 @@ export function HomePage() {
         </motion.div>
       </section>
 
-      <section className="relative grid gap-3 px-4 pb-8">
+      {/* grid-cols-1 (not bare `grid`): an implicit auto track sizes to
+          max-content, and `truncate` makes that the full unwrapped subtitle —
+          which blew the cards past the viewport. minmax(0,1fr) clamps it. */}
+      <section className="relative grid grid-cols-1 gap-3 px-4 pb-8">
         <QuickLink
           to="/matches/new"
           Icon={PlusCircle}
