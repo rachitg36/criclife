@@ -35,6 +35,7 @@
     "dexie-react-hooks": "^1.1.7",
     "lucide-react": "^0.544.0",
     "motion": "^12.23.22",
+    "qrcode": "^1.5.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.64.0",
@@ -52,6 +53,7 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22.18.6",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.3",
@@ -114,7 +116,12 @@
         "!dist/assets/roleLabels-*.js",
         "!dist/assets/hooks-*.js",
         "!dist/assets/plus-*.js",
-        "!dist/assets/supabase-*.js"
+        "!dist/assets/supabase-*.js",
+        "!dist/assets/RedeemGrantPage-*.js",
+        "!dist/assets/MatchHubPage-*.js",
+        "!dist/assets/NewMatchPage-*.js",
+        "!dist/assets/MatchSetupPage-*.js",
+        "!dist/assets/ScoringRightsMapPage-*.js"
       ],
       "limit": "180 kB"
     }

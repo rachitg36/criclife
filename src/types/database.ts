@@ -308,6 +308,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      handoff_tokens: {
+        Row: {
+          id: string;
+          token: string;
+          match_id: string;
+          issued_by_profile_id: string;
+          can_delegate: boolean;
+          scope: string;
+          expires_at: string;
+          redeemed_at: string | null;
+          redeemed_by_profile_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          token: string;
+          match_id: string;
+          issued_by_profile_id: string;
+          can_delegate?: boolean;
+          scope?: string;
+          expires_at: string;
+          redeemed_at?: string | null;
+          redeemed_by_profile_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          token?: string;
+          match_id?: string;
+          issued_by_profile_id?: string;
+          can_delegate?: boolean;
+          scope?: string;
+          expires_at?: string;
+          redeemed_at?: string | null;
+          redeemed_by_profile_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       innings: {
         Row: {
           id: string;
@@ -1120,6 +1159,24 @@ export type Database = {
         };
         Returns: Database['public']['Tables']['players']['Row'];
       };
+      create_handoff_token: {
+        Args: {
+          p_match_id: string | null;
+          p_ttl_seconds?: number | null;
+        };
+        Returns: Database['public']['Tables']['handoff_tokens']['Row'];
+      };
+      create_match: {
+        Args: {
+          p_team_a_id: string | null;
+          p_team_b_id: string | null;
+          p_config: Json | null;
+          p_title?: string | null;
+          p_venue?: string | null;
+          p_scheduled_at?: string | null;
+        };
+        Returns: Database['public']['Tables']['matches']['Row'];
+      };
       create_shadow_player: {
         Args: {
           p_team_id: string | null;
@@ -1139,6 +1196,28 @@ export type Database = {
           p_city?: string | null;
         };
         Returns: Database['public']['Tables']['teams']['Row'];
+      };
+      get_match_grants: {
+        Args: {
+          p_match_id: string | null;
+        };
+        Returns: {
+          id: string;
+          match_id: string;
+          grantee_profile_id: string;
+          granted_by_profile_id: string;
+          status: Database['public']['Enums']['grant_status'];
+          can_delegate: boolean;
+          scope: string;
+          granted_at: string;
+          expires_at: string | null;
+          revoked_at: string | null;
+          transferred_to_grant_id: string | null;
+          note: string | null;
+          grantee_display_name: string;
+          grantee_avatar_url: string | null;
+          granted_by_display_name: string | null;
+        }[];
       };
       is_player_self: {
         Args: {
@@ -1162,11 +1241,28 @@ export type Database = {
         };
         Returns: boolean;
       };
+      issue_scoring_grant: {
+        Args: {
+          p_match_id: string | null;
+          p_grantee_profile_id: string | null;
+          p_can_delegate?: boolean | null;
+          p_scope?: string | null;
+          p_expires_at?: string | null;
+          p_note?: string | null;
+        };
+        Returns: Database['public']['Tables']['scoring_grants']['Row'];
+      };
       rebuild_innings: {
         Args: {
           p_innings_id: string | null;
         };
         Returns: undefined;
+      };
+      redeem_handoff_token: {
+        Args: {
+          p_token: string | null;
+        };
+        Returns: Database['public']['Tables']['scoring_grants']['Row'];
       };
       respond_to_role_suggestion: {
         Args: {
@@ -1174,6 +1270,13 @@ export type Database = {
           p_accept: boolean | null;
         };
         Returns: Database['public']['Tables']['role_change_suggestions']['Row'];
+      };
+      revoke_scoring_grant: {
+        Args: {
+          p_grant_id: string | null;
+          p_reason?: string | null;
+        };
+        Returns: Database['public']['Tables']['scoring_grants']['Row'];
       };
       search_profiles: {
         Args: {
@@ -1186,6 +1289,30 @@ export type Database = {
           avatar_url: string | null;
         }[];
       };
+      set_playing_xi: {
+        Args: {
+          p_match_id: string | null;
+          p_team_id: string | null;
+          p_player_ids: string[] | null;
+          p_captain_id?: string | null;
+          p_keeper_id?: string | null;
+        };
+        Returns: Database['public']['Tables']['match_squads']['Row'][];
+      };
+      set_toss: {
+        Args: {
+          p_match_id: string | null;
+          p_winner_team_id: string | null;
+          p_decision: string | null;
+        };
+        Returns: Database['public']['Tables']['matches']['Row'];
+      };
+      start_innings: {
+        Args: {
+          p_match_id: string | null;
+        };
+        Returns: Database['public']['Tables']['innings']['Row'];
+      };
       suggest_role_change: {
         Args: {
           p_player_id: string | null;
@@ -1193,6 +1320,14 @@ export type Database = {
           p_note?: string | null;
         };
         Returns: Database['public']['Tables']['role_change_suggestions']['Row'];
+      };
+      transfer_scoring_grant: {
+        Args: {
+          p_grant_id: string | null;
+          p_to_profile_id: string | null;
+          p_keep_mine?: boolean | null;
+        };
+        Returns: Database['public']['Tables']['scoring_grants']['Row'];
       };
       transfer_team_ownership: {
         Args: {

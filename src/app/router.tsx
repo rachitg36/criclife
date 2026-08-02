@@ -55,6 +55,23 @@ const PlayerEditPage = lazy(() =>
 const ClaimPlayerPage = lazy(() =>
   import('@/features/players/ClaimPlayerPage').then((m) => ({ default: m.ClaimPlayerPage }))
 );
+const NewMatchPage = lazy(() =>
+  import('@/features/matches/NewMatchPage').then((m) => ({ default: m.NewMatchPage }))
+);
+const MatchHubPage = lazy(() =>
+  import('@/features/matches/MatchHubPage').then((m) => ({ default: m.MatchHubPage }))
+);
+const MatchSetupPage = lazy(() =>
+  import('@/features/matches/MatchSetupPage').then((m) => ({ default: m.MatchSetupPage }))
+);
+const ScoringRightsMapPage = lazy(() =>
+  import('@/features/matches/ScoringRightsMapPage').then((m) => ({
+    default: m.ScoringRightsMapPage,
+  }))
+);
+const RedeemGrantPage = lazy(() =>
+  import('@/features/matches/RedeemGrantPage').then((m) => ({ default: m.RedeemGrantPage }))
+);
 
 const stub = (title: string, phase: number, doc?: string, description?: string) => ({
   element: <Placeholder title={title} phase={phase} doc={doc} description={description} />,
@@ -100,6 +117,7 @@ export const router = createBrowserRouter([
           { path: '/teams/:teamId/matches', ...stub('Team matches', 3) },
           { path: '/teams/:teamId/stats', ...stub('Team stats', 8) },
           { path: '/players/:playerId', element: <PlayerProfilePage /> },
+          { path: '/matches/:matchId', element: <MatchHubPage /> },
         ],
       },
 
@@ -159,26 +177,10 @@ export const router = createBrowserRouter([
 
               /* Matches (Phases 4–6) */
               { path: '/matches', ...stub('Matches', 4) },
-              {
-                path: '/matches/new',
-                ...stub(
-                  'New match',
-                  4,
-                  '11-SCREENS-AND-ROUTES.md',
-                  'Overs per innings is set here.'
-                ),
-              },
-              { path: '/matches/:matchId', ...stub('Match hub', 4) },
-              { path: '/matches/:matchId/setup', ...stub('Toss & playing XI', 4) },
-              {
-                path: '/matches/:matchId/rights',
-                ...stub(
-                  'Scoring Rights Map',
-                  4,
-                  '03-ROLES-PERMISSIONS.md',
-                  'Who can score right now — issue, pass, revoke.'
-                ),
-              },
+              { path: '/matches/new', element: <NewMatchPage /> },
+              { path: '/matches/:matchId/setup', element: <MatchSetupPage /> },
+              { path: '/matches/:matchId/rights', element: <ScoringRightsMapPage /> },
+              { path: '/redeem-grant/:token', element: <RedeemGrantPage /> },
               { path: '/matches/:matchId/settings', ...stub('Match settings', 4) },
               {
                 path: '/matches/:matchId/review',
