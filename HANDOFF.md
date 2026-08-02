@@ -25,24 +25,14 @@ Decisions already locked in are logged in `docs/13-OPEN-QUESTIONS.md` § A and �
 
 We're mid-way through the Phase 0 deployment/account-setup checklist,
 working through it live in chat, one browser step at a time. **Pick up at
-Resend.**
+GitHub secrets + keepalive.**
 
-### Immediately next: Resend (magic-link email)
+Resend is done — custom SMTP wired on both `criclife-prod` and
+`criclife-staging` (Authentication → Emails → SMTP Settings in the Supabase
+dashboard, host `smtp.resend.com`, sender `onboarding@resend.dev` until a
+real domain is verified).
 
-1. Sign up at <https://resend.com> (free: 3,000 emails/month, 100/day)
-2. Verify a sending domain, or use Resend's onboarding/test sender to start
-3. Create an API key
-4. **Do not paste the API key into chat.** Go directly into the Supabase
-   dashboard (**criclife-prod → Project Settings → Authentication → SMTP
-   Settings**) and enter it there yourself:
-   - Host `smtp.resend.com`, Port `465`
-   - Username `resend`
-   - Password: the Resend API key
-   - Sender: `CricLife <noreply@yourdomain>`
-5. Repeat for `criclife-staging` if you want staging to send real emails too
-   (optional — staging can usually just use Supabase's rate-limited default).
-
-### After Resend: GitHub secrets + keepalive
+### Immediately next: GitHub secrets + keepalive
 
 1. On GitHub → `rachitg36/criclife` → **Settings → Secrets and variables →
    Actions**, add:
@@ -208,8 +198,8 @@ Everything below is confirmed working (not just written) via
 - [x] Open the is-a.dev PR — pending merge
 - [x] Create both Supabase projects
 - [x] Disable phone auth on both
-- [ ] **← Resend account, wired as custom SMTP (in progress, see § 2)**
-- [ ] Add `SUPABASE_URL` / `SUPABASE_ANON_KEY` as GitHub Actions secrets
+- [x] Resend account, wired as custom SMTP on both `criclife-prod` and `criclife-staging`
+- [ ] **← Add `SUPABASE_URL` / `SUPABASE_ANON_KEY` as GitHub Actions secrets**
 - [ ] Run the keepalive workflow once manually
 - [ ] (Optional, deferred) Google OAuth client
 
