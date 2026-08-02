@@ -32,14 +32,15 @@ everything else is a view over it, and a wrong engine poisons every screen.
 - [x] UI primitives themed to the token set: Button, Card, Skeleton, CountUp,
       Aurora, LivePill, ThemeToggle
 - [x] React Router with the full route tree, all screens stubbed
-- [ ] Local dev via `supabase start` (keeps you at 2 free cloud projects) — *not
-      set up; no migrations exist until Phase 2, so nothing to run locally yet*
-- [x] ESLint, Prettier, Vitest, Playwright — *Husky pre-commit not initialised
-      (`prepare` script references it but `.husky/` doesn't exist)*
+- [ ] Local dev via `supabase start` (keeps you at 2 free cloud projects) —
+      *deferred to Phase 2. The `supabase` CLI is already a devDependency, but
+      `supabase/` holds no migrations until Phase 2, so there is nothing for a
+      local stack to serve. Running it now would only burn Docker disk.*
+- [x] ESLint, Prettier, Vitest, Playwright — Husky pre-commit runs `lint-staged`
 - [x] CI: typecheck, lint, test, `size-limit` — *Lighthouse CI not set up*
 - [x] PWA manifest + service worker
-- [ ] Self-hosted Inter + Geist in `public/fonts/` — *not committed; app falls
-      back to system font*
+- [x] Self-hosted Inter + Geist in `public/fonts/` — variable, latin subset,
+      committed with their OFL licences
 
 **Done when:** the app installs on a phone from `criclife.geminirachit.workers.dev`, shows an
 empty themed shell, the dark/light toggle animates correctly, and the keepalive
