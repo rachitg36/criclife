@@ -1086,28 +1086,63 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      add_existing_profile_to_team: {
+        Args: {
+          p_team_id: string | null;
+          p_profile_id: string | null;
+          p_team_role?: Database['public']['Enums']['team_role'] | null;
+        };
+        Returns: Database['public']['Tables']['players']['Row'];
+      };
+      archive_team: {
+        Args: {
+          p_team_id: string | null;
+          p_archived?: boolean | null;
+        };
+        Returns: undefined;
+      };
       can_manage_match: {
         Args: {
-          p_match_id: string;
+          p_match_id: string | null;
         };
         Returns: boolean;
       };
       can_score: {
         Args: {
-          p_match_id: string;
-          p_profile_id: string;
+          p_match_id: string | null;
+          p_profile_id: string | null;
         };
         Returns: boolean;
       };
       claim_player: {
         Args: {
-          p_claim_code: string;
+          p_claim_code: string | null;
         };
         Returns: Database['public']['Tables']['players']['Row'];
       };
+      create_shadow_player: {
+        Args: {
+          p_team_id: string | null;
+          p_full_name: string | null;
+          p_primary_role?: Database['public']['Enums']['player_role'] | null;
+          p_jersey_number?: number | null;
+        };
+        Returns: Database['public']['Tables']['players']['Row'];
+      };
+      create_team: {
+        Args: {
+          p_name: string | null;
+          p_short_code: string | null;
+          p_primary_color?: string | null;
+          p_secondary_color?: string | null;
+          p_home_ground?: string | null;
+          p_city?: string | null;
+        };
+        Returns: Database['public']['Tables']['teams']['Row'];
+      };
       is_player_self: {
         Args: {
-          p_player_id: string;
+          p_player_id: string | null;
         };
         Returns: boolean;
       };
@@ -1117,27 +1152,60 @@ export type Database = {
       };
       is_team_admin: {
         Args: {
-          p_team_id: string;
+          p_team_id: string | null;
         };
         Returns: boolean;
       };
       is_team_manager: {
         Args: {
-          p_team_id: string;
+          p_team_id: string | null;
         };
         Returns: boolean;
       };
       rebuild_innings: {
         Args: {
-          p_innings_id: string;
+          p_innings_id: string | null;
+        };
+        Returns: undefined;
+      };
+      respond_to_role_suggestion: {
+        Args: {
+          p_suggestion_id: string | null;
+          p_accept: boolean | null;
+        };
+        Returns: Database['public']['Tables']['role_change_suggestions']['Row'];
+      };
+      search_profiles: {
+        Args: {
+          p_query: string | null;
+        };
+        Returns: {
+          id: string;
+          display_name: string;
+          handle: string | null;
+          avatar_url: string | null;
+        }[];
+      };
+      suggest_role_change: {
+        Args: {
+          p_player_id: string | null;
+          p_suggested_role: Database['public']['Enums']['player_role'] | null;
+          p_note?: string | null;
+        };
+        Returns: Database['public']['Tables']['role_change_suggestions']['Row'];
+      };
+      transfer_team_ownership: {
+        Args: {
+          p_team_id: string | null;
+          p_new_owner_profile_id: string | null;
         };
         Returns: undefined;
       };
       update_player_admin_fields: {
         Args: {
-          p_player_id: string;
-          p_full_name: string;
-          p_jersey_number: number;
+          p_player_id: string | null;
+          p_full_name: string | null;
+          p_jersey_number: number | null;
         };
         Returns: undefined;
       };

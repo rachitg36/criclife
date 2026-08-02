@@ -31,6 +31,30 @@ const AuthCallbackPage = lazy(() =>
 const OnboardingPage = lazy(() =>
   import('@/features/auth/OnboardingPage').then((m) => ({ default: m.OnboardingPage }))
 );
+const TeamsPage = lazy(() =>
+  import('@/features/teams/TeamsPage').then((m) => ({ default: m.TeamsPage }))
+);
+const NewTeamPage = lazy(() =>
+  import('@/features/teams/NewTeamPage').then((m) => ({ default: m.NewTeamPage }))
+);
+const TeamSquadPage = lazy(() =>
+  import('@/features/teams/TeamSquadPage').then((m) => ({ default: m.TeamSquadPage }))
+);
+const AddPlayerPage = lazy(() =>
+  import('@/features/teams/AddPlayerPage').then((m) => ({ default: m.AddPlayerPage }))
+);
+const TeamSettingsPage = lazy(() =>
+  import('@/features/teams/TeamSettingsPage').then((m) => ({ default: m.TeamSettingsPage }))
+);
+const PlayerProfilePage = lazy(() =>
+  import('@/features/players/PlayerProfilePage').then((m) => ({ default: m.PlayerProfilePage }))
+);
+const PlayerEditPage = lazy(() =>
+  import('@/features/players/PlayerEditPage').then((m) => ({ default: m.PlayerEditPage }))
+);
+const ClaimPlayerPage = lazy(() =>
+  import('@/features/players/ClaimPlayerPage').then((m) => ({ default: m.ClaimPlayerPage }))
+);
 
 const stub = (title: string, phase: number, doc?: string, description?: string) => ({
   element: <Placeholder title={title} phase={phase} doc={doc} description={description} />,
@@ -41,7 +65,7 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     errorElement: <ErrorPage />,
     children: [
-      /* ── Audience — PUBLIC, no auth (Phase 7) ──────────── */
+      /* ── Audience — PUBLIC, no auth, no auth code at all (Phase 7) ─ */
       {
         element: <PublicLayout />,
         children: [
@@ -55,16 +79,27 @@ export const router = createBrowserRouter([
             path: '/stats',
             ...stub('League stats', 8, '07-STATS-AND-RANKINGS.md', 'Leaderboards.'),
           },
-          {
-            path: '/players/:playerId',
-            ...stub('Player profile', 3, '11-SCREENS-AND-ROUTES.md'),
-          },
-          { path: '/teams/:teamId', ...stub('Team', 3, '11-SCREENS-AND-ROUTES.md') },
-          { path: '/teams/:teamId/squad', ...stub('Squad', 3) },
-          { path: '/teams/:teamId/matches', ...stub('Team matches', 3) },
-          { path: '/teams/:teamId/stats', ...stub('Team stats', 8) },
           { path: '/matches/:matchId/scorecard', ...stub('Scorecard', 5) },
           { path: '/matches/:matchId/feed', ...stub('Ball-by-ball', 5) },
+        ],
+      },
+
+      /* ── Public-READ, auth-AWARE (Phase 3) ───────────────
+             Team/player pages are reachable with no session, but a manager
+             or the player themself sees extra controls once one exists — so
+             AuthProvider rides along here (lazy), unlike the strict audience
+             branch above which must stay supabase-js-free. ── */
+      {
+        lazy: async () => {
+          const m = await import('./layouts/PublicAuthedOutlet');
+          return { Component: m.PublicAuthedOutlet };
+        },
+        children: [
+          { path: '/teams/:teamId', element: <TeamSquadPage /> },
+          { path: '/teams/:teamId/squad', element: <TeamSquadPage /> },
+          { path: '/teams/:teamId/matches', ...stub('Team matches', 3) },
+          { path: '/teams/:teamId/stats', ...stub('Team stats', 8) },
+          { path: '/players/:playerId', element: <PlayerProfilePage /> },
         ],
       },
 
@@ -113,22 +148,14 @@ export const router = createBrowserRouter([
               { index: true, element: <HomePage /> },
 
               /* Teams (Phase 3) */
-              { path: '/teams', ...stub('Teams', 3, '11-SCREENS-AND-ROUTES.md') },
-              { path: '/teams/new', ...stub('Create a team', 3) },
-              { path: '/teams/:teamId/add-player', ...stub('Add a player', 3) },
-              { path: '/teams/:teamId/settings', ...stub('Team settings', 3) },
+              { path: '/teams', element: <TeamsPage /> },
+              { path: '/teams/new', element: <NewTeamPage /> },
+              { path: '/teams/:teamId/add-player', element: <AddPlayerPage /> },
+              { path: '/teams/:teamId/settings', element: <TeamSettingsPage /> },
 
               /* Players (Phase 3) */
-              {
-                path: '/players/:playerId/edit',
-                ...stub(
-                  'Edit your player profile',
-                  3,
-                  '03-ROLES-PERMISSIONS.md',
-                  'Set your own playing role, batting hand and bowling style.'
-                ),
-              },
-              { path: '/players/claim', ...stub('Claim your player record', 3) },
+              { path: '/players/:playerId/edit', element: <PlayerEditPage /> },
+              { path: '/players/claim', element: <ClaimPlayerPage /> },
 
               /* Matches (Phases 4–6) */
               { path: '/matches', ...stub('Matches', 4) },
