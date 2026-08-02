@@ -183,11 +183,12 @@ Phase 0 acceptance criteria from `docs/12-ROADMAP.md`:
 
 - [x] `criclife.geminirachit.workers.dev` deployed and live
 - [x] `criclife.is-a.dev` PR opened — [#45746](https://github.com/is-a-dev/register/pull/45746), pending merge
-- [ ] Both Supabase projects created, phone auth disabled
-- [ ] Resend wired as custom SMTP
-- [ ] Keepalive workflow has run successfully at least once
-- [x] Repo is public (CI status not yet checked)
-- [ ] App installs to a phone home screen from the deployed URL
+- [x] Both Supabase projects created, phone auth disabled
+- [x] Resend wired as custom SMTP (both prod and staging)
+- [x] Keepalive workflow has run successfully at least once
+- [x] Repo is public, CI green (all four jobs)
+- [ ] App installs to a phone home screen from the deployed URL — **not yet
+      verified on a real device**
 - [x] Dark/light toggle animates correctly, no flash on reload (verified locally + on the deployed URL)
 - [x] The no-scroll E2E test passes at all four viewports
 

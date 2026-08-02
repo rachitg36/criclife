@@ -1,10 +1,10 @@
 # CricLife — Handoff
 
-**Date:** 2026-08-01
+**Date:** 2026-08-02
 **Written by:** Claude Code (laptop session) → for continuation on another
 device/session (e.g. mobile cloud co-work)
-**State:** Phase 0 done, verified, and deployed. Deployment + domain setup is
-most of the way through. Phase 1 (the rules engine) has **not** started.
+**State:** **Phase 0 complete** — scaffold verified, deployed, all accounts
+wired, CI green. Phase 1 (the rules engine) has **not** started.
 
 Read this file, then `CLAUDE.md`. Skip straight to **§ 2** for what to do next
 — § 1 and § 8 are background/history if you want it.
@@ -23,38 +23,35 @@ Decisions already locked in are logged in `docs/13-OPEN-QUESTIONS.md` § A and �
 
 ## 2. Continue here — exact next step
 
-We're mid-way through the Phase 0 deployment/account-setup checklist,
-working through it live in chat, one browser step at a time. **Pick up at
-GitHub secrets + keepalive.**
+**Phase 0 setup is complete.** Everything on the deployment/account checklist
+is done: deployed, repo public, is-a.dev PR open, both Supabase projects
+created with phone auth off, Resend SMTP wired on both, GitHub secrets set,
+keepalive run successfully, and **CI is green on all four jobs**.
 
-Resend is done — custom SMTP wired on both `criclife-prod` and
-`criclife-staging` (Authentication → Emails → SMTP Settings in the Supabase
-dashboard, host `smtp.resend.com`, sender `onboarding@resend.dev` until a
-real domain is verified).
-
-### Immediately next: GitHub secrets + keepalive
-
-1. On GitHub → `rachitg36/criclife` → **Settings → Secrets and variables →
-   Actions**, add:
-   | Secret              | Value                                               |
-   | ------------------- | --------------------------------------------------- |
-   | `SUPABASE_URL`      | `https://tljbwnbjwgdpmdhvttai.supabase.co`          |
-   | `SUPABASE_ANON_KEY` | the `criclife-prod` publishable key (see § 4 below) |
-2. Run it once manually to confirm: **Actions → Supabase keepalive → Run
-   workflow**. (The workflow file already exists at
-   `.github/workflows/keepalive.yml` — nothing to write, just needs the
-   secrets and a manual trigger.)
-
-### After that: Phase 0 is fully done. Start Phase 1.
+### Next: Phase 1 — the rules engine
 
 > Start Phase 1: build the pure cricket rules engine in `src/engine/` per
 > `docs/04-RULES-ENGINE.md`, with the full test suite from § 12 of that doc.
-> First confirm Phase 0's acceptance criteria in `docs/12-ROADMAP.md` — they
-> should all be checked off by this point.
 
-Or: `/phase 1` — but note the last time this was tried (before deployment was
-finished), the answer was "stop and do deployment setup first," which is the
-work this file documents. This time it should be a clean go-ahead.
+Or: `/phase 1`.
+
+This is the phase with no visible output and it is tempting to skip. Don't —
+`src/engine/` must stay pure (no React, no I/O, no DOM, no `Date.now()`, no
+`Math.random()`; ESLint already enforces this the moment the folder exists).
+Acceptance: 100% branch coverage on `src/engine`, three real-match fixtures
+replaying to byte-identical scorecards, `applyDelivery` under 1ms.
+
+### Two known follow-ups, neither blocking Phase 1
+
+- **is-a.dev PR** ([#45746](https://github.com/is-a-dev/register/pull/45746))
+  is still pending merge. Once merged, add `criclife.is-a.dev` as a custom
+  domain on the Worker (Workers & Pages → criclife → Settings → Domains &
+  Routes). **Keep the `.workers.dev` domain working** — never replace it, or
+  installed PWAs break.
+- **Deploys are manual** (`npm run deploy` from a machine with
+  `.env.local`). There is no CD wiring, so a push to `main` does not
+  redeploy. Worth adding a deploy workflow before Phase 5, when real scorers
+  start using it.
 
 ---
 
@@ -199,9 +196,12 @@ Everything below is confirmed working (not just written) via
 - [x] Create both Supabase projects
 - [x] Disable phone auth on both
 - [x] Resend account, wired as custom SMTP on both `criclife-prod` and `criclife-staging`
-- [ ] **← Add `SUPABASE_URL` / `SUPABASE_ANON_KEY` as GitHub Actions secrets**
-- [ ] Run the keepalive workflow once manually
-- [ ] (Optional, deferred) Google OAuth client
+- [x] Add `SUPABASE_URL` / `SUPABASE_ANON_KEY` as GitHub Actions secrets
+- [x] Run the keepalive workflow once manually — succeeded
+- [x] CI green on all four jobs (quality, build+size, e2e, secrets-guard)
+- [ ] (Optional, deferred) Google OAuth client — Phase 2, when there's a login UI
+- [ ] (Follow-up) Merge of is-a.dev PR, then add the custom domain to the Worker
+- [ ] (Follow-up) CD workflow so pushes to `main` redeploy — currently manual
 
 > The keepalive matters. Free Supabase projects pause after 7 idle days and need
 > a manual dashboard click plus a 60s cold start to wake. For a league playing

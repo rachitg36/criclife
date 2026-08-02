@@ -15,32 +15,41 @@ everything else is a view over it, and a wrong engine poisons every screen.
 
 - [x] Deploy to Cloudflare Workers (Static Assets) named **`criclife`** → live at `criclife.geminirachit.workers.dev`
 - [x] Open the is-a.dev PR for **`criclife.is-a.dev`** — [is-a-dev/register#45746](https://github.com/is-a-dev/register/pull/45746), pending merge
-- [ ] Supabase projects `criclife-prod` + `criclife-staging` (your 2 free projects)
-- [ ] Resend account → verify sender → wire as Supabase custom SMTP; **disable phone auth**
-- [ ] `.github/workflows/keepalive.yml` — prevents the 7-day Supabase pause
-- [ ] Make the GitHub repo **public** (unlimited free Actions minutes)
-- [ ] Cloudflare Web Analytics enabled; Sentry Developer project created
+- [x] Supabase projects `criclife-prod` + `criclife-staging` (your 2 free projects)
+- [x] Resend account → wire as Supabase custom SMTP (both projects); **phone auth disabled**
+- [x] `.github/workflows/keepalive.yml` — prevents the 7-day Supabase pause; run once, succeeded
+- [x] Make the GitHub repo **public** (unlimited free Actions minutes)
+- [ ] Cloudflare Web Analytics enabled; Sentry Developer project created — *deferred, wiring lands in Phase 9*
 
 *Full detail and the reasoning in [14-FREE-TIER-PLAN](./14-FREE-TIER-PLAN.md) § 7.*
 
 **Then the code skeleton:**
 
-- [ ] Vite + React 19 + TypeScript (strict) project
-- [ ] Tailwind v4 with the token file from [08](./08-DESIGN-SYSTEM.md)
-- [ ] Theme provider: dark / light / auto, no-flash inline script, View
+- [x] Vite + React 19 + TypeScript (strict) project
+- [x] Tailwind v4 with the token file from [08](./08-DESIGN-SYSTEM.md)
+- [x] Theme provider: dark / light / auto, no-flash inline script, View
       Transition toggle
-- [ ] UI primitives themed to the token set: Button, Card, Skeleton, CountUp,
+- [x] UI primitives themed to the token set: Button, Card, Skeleton, CountUp,
       Aurora, LivePill, ThemeToggle
-- [ ] React Router with the full route tree, all screens stubbed
-- [ ] Local dev via `supabase start` (keeps you at 2 free cloud projects)
-- [ ] ESLint, Prettier, Vitest, Playwright, Husky pre-commit
-- [ ] CI: typecheck, lint, test, `size-limit`, Lighthouse CI
-- [ ] PWA manifest + service worker; installs to home screen
-- [ ] Self-hosted Inter + Geist in `public/fonts/`
+- [x] React Router with the full route tree, all screens stubbed
+- [ ] Local dev via `supabase start` (keeps you at 2 free cloud projects) — *not
+      set up; no migrations exist until Phase 2, so nothing to run locally yet*
+- [x] ESLint, Prettier, Vitest, Playwright — *Husky pre-commit not initialised
+      (`prepare` script references it but `.husky/` doesn't exist)*
+- [x] CI: typecheck, lint, test, `size-limit` — *Lighthouse CI not set up*
+- [x] PWA manifest + service worker
+- [ ] Self-hosted Inter + Geist in `public/fonts/` — *not committed; app falls
+      back to system font*
 
 **Done when:** the app installs on a phone from `criclife.geminirachit.workers.dev`, shows an
 empty themed shell, the dark/light toggle animates correctly, and the keepalive
 workflow has run at least once.
+
+> **Status 2026-08-02:** Deployed, themed shell renders, toggle verified, and
+> the keepalive workflow has run successfully. **Not yet verified: installing
+> to a real phone's home screen.** The manifest, icons and service worker are
+> all in place and the SW registers on the deployed URL, but nobody has done
+> the Add-to-Home-Screen flow on an actual device.
 
 ---
 

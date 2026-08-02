@@ -3,13 +3,14 @@
 Mobile-first PWA for scoring cricket matches, with live audience view, player
 stats and rankings. React 19 + Vite + Supabase. Runs entirely on free tiers.
 
-**Current state: Phase 0 scaffolded but never installed or run.** Read
-`HANDOFF.md` first — it explains exactly where things stand and what to do next.
+**Current state: Phase 0 complete** — verified, deployed to
+`criclife.geminirachit.workers.dev`, CI green. Next is Phase 1 (the rules
+engine). Read `HANDOFF.md` for the full picture.
 
 ## Commands
 
 ```bash
-npm install            # never yet run — see HANDOFF.md
+npm install
 npm run dev            # :5173
 npm run build          # tsc -b && vite build
 npm run typecheck      # strict, no emit
@@ -18,6 +19,7 @@ npm run test           # vitest
 npm run test:e2e       # playwright, incl. the no-scroll gate
 npm run size           # bundle budget
 npm run icons          # regenerate PWA icons (python3 + Pillow)
+npm run deploy         # vite build && wrangler deploy — manual, no CD yet
 ```
 
 ## Non-negotiable rules
@@ -96,12 +98,15 @@ picking one — the docs may need updating too.
 
 I cannot do these; they need a browser and your accounts. `SETUP.md` has steps.
 
-- ~~Deploy to Cloudflare~~ — done, live at `criclife.geminirachit.workers.dev`
-  (Cloudflare Workers Static Assets, not Pages — see `docs/14-FREE-TIER-PLAN.md`)
-- Open the is-a.dev PR for `criclife.is-a.dev`
-- Create the two Supabase projects, disable phone auth
-- Wire Resend as custom SMTP
-- Add `SUPABASE_URL` / `SUPABASE_ANON_KEY` as GitHub secrets for the keepalive cron
+All of Phase 0's human-only setup is **done** (deploy, GitHub repo, Supabase
+projects, phone auth off, Resend SMTP, Actions secrets, keepalive). What's
+left:
+
+- Merge of the is-a.dev PR ([#45746](https://github.com/is-a-dev/register/pull/45746)),
+  then add `criclife.is-a.dev` as a custom domain on the Worker — keep the
+  `.workers.dev` domain too, or installed PWAs break
+- Verify Add-to-Home-Screen on a real phone (never tested on a device)
+- Google OAuth client — deferred to Phase 2, when there's a login UI
 
 ## Style
 
