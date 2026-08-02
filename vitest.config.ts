@@ -18,13 +18,10 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/**/*.test.{ts,tsx}', 'src/**/index.ts', 'src/main.tsx'],
-      // ── Enable in Phase 1, once src/engine/ exists. ──
-      // The rules engine is held to 100% branch coverage; a per-glob threshold
-      // errors today because no files match the pattern.
-      // docs/09-ARCHITECTURE.md § 9
-      // thresholds: {
-      //   'src/engine/**': { branches: 100, functions: 100, lines: 100, statements: 100 },
-      // },
+      // docs/09-ARCHITECTURE.md § 9 — the rules engine is held to 100% branch coverage.
+      thresholds: {
+        'src/engine/**': { branches: 100, functions: 100, lines: 100, statements: 100 },
+      },
     },
   },
 });
