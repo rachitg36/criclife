@@ -129,10 +129,10 @@ public repos (private gets 2,000/month).
 
 Then add repository secrets (**Settings → Secrets and variables → Actions**):
 
-| Secret | Value |
-|---|---|
-| `SUPABASE_URL` | `https://<ref>.supabase.co` |
-| `SUPABASE_ANON_KEY` | your anon key |
+| Secret              | Value                       |
+| ------------------- | --------------------------- |
+| `SUPABASE_URL`      | `https://<ref>.supabase.co` |
+| `SUPABASE_ANON_KEY` | your anon key               |
 
 `.github/workflows/keepalive.yml` then pings the database every 3 days.
 

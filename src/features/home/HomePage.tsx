@@ -44,8 +44,8 @@ export function HomePage() {
           </div>
 
           <p className="mt-2 text-[var(--text-secondary)]">
-            No matches yet. The scaffold is live — theme, tokens, routes and the no-scroll
-            scoring shell are all in place.
+            No matches yet. The scaffold is live — theme, tokens, routes and the no-scroll scoring
+            shell are all in place.
           </p>
         </motion.div>
       </section>

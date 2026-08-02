@@ -32,7 +32,7 @@ npm run icons          # regenerate PWA icons (python3 + Pillow)
    innings from ball 1. Never write reverse-a-delivery logic.
 4. **Scoring writes to IndexedDB first, network second.** The pad must never
    await a request. A whole match has to be scorable offline.
-5. **Only the player owns their playing role.** Team admins can *suggest*, never
+5. **Only the player owns their playing role.** Team admins can _suggest_, never
    set. Enforced in RLS, not just UI.
 6. **Never auto-reload the service worker.** A scorer may be mid-over with an
    unsynced queue. `src/lib/sw.ts` prompts instead.
@@ -76,18 +76,18 @@ supabase/      migrations (Phase 2, does not exist yet)
 
 ## Where to look things up
 
-| Question | Doc |
-|---|---|
-| How does a wide / free hit / run out score? | `docs/04-RULES-ENGINE.md` |
-| Who can do what? The scoring token? | `docs/03-ROLES-PERMISSIONS.md` |
-| Table and column definitions | `docs/02-DATA-MODEL.md` |
-| Scorer screen layout budget | `docs/05-SCORER-VIEW.md` |
-| Colours, motion, typography | `docs/08-DESIGN-SYSTEM.md` |
-| Stat formulas, ranking maths | `docs/07-STATS-AND-RANKINGS.md` |
-| Endpoints, RPCs, error codes | `docs/10-API-CONTRACT.md` |
-| Every screen and route | `docs/11-SCREENS-AND-ROUTES.md` |
-| What ships when | `docs/12-ROADMAP.md` |
-| Free-tier limits, domains | `docs/14-FREE-TIER-PLAN.md` |
+| Question                                    | Doc                             |
+| ------------------------------------------- | ------------------------------- |
+| How does a wide / free hit / run out score? | `docs/04-RULES-ENGINE.md`       |
+| Who can do what? The scoring token?         | `docs/03-ROLES-PERMISSIONS.md`  |
+| Table and column definitions                | `docs/02-DATA-MODEL.md`         |
+| Scorer screen layout budget                 | `docs/05-SCORER-VIEW.md`        |
+| Colours, motion, typography                 | `docs/08-DESIGN-SYSTEM.md`      |
+| Stat formulas, ranking maths                | `docs/07-STATS-AND-RANKINGS.md` |
+| Endpoints, RPCs, error codes                | `docs/10-API-CONTRACT.md`       |
+| Every screen and route                      | `docs/11-SCREENS-AND-ROUTES.md` |
+| What ships when                             | `docs/12-ROADMAP.md`            |
+| Free-tier limits, domains                   | `docs/14-FREE-TIER-PLAN.md`     |
 
 Docs are the spec. If code and docs disagree, say so rather than silently
 picking one — the docs may need updating too.

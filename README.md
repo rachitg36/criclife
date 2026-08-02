@@ -4,7 +4,7 @@
 > Installable PWA. Runs on free tiers.
 
 **Status:** Phase 0 complete — foundations scaffolded and deployed.
-**Live:** `criclife.geminirachit.workers.dev` · `criclife.is-a.dev` *(pending PR)*
+**Live:** `criclife.geminirachit.workers.dev` · `criclife.is-a.dev` _(pending PR)_
 
 ---
 
@@ -46,26 +46,26 @@ Fifteen planning documents in [`docs/`](./docs/README.md). Read
 
 The three that matter most:
 
-| Doc | Why |
-|---|---|
-| [04-RULES-ENGINE](./docs/04-RULES-ENGINE.md) | Cricket's laws encoded. Build this before any UI. |
-| [03-ROLES-PERMISSIONS](./docs/03-ROLES-PERMISSIONS.md) | The scoring token and the RLS model. |
-| [05-SCORER-VIEW](./docs/05-SCORER-VIEW.md) | The zero-scroll layout budget. |
+| Doc                                                    | Why                                               |
+| ------------------------------------------------------ | ------------------------------------------------- |
+| [04-RULES-ENGINE](./docs/04-RULES-ENGINE.md)           | Cricket's laws encoded. Build this before any UI. |
+| [03-ROLES-PERMISSIONS](./docs/03-ROLES-PERMISSIONS.md) | The scoring token and the RLS model.              |
+| [05-SCORER-VIEW](./docs/05-SCORER-VIEW.md)             | The zero-scroll layout budget.                    |
 
 ---
 
 ## Commands
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Dev server on :5173 |
-| `npm run build` | Production build |
-| `npm run typecheck` | Strict TypeScript, no emit |
-| `npm run lint` | ESLint, zero warnings allowed |
-| `npm run test` | Vitest unit tests |
-| `npm run test:e2e` | Playwright — includes the no-scroll gate |
-| `npm run size` | Bundle size budget |
-| `npm run icons` | Regenerate PWA icons (needs Python + Pillow) |
+| Command             | What it does                                 |
+| ------------------- | -------------------------------------------- |
+| `npm run dev`       | Dev server on :5173                          |
+| `npm run build`     | Production build                             |
+| `npm run typecheck` | Strict TypeScript, no emit                   |
+| `npm run lint`      | ESLint, zero warnings allowed                |
+| `npm run test`      | Vitest unit tests                            |
+| `npm run test:e2e`  | Playwright — includes the no-scroll gate     |
+| `npm run size`      | Bundle size budget                           |
+| `npm run icons`     | Regenerate PWA icons (needs Python + Pillow) |
 
 ---
 
@@ -83,17 +83,17 @@ can be scored offline. Full detail:
 
 ## Roadmap
 
-| Phase | | |
-|---|---|---|
-| 0 | Foundations | ✅ scaffolded |
-| 1 | Rules engine | ⬜ next |
-| 2 | Data layer & auth | ⬜ |
-| 3 | Teams, players, self-managed roles | ⬜ |
-| 4 | Match setup & the scoring token | ⬜ |
-| 5 | Scorer view | ⬜ |
-| 6 | Offline & concurrency | ⬜ |
-| 7 | Audience view | ⬜ |
-| 8 | Stats & ranks | ⬜ |
-| 9 | Admin, polish, launch | ⬜ |
+| Phase |                                    |               |
+| ----- | ---------------------------------- | ------------- |
+| 0     | Foundations                        | ✅ scaffolded |
+| 1     | Rules engine                       | ⬜ next       |
+| 2     | Data layer & auth                  | ⬜            |
+| 3     | Teams, players, self-managed roles | ⬜            |
+| 4     | Match setup & the scoring token    | ⬜            |
+| 5     | Scorer view                        | ⬜            |
+| 6     | Offline & concurrency              | ⬜            |
+| 7     | Audience view                      | ⬜            |
+| 8     | Stats & ranks                      | ⬜            |
+| 9     | Admin, polish, launch              | ⬜            |
 
 Acceptance criteria per phase: [`docs/12-ROADMAP.md`](./docs/12-ROADMAP.md).

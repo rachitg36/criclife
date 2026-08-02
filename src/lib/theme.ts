@@ -66,7 +66,10 @@ export function setTeamAccent(hex: string | null): void {
   const isDarkTheme = root.dataset.theme === 'dark';
   const corrected = ensureReadable(hex, isDarkTheme);
   root.style.setProperty('--accent', corrected);
-  root.style.setProperty('--accent-fg', relativeLuminance(corrected) > 0.45 ? '#04141a' : '#ffffff');
+  root.style.setProperty(
+    '--accent-fg',
+    relativeLuminance(corrected) > 0.45 ? '#04141a' : '#ffffff'
+  );
 }
 
 /** Nudges a colour's lightness until it has enough contrast to read as an accent. */
@@ -162,7 +165,9 @@ export function transitionTheme(apply: () => void, origin?: { x: number; y: numb
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const calm = document.documentElement.dataset.calm === 'true';
 
-  type DocWithVT = Document & { startViewTransition?: (cb: () => void) => { ready: Promise<void> } };
+  type DocWithVT = Document & {
+    startViewTransition?: (cb: () => void) => { ready: Promise<void> };
+  };
   const doc = document as DocWithVT;
 
   if (prefersReduced || calm || typeof doc.startViewTransition !== 'function') {

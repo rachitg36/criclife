@@ -1,12 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import {
-  applyAccent,
-  applyCalm,
-  applyTheme,
-  type AccentName,
-  type ThemeMode,
-} from '@/lib/theme';
+import { applyAccent, applyCalm, applyTheme, type AccentName, type ThemeMode } from '@/lib/theme';
 
 /** User preferences. Mirrors `profiles` columns; synced to the server on login. */
 type UiState = {

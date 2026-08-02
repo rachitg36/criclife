@@ -55,11 +55,9 @@
   /* ── Elevation — glow-based in dark ─────────────────────── */
   --glow-sm: 0 0 0 1px var(--border-subtle), 0 2px 8px rgb(0 0 0 / 0.4);
   --glow-md:
-    0 0 0 1px var(--border-default), 0 8px 24px rgb(0 0 0 / 0.5),
-    0 0 32px -8px var(--accent-glow);
+    0 0 0 1px var(--border-default), 0 8px 24px rgb(0 0 0 / 0.5), 0 0 32px -8px var(--accent-glow);
   --glow-lg:
-    0 0 0 1px var(--border-strong), 0 16px 48px rgb(0 0 0 / 0.6),
-    0 0 64px -12px var(--accent-glow);
+    0 0 0 1px var(--border-strong), 0 16px 48px rgb(0 0 0 / 0.6), 0 0 64px -12px var(--accent-glow);
 
   /* ── Radii ──────────────────────────────────────────────── */
   --r-sm: 8px;

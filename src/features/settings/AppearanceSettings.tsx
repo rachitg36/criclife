@@ -40,9 +40,7 @@ export function AppearanceSettings() {
           overline="Accent"
           title="Accent colour"
           action={
-            <span className="text-[var(--text-body-sm)] text-[var(--text-tertiary)]">
-              {accent}
-            </span>
+            <span className="text-[var(--text-body-sm)] text-[var(--text-tertiary)]">{accent}</span>
           }
         />
         <div className="flex flex-wrap gap-2.5">

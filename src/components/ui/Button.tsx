@@ -9,10 +9,10 @@ const VARIANTS: Record<Variant, string> = {
   primary: 'bg-[var(--accent)] text-[var(--accent-fg)] hover:brightness-110 glow-accent',
   secondary:
     'bg-[var(--surface-2)] text-[var(--text-primary)] border border-[var(--border-default)] hover:border-[var(--border-strong)]',
-  ghost: 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)]',
+  ghost:
+    'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)]',
   danger: 'bg-[var(--wicket)] text-white hover:brightness-110',
-  glass:
-    'panel text-[var(--text-primary)] hover:border-[var(--border-strong)] backdrop-blur-xl',
+  glass: 'panel text-[var(--text-primary)] hover:border-[var(--border-strong)] backdrop-blur-xl',
 };
 
 const SIZES: Record<Size, string> = {

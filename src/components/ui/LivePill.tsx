@@ -29,10 +29,7 @@ export function LivePill({ state = 'live' }: { state?: ConnectionState }) {
       {state === 'live' ? (
         <span className="live-dot" aria-hidden />
       ) : (
-        <span
-          className="inline-block h-2 w-2 rounded-full bg-current opacity-60"
-          aria-hidden
-        />
+        <span className="inline-block h-2 w-2 rounded-full bg-current opacity-60" aria-hidden />
       )}
       {LABELS[state]}
     </span>

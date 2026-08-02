@@ -36,9 +36,9 @@ real domain is verified).
 
 1. On GitHub → `rachitg36/criclife` → **Settings → Secrets and variables →
    Actions**, add:
-   | Secret | Value |
-   |---|---|
-   | `SUPABASE_URL` | `https://tljbwnbjwgdpmdhvttai.supabase.co` |
+   | Secret              | Value                                               |
+   | ------------------- | --------------------------------------------------- |
+   | `SUPABASE_URL`      | `https://tljbwnbjwgdpmdhvttai.supabase.co`          |
    | `SUPABASE_ANON_KEY` | the `criclife-prod` publishable key (see § 4 below) |
 2. Run it once manually to confirm: **Actions → Supabase keepalive → Run
    workflow**. (The workflow file already exists at
@@ -98,17 +98,17 @@ deploy`). First time on a new machine, run `npx wrangler login` first
 
 ## 4. Live infrastructure reference
 
-| Thing | Value |
-|---|---|
-| Deployed app | `https://criclife.geminirachit.workers.dev` |
-| GitHub repo | `https://github.com/rachitg36/criclife` (public) |
-| is-a.dev PR | [is-a-dev/register#45746](https://github.com/is-a-dev/register/pull/45746) — pending merge |
-| Supabase `criclife-prod` | Project ID `tljbwnbjwgdpmdhvttai`, region `eu-central-1` (Frankfurt — kept as-is despite docs recommending Mumbai/Singapore) |
-| Supabase `criclife-prod` publishable key | `sb_publishable_oyHY2XoW3H2sk3ckL8JyQA_FLYJD6OM` |
-| Supabase `criclife-staging` | Project ID `mkzgwwqkwcjcggxuavlr` |
-| Supabase `criclife-staging` publishable key | `sb_publishable_AOlNgi5MClWG1zHMbtofaA_v-Zb0XsE` |
-| Phone auth | Disabled on both Supabase projects (confirmed) |
-| Google OAuth | **Deferred to Phase 2** — no login UI exists yet to wire it into |
+| Thing                                       | Value                                                                                                                        |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Deployed app                                | `https://criclife.geminirachit.workers.dev`                                                                                  |
+| GitHub repo                                 | `https://github.com/rachitg36/criclife` (public)                                                                             |
+| is-a.dev PR                                 | [is-a-dev/register#45746](https://github.com/is-a-dev/register/pull/45746) — pending merge                                   |
+| Supabase `criclife-prod`                    | Project ID `tljbwnbjwgdpmdhvttai`, region `eu-central-1` (Frankfurt — kept as-is despite docs recommending Mumbai/Singapore) |
+| Supabase `criclife-prod` publishable key    | `sb_publishable_oyHY2XoW3H2sk3ckL8JyQA_FLYJD6OM`                                                                             |
+| Supabase `criclife-staging`                 | Project ID `mkzgwwqkwcjcggxuavlr`                                                                                            |
+| Supabase `criclife-staging` publishable key | `sb_publishable_AOlNgi5MClWG1zHMbtofaA_v-Zb0XsE`                                                                             |
+| Phone auth                                  | Disabled on both Supabase projects (confirmed)                                                                               |
+| Google OAuth                                | **Deferred to Phase 2** — no login UI exists yet to wire it into                                                             |
 
 These are publishable/anon-tier credentials, safe to keep in plain text here
 and in `.env.local`. **Never** put a Supabase personal access token, service
@@ -130,21 +130,21 @@ Everything below is confirmed working (not just written) via
 `npm run typecheck/lint/test/build/size` and `npm run test:e2e` (45 tests,
 4 viewports + desktop, including the no-scroll gate) — all green.
 
-| Area | Status |
-|---|---|
-| Vite + React 19 + TS strict config | verified |
-| Tailwind v4 + full design token layer | verified |
-| Theme system: dark/light/auto, no-flash script, View Transition wipe | verified |
-| Zustand `uiStore` with persistence | verified |
-| Router with all 39 routes, guards stubbed, code split | verified |
-| UI primitives: Button Card Skeleton CountUp Aurora LivePill ThemeToggle | verified |
-| Layouts: Root, App (tab bar), Public, **Scoring (no-scroll shell)** | verified |
-| `lib/`: env, supabase, Dexie, theme, haptics, format, cn, sw | verified |
-| PWA manifest, generated icons, Workbox config, service worker registered | verified |
-| GitHub Actions: CI + **Supabase keepalive** | written, keepalive not yet run |
-| Vitest setup + unit tests | verified (23 passing) |
-| Playwright e2e + no-scroll gate + smoke tests | verified (45 passing) |
-| Cloudflare Workers deploy (`wrangler.jsonc`) | verified, live |
+| Area                                                                     | Status                         |
+| ------------------------------------------------------------------------ | ------------------------------ |
+| Vite + React 19 + TS strict config                                       | verified                       |
+| Tailwind v4 + full design token layer                                    | verified                       |
+| Theme system: dark/light/auto, no-flash script, View Transition wipe     | verified                       |
+| Zustand `uiStore` with persistence                                       | verified                       |
+| Router with all 39 routes, guards stubbed, code split                    | verified                       |
+| UI primitives: Button Card Skeleton CountUp Aurora LivePill ThemeToggle  | verified                       |
+| Layouts: Root, App (tab bar), Public, **Scoring (no-scroll shell)**      | verified                       |
+| `lib/`: env, supabase, Dexie, theme, haptics, format, cn, sw             | verified                       |
+| PWA manifest, generated icons, Workbox config, service worker registered | verified                       |
+| GitHub Actions: CI + **Supabase keepalive**                              | written, keepalive not yet run |
+| Vitest setup + unit tests                                                | verified (23 passing)          |
+| Playwright e2e + no-scroll gate + smoke tests                            | verified (45 passing)          |
+| Cloudflare Workers deploy (`wrangler.jsonc`)                             | verified, live                 |
 
 ### Fixes made to get Phase 0 green (see git log for details)
 
@@ -180,14 +180,14 @@ Everything below is confirmed working (not just written) via
 
 ## 6. Missing on purpose
 
-| Thing | Why |
-|---|---|
-| `src/engine/` | Phase 1 — not started. ESLint purity rules already written and waiting. |
-| `supabase/migrations/` | Phase 2. Schema fully specced in `docs/02-DATA-MODEL.md`. Both cloud projects exist but are empty. |
-| `src/types/database.ts` | Placeholder. Regenerate after migrations exist. |
-| `public/fonts/*.woff2` | Not committed. See `public/fonts/README.md`. App falls back to system font. |
-| Husky hooks | `prepare` script references husky but `.husky/` isn't initialised. Run `npx husky init` or drop the script. |
-| Google OAuth | Deferred to Phase 2 — needs a Google Cloud OAuth client, and there's no login UI yet to use it. |
+| Thing                   | Why                                                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `src/engine/`           | Phase 1 — not started. ESLint purity rules already written and waiting.                                     |
+| `supabase/migrations/`  | Phase 2. Schema fully specced in `docs/02-DATA-MODEL.md`. Both cloud projects exist but are empty.          |
+| `src/types/database.ts` | Placeholder. Regenerate after migrations exist.                                                             |
+| `public/fonts/*.woff2`  | Not committed. See `public/fonts/README.md`. App falls back to system font.                                 |
+| Husky hooks             | `prepare` script references husky but `.husky/` isn't initialised. Run `npx husky init` or drop the script. |
+| Google OAuth            | Deferred to Phase 2 — needs a Google Cloud OAuth client, and there's no login UI yet to use it.             |
 
 ---
 
@@ -213,17 +213,17 @@ Everything below is confirmed working (not just written) via
 
 Reasoning is in `docs/13-OPEN-QUESTIONS.md` § A. Short version:
 
-| Decision | Because |
-|---|---|
-| PWA, not React Native | No app stores wanted; one codebase serves phone, laptop and the TV at the ground |
-| Supabase over Firebase | The scoring token is a row-level auth problem — that's what Postgres RLS is for. Rankings are aggregate SQL. |
+| Decision                                       | Because                                                                                                                                                                                                                                                         |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PWA, not React Native                          | No app stores wanted; one codebase serves phone, laptop and the TV at the ground                                                                                                                                                                                |
+| Supabase over Firebase                         | The scoring token is a row-level auth problem — that's what Postgres RLS is for. Rankings are aggregate SQL.                                                                                                                                                    |
 | Cloudflare (Workers Static Assets) over Vercel | Vercel Hobby is non-commercial and caps at 100 GB, then **pauses your site**. Terrible failure mode for live scores. Note: Cloudflare's product was "Pages" when this was originally written; it's since merged into Workers — see `docs/14-FREE-TIER-PLAN.md`. |
-| Rules engine before UI | Only part where a mistake is expensive to undo, and it needs no design decisions |
-| Undo by replay, not reversal | Reversal logic is where scoring apps get subtly wrong. 130 rows replays in ~15ms. |
-| Append-only delivery log | Disputed scores are the #1 social problem in amateur cricket |
-| "Scoring map" = a rights topology graph | Best reading of the request; the wagon wheel is separately planned as Advanced Mode |
-| Team admins can only *suggest* roles | Owner said players own their roles |
-| Exponential decay ranking, 20-match half-life | Recent form should matter; one lucky innings shouldn't top the board |
+| Rules engine before UI                         | Only part where a mistake is expensive to undo, and it needs no design decisions                                                                                                                                                                                |
+| Undo by replay, not reversal                   | Reversal logic is where scoring apps get subtly wrong. 130 rows replays in ~15ms.                                                                                                                                                                               |
+| Append-only delivery log                       | Disputed scores are the #1 social problem in amateur cricket                                                                                                                                                                                                    |
+| "Scoring map" = a rights topology graph        | Best reading of the request; the wagon wheel is separately planned as Advanced Mode                                                                                                                                                                             |
+| Team admins can only _suggest_ roles           | Owner said players own their roles                                                                                                                                                                                                                              |
+| Exponential decay ranking, 20-match half-life  | Recent form should matter; one lucky innings shouldn't top the board                                                                                                                                                                                            |
 
 Still open, none blocking: who can create teams (B2), tournaments in v1 (B4),
 a team ladder as well as player ranks (B6), web push in v1 (B8), importing

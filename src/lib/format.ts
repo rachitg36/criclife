@@ -41,7 +41,11 @@ export function strikeRate(runs: number, ballsFaced: number): number | null {
   return ballsFaced > 0 ? (runs / ballsFaced) * 100 : null;
 }
 
-export function economyRate(runsConceded: number, legalBalls: number, ballsPerOver = 6): number | null {
+export function economyRate(
+  runsConceded: number,
+  legalBalls: number,
+  ballsPerOver = 6
+): number | null {
   if (legalBalls === 0) return null;
   return runsConceded / (legalBalls / ballsPerOver);
 }
