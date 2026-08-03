@@ -177,6 +177,45 @@ and in `.env.local`. **Never** put a Supabase personal access token, service
 role key, or Resend API key in this file or in chat — those go directly into
 the relevant dashboard, never through an assistant.
 
+### Staging has a schema as of 2026-08-03 — what that does and does not prove
+
+All 13 migrations were applied to `criclife-staging` via the Dashboard SQL
+Editor (route 2 below) and verified with a checklist query. Every count
+matched a clean local apply exactly:
+
+| check                          | got / expect |
+| ------------------------------ | ------------ |
+| tables                         | 22           |
+| functions                      | 41           |
+| RLS policies                   | 45           |
+| tables with RLS disabled       | 0            |
+| realtime-published tables      | 4            |
+| signup trigger on `auth.users` | 1            |
+| `deliveries` replica identity  | `f` (FULL)   |
+| seed data leaked in            | 0            |
+
+Two of those were genuinely uncertain before and are now settled. **The
+publication branch that only runs on real Supabase works**: a real project
+ships `supabase_realtime` already created, so the migration takes its
+"exists, just add the tables" path — which a bare local Postgres can never
+exercise, because there the migration creates the publication itself. And
+the `on_auth_user_created` trigger on `auth.users` was created successfully,
+which the SQL Editor's role is privileged enough to do.
+
+**What this still does not prove.** The schema is structurally right; it has
+not been _exercised_. Nobody has signed up, so no RLS policy has ever been
+evaluated against a real JWT, and no Realtime message has travelled from
+Postgres to a browser. Structure and behaviour are different claims — see
+§ 8.6 and § 8.11.
+
+**Still to do:** `criclife-prod` (`tljbwnbjwgdpmdhvttai`) is **still empty**,
+which is what the deployed app points at, so the public URL remains broken
+until staging proves itself and prod gets the same treatment. And
+`src/types/database.ts` is still the introspection-script output (§ 5.1) —
+now that a real project has the schema, regenerate it properly with
+`npx supabase gen types typescript --linked` and expect the hand-fixed
+`returns table(...)` shapes to come back correct for the first time.
+
 **Confirmed on a real device, 2026-08-03:** the deployed Phase 7 build
 redirects to `/login` and the magic link fails — exactly what an empty
 database produces (no `profiles` table, so the signup trigger has nothing to
@@ -626,8 +665,9 @@ auth.uid())` via RPC, subscribes to `scoring_grants` over Realtime for
 - [x] Add `SUPABASE_URL` / `SUPABASE_ANON_KEY` as GitHub Actions secrets
 - [x] Run the keepalive workflow once manually — succeeded
 - [x] CI green on all four jobs (Phase 0 baseline)
-- [ ] **New, blocking real usage:** push `supabase/migrations/*.sql` to
-      `criclife-prod` (and/or `criclife-staging`) — nothing has run against
+- [x] Push `supabase/migrations/*.sql` to **`criclife-staging`** — done
+      2026-08-03, structurally verified (see § 4)
+- [ ] **Still blocking real usage:** the same for **`criclife-prod`** — nothing has run against
       either real project yet (see § 4). This now includes `record_delivery`,
       `record_deliveries_batch`, and the rest of the scoring RPCs — the
       endpoints a real match depends on every ball, offline or not.

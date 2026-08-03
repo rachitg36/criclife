@@ -112,10 +112,9 @@ All of Phase 0's human-only setup is **done** (deploy, GitHub repo, Supabase
 projects, phone auth off, Resend SMTP, Actions secrets, keepalive). What's
 left — the first one now blocks real use:
 
-- **Run the migrations against a real Supabase project.** Nothing in
-  `supabase/migrations/` has ever touched `criclife-prod` or
-  `criclife-staging`; every green check so far is against a scratch local
-  Postgres. See HANDOFF.md § 4.
+- **Run the migrations against `criclife-prod`.** `criclife-staging` was done
+  on 2026-08-03 and verified; prod is still empty, and prod is what the
+  deployed app points at. See HANDOFF.md § 4.
 - Measure Phase 7's own bar: audience latency under 1.5s p95 on 4G, and
   Lighthouse mobile ≥ 90 on `/live/:publicSlug`. Neither is measurable here.
 
