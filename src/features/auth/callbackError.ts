@@ -40,6 +40,15 @@ const HINTS: Record<string, string> = {
   server_error: 'The server failed while signing you in. This is not something you can fix.',
 };
 
+/**
+ * A failed PKCE exchange almost always means the verifier that was stored when
+ * the link was requested is not in this browser's storage: a different
+ * browser, a private window, cleared site data, or a link already spent.
+ */
+const EXCHANGE_HINT =
+  'The link has to be opened in the same browser you requested it from, and each ' +
+  'one works only once. Request a new one here.';
+
 function readFrom(params: URLSearchParams): CallbackError | null {
   const error = params.get('error');
   const code = params.get('error_code');
@@ -71,6 +80,28 @@ export function parseCallbackError(href: string): CallbackError | null {
   // Query string first (PKCE), then the hash (implicit). The hash arrives as
   // `#error=...&error_code=...`, so the leading `#` is dropped before parsing.
   return readFrom(url.searchParams) ?? readFrom(new URLSearchParams(url.hash.replace(/^#/, '')));
+}
+
+/**
+ * The other half of the story, and the half that was invisible.
+ *
+ * `parseCallbackError` only sees failures GoTrue *redirected* with. When the
+ * redirect succeeds and the **code exchange** then fails — no stored verifier,
+ * a code already spent, a 400 off `/token` — supabase-js throws inside its own
+ * `initialize()` and the URL still looks clean. Nothing surfaced that anywhere,
+ * so the screen fell through to the 8-second timeout and blamed expiry.
+ */
+export function describeExchangeFailure(err: {
+  message: string;
+  code?: string | undefined;
+  status?: number | undefined;
+}): CallbackError {
+  const key = err.code ?? '';
+  return {
+    code: key || (err.status ? `http_${err.status}` : null),
+    message: err.message.trim() || 'That sign-in link could not be used.',
+    hint: HINTS[key] ?? EXCHANGE_HINT,
+  };
 }
 
 /**

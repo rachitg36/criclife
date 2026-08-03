@@ -33,13 +33,13 @@ either environment until it is cleared, so Phase 8 is not actually startable.
 
 **Where things got to this session**
 
-|                                         |                                                              |
-| --------------------------------------- | ------------------------------------------------------------ |
-| `criclife-staging` schema               | applied and verified — § 4                                   |
-| `criclife-prod` schema                  | **still empty**, and prod is what the deployed app points at |
-| Deployed Worker                         | Phase 7 build, version `fd6a1bd0`                            |
-| Add-to-Home-Screen                      | verified on a real phone                                     |
-| Local dev on the owner's Windows laptop | running, on this branch, `.env.local` → staging              |
+|                                         |                                                         |
+| --------------------------------------- | ------------------------------------------------------- |
+| `criclife-staging` schema               | applied and verified, but **13 of 15 migrations** — § 4 |
+| `criclife-prod` schema                  | applied 2026-08-03 from the 15-file version — § 4       |
+| Deployed Worker                         | Phase 7 build, version `fd6a1bd0`                       |
+| Add-to-Home-Screen                      | verified on a real phone                                |
+| Local dev on the owner's Windows laptop | running, on this branch, `.env.local` → staging         |
 
 **The blocker: sign-in returns HTTP 500.**
 
@@ -263,11 +263,11 @@ and in `.env.local`. **Never** put a Supabase personal access token, service
 role key, or Resend API key in this file or in chat — those go directly into
 the relevant dashboard, never through an assistant.
 
-### Staging has a schema as of 2026-08-03 — what that does and does not prove
+### Both projects have a schema as of 2026-08-03 — but not the _same_ schema
 
-All 13 migrations were applied to `criclife-staging` via the Dashboard SQL
-Editor (route 2 below) and verified with a checklist query. Every count
-matched a clean local apply exactly:
+`criclife-staging` was done first, from the 13 migrations that existed at the
+end of Phase 7, via the Dashboard SQL Editor (route 2 below), and verified
+with a checklist query. Every count matched a clean local apply exactly:
 
 | check                          | got / expect |
 | ------------------------------ | ------------ |
@@ -279,6 +279,37 @@ matched a clean local apply exactly:
 | signup trigger on `auth.users` | 1            |
 | `deliveries` replica identity  | `f` (FULL)   |
 | seed data leaked in            | 0            |
+
+`criclife-prod` was done later the same day, the same way, and reported
+successful — but from the **15**-migration file, i.e. after Phase 8 added
+`20260803190000_stats_and_rankings.sql` and
+`20260803191000_fix_json_null_wicket.sql`.
+
+**So staging is two migrations behind prod, and staging is what `.env.local`
+points at.** That is the wrong way round, and it matters more than it sounds:
+`20260803191000` is the fix for the two live scoring bugs (§ 8.13) — a
+staging `record_delivery` still flags every ball a wicket and still drops a
+run off every wide. Anyone testing a match against staging will see nonsense
+and reasonably blame the client.
+
+Fix it by pasting those two files, in that order, into the staging SQL
+Editor. **The expected counts change** once they are in — this table is the
+one to check either project against now:
+
+| check                            | expect for all 15 migrations |
+| -------------------------------- | ---------------------------- |
+| tables                           | 22                           |
+| functions                        | **56** (was 41)              |
+| RLS policies                     | 45                           |
+| tables with RLS disabled         | 0                            |
+| realtime-published tables        | 4                            |
+| signup trigger on `auth.users`   | 1                            |
+| `matches_finalize_stats` trigger | 1                            |
+| `deliveries` replica identity    | `f` (FULL)                   |
+| seed data leaked in              | 0                            |
+
+Those numbers are from a clean local apply of all 15 files on 2026-08-03, so
+a project that reports 41 functions has the Phase 7 schema, not this one.
 
 Two of those were genuinely uncertain before and are now settled. **The
 publication branch that only runs on real Supabase works**: a real project
@@ -294,9 +325,10 @@ evaluated against a real JWT, and no Realtime message has travelled from
 Postgres to a browser. Structure and behaviour are different claims — see
 § 8.6 and § 8.11.
 
-**Still to do:** `criclife-prod` (`tljbwnbjwgdpmdhvttai`) is **still empty**,
-which is what the deployed app points at, so the public URL remains broken
-until staging proves itself and prod gets the same treatment. And
+**Still to do:** bring staging up to 15 migrations (above), and confirm prod's
+counts with the checklist query — "the SQL ran successfully" and "the schema
+is what this repo says it is" are different claims, and only the second one
+lets the next person stop wondering. And
 `src/types/database.ts` is still the introspection-script output (§ 5.1) —
 now that a real project has the schema, regenerate it properly with
 `npx supabase gen types typescript --linked` and expect the hand-fixed
@@ -820,11 +852,18 @@ screen is free.
 - [x] Run the keepalive workflow once manually — succeeded
 - [x] CI green on all four jobs (Phase 0 baseline)
 - [x] Push `supabase/migrations/*.sql` to **`criclife-staging`** — done
-      2026-08-03, structurally verified (see § 4)
-- [ ] **Still blocking real usage:** the same for **`criclife-prod`** — nothing has run against
-      either real project yet (see § 4). This now includes `record_delivery`,
-      `record_deliveries_batch`, and the rest of the scoring RPCs — the
-      endpoints a real match depends on every ball, offline or not.
+      2026-08-03, structurally verified (see § 4). **13 of 15 files** — the
+      two Phase 8 migrations still need applying there.
+- [x] The same for **`criclife-prod`** — done 2026-08-03 from the 15-file
+      version, reported successful; counts not yet read back (see § 4)
+- [ ] Apply `20260803190000_stats_and_rankings.sql` and
+      `20260803191000_fix_json_null_wicket.sql` to **staging**, which is
+      behind prod and is what local dev points at (see § 4)
+- [ ] **Still unproven:** no RLS policy has been evaluated against a real JWT
+      and no scoring RPC has been called on either project. `record_delivery`,
+      `record_deliveries_batch` and friends are the endpoints a real match
+      depends on every ball, offline or not, and they have only ever run
+      against a scratch local Postgres.
 - [ ] (Optional, deferred) Google OAuth client — code is ready, needs a
       Google Cloud project + credentials
 - [ ] (Follow-up) Merge of is-a.dev PR, then add the custom domain to the Worker

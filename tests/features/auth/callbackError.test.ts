@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { hasAuthPayload, parseCallbackError } from '@/features/auth/callbackError';
+import {
+  describeExchangeFailure,
+  hasAuthPayload,
+  parseCallbackError,
+} from '@/features/auth/callbackError';
 
 /**
  * Written against the URLs Supabase actually redirects to. The callback screen
@@ -57,6 +61,42 @@ describe('parseCallbackError', () => {
 
   it('survives a malformed URL', () => {
     expect(parseCallbackError('not a url')).toBeNull();
+  });
+});
+
+describe('describeExchangeFailure', () => {
+  // The case the URL can never show: GoTrue redirected fine, and supabase-js
+  // then failed to trade the code for a session.
+  it('explains an exchange failure that left no trace in the URL', () => {
+    const e = describeExchangeFailure({
+      message: 'invalid request: both auth code and code verifier should be non-empty',
+      status: 400,
+    });
+    expect(e.message).toMatch(/code verifier/);
+    expect(e.hint).toMatch(/same browser/);
+    expect(e.code).toBe('http_400');
+  });
+
+  it('prefers a named error code over the HTTP status', () => {
+    expect(
+      describeExchangeFailure({ message: 'nope', code: 'bad_code_verifier', status: 400 }).code
+    ).toBe('bad_code_verifier');
+  });
+
+  it('reuses the redirect hints when the code is one it already knows', () => {
+    expect(describeExchangeFailure({ message: 'x', code: 'otp_expired' }).hint).toMatch(
+      /short-lived/
+    );
+  });
+
+  it('never shows an empty message as the reason', () => {
+    expect(describeExchangeFailure({ message: '   ' }).message).toBe(
+      'That sign-in link could not be used.'
+    );
+  });
+
+  it('has no code to show when there is neither a code nor a status', () => {
+    expect(describeExchangeFailure({ message: 'x' }).code).toBeNull();
   });
 });
 

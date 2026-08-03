@@ -119,9 +119,12 @@ left — the first one now blocks real use:
 - **Sign-in is broken on staging** — `POST /auth/v1/otp` returns 500 and
   nothing reaches Resend. Almost certainly SMTP. This blocks everything;
   HANDOFF.md § 2 opens with the diagnosis and the fastest way past it.
-- **Run the migrations against `criclife-prod`.** `criclife-staging` was done
-  on 2026-08-03 and verified; prod is still empty, and prod is what the
-  deployed app points at. See HANDOFF.md § 4.
+- **Bring `criclife-staging` up to 15 migrations.** Both projects now have a
+  schema (2026-08-03), but staging got the 13-file Phase 7 version and prod
+  got all 15 — so staging, which local dev points at, is still running the
+  `record_delivery` that flags every ball a wicket. Paste
+  `20260803190000_stats_and_rankings.sql` and
+  `20260803191000_fix_json_null_wicket.sql` into it. See HANDOFF.md § 4.
 - Measure Phase 7's own bar: audience latency under 1.5s p95 on 4G, and
   Lighthouse mobile ≥ 90 on `/live/:publicSlug`. Neither is measurable here.
 

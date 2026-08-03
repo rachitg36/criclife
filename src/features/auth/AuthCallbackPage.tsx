@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router';
 import { SkeletonText } from '@/components/ui/Skeleton';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from './authContext';
-import { hasAuthPayload, parseCallbackError } from './callbackError';
+import { humanAuthError } from './authErrors';
+import {
+  describeExchangeFailure,
+  hasAuthPayload,
+  parseCallbackError,
+  type CallbackError,
+} from './callbackError';
 
 /**
  * docs/11-SCREENS-AND-ROUTES.md § 1 — "Token exchange + redirect". The
@@ -23,6 +30,7 @@ import { hasAuthPayload, parseCallbackError } from './callbackError';
 export function AuthCallbackPage() {
   const { session, loading } = useAuth();
   const [timedOut, setTimedOut] = useState(false);
+  const [exchangeError, setExchangeError] = useState<CallbackError | null>(null);
 
   // Captured on mount: `detectSessionInUrl` strips the parameters out of the
   // address bar once it has read them, so waiting until the timeout to look
@@ -43,10 +51,31 @@ export function AuthCallbackPage() {
     return () => clearTimeout(timer);
   }, []);
 
+  // `initialize()` resolves the very promise the client kicked off on import,
+  // so this is asking for the result of the exchange that already ran, not
+  // starting a second one. It is the only public handle on that error.
+  useEffect(() => {
+    let alive = true;
+    void supabase.auth.initialize().then(({ error }) => {
+      if (!alive || !error) return;
+      setExchangeError(
+        describeExchangeFailure({
+          message: humanAuthError(error),
+          code: error.code,
+          status: error.status,
+        })
+      );
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   if (!loading && session) return <Navigate to="/onboarding" replace />;
 
-  // An explicit error needs no waiting — the answer is already in hand.
-  const failed = initial.error !== null || (!loading && !session && timedOut);
+  // Either error needs no waiting — the answer is already in hand.
+  const known = initial.error ?? exchangeError;
+  const failed = known !== null || (!loading && !session && timedOut);
   if (!failed) {
     return (
       <div className="flex h-dvh items-center justify-center p-6">
@@ -57,14 +86,14 @@ export function AuthCallbackPage() {
     );
   }
 
-  const headline = initial.error
-    ? initial.error.message
+  const headline = known
+    ? known.message
     : initial.payload
       ? "That sign-in link couldn't be completed."
       : 'There was no sign-in link to use.';
 
   const hint =
-    initial.error?.hint ??
+    known?.hint ??
     (initial.payload
       ? 'Links work once, and only in the browser they were requested from. Request a new one here.'
       : 'Open the link from your email, or request a new one.');
@@ -73,8 +102,8 @@ export function AuthCallbackPage() {
     <div className="flex h-dvh flex-col items-center justify-center gap-3 p-6 text-center">
       <p className="max-w-sm text-[var(--text-primary)]">{headline}</p>
       <p className="max-w-sm text-[var(--text-body-sm)] text-[var(--text-secondary)]">{hint}</p>
-      {initial.error?.code && (
-        <p className="font-mono text-[11px] text-[var(--text-tertiary)]">{initial.error.code}</p>
+      {known?.code && (
+        <p className="font-mono text-[11px] text-[var(--text-tertiary)]">{known.code}</p>
       )}
       <a href="/login" className="text-[var(--accent)] underline">
         Back to sign in
