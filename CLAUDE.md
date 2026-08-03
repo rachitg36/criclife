@@ -122,7 +122,7 @@ left — the first one now blocks real use:
 - Merge of the is-a.dev PR ([#45746](https://github.com/is-a-dev/register/pull/45746)),
   then add `criclife.is-a.dev` as a custom domain on the Worker — keep the
   `.workers.dev` domain too, or installed PWAs break
-- Verify Add-to-Home-Screen on a real phone (never tested on a device)
+- ~~Verify Add-to-Home-Screen on a real phone~~ — done 2026-08-03
 - Google OAuth client — deferred to Phase 2, when there's a login UI
 
 ## Style

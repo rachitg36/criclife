@@ -45,11 +45,10 @@ everything else is a view over it, and a wrong engine poisons every screen.
 empty themed shell, the dark/light toggle animates correctly, and the keepalive
 workflow has run at least once.
 
-> **Status 2026-08-02:** Deployed, themed shell renders, toggle verified, and
-> the keepalive workflow has run successfully. **Not yet verified: installing
-> to a real phone's home screen.** The manifest, icons and service worker are
-> all in place and the SW registers on the deployed URL, but nobody has done
-> the Add-to-Home-Screen flow on an actual device.
+> **Status 2026-08-03:** Deployed, themed shell renders, toggle verified, the
+> keepalive workflow has run successfully, and **the app has now been installed
+> to a real phone's home screen** — the last open item on this phase. Phase 0
+> is complete.
 
 ---
 

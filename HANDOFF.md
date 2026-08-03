@@ -608,7 +608,10 @@ auth.uid())` via RPC, subscribes to `scoring_grants` over Realtime for
       Google Cloud project + credentials
 - [ ] (Follow-up) Merge of is-a.dev PR, then add the custom domain to the Worker
 - [ ] (Follow-up) CD workflow so pushes to `main` redeploy — currently manual
-- [ ] Verify Add-to-Home-Screen on a real phone — never tested on a device
+- [x] Verify Add-to-Home-Screen on a real phone — **done 2026-08-03**, owner
+      installed it to a mobile home screen. That confirms the install flow,
+      manifest and icons; it does **not** confirm how the app behaves once
+      open, since the backend still has no schema (see above)
 - [ ] Score a real 20-over match on a real phone end to end — the literal
       Phase 5 "Done when" bar; unverifiable in this sandbox (no device, no
       live backend) and not yet done by a human either
