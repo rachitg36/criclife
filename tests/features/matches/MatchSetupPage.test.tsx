@@ -14,6 +14,7 @@ const matchSingleMock = vi.fn();
 const profileSingleMock = vi.fn();
 const myPlayerMaybeSingleMock = vi.fn();
 const squadOrderMock = vi.fn();
+const matchSquadOrderMock = vi.fn();
 
 // docs/03 §4 — "Edit match config (pre-toss)" is Super Admin / Team Owner / Admin
 // / Captain / VC only, never a plain grant holder or outsider. MatchSetupPage
@@ -32,8 +33,16 @@ vi.mock('@/lib/supabase', () => ({
       if (table === 'players') {
         return {
           select: () => ({
-            eq: () => ({ order: () => ({ limit: () => ({ maybeSingle: myPlayerMaybeSingleMock }) }) }),
+            eq: () => ({
+              order: () => ({ limit: () => ({ maybeSingle: myPlayerMaybeSingleMock }) }),
+            }),
           }),
+        };
+      }
+      if (table === 'match_squads') {
+        // Read by useMatchSquad so setup can show what it has already saved.
+        return {
+          select: () => ({ eq: () => ({ eq: () => ({ order: matchSquadOrderMock }) }) }),
         };
       }
       if (table === 'team_members') {
@@ -62,6 +71,7 @@ function renderSetupPage(session: Session | null) {
   profileSingleMock.mockResolvedValue({ data: { is_super_admin: false }, error: null });
   myPlayerMaybeSingleMock.mockResolvedValue({ data: null, error: null });
   squadOrderMock.mockResolvedValue({ data: [], error: null });
+  matchSquadOrderMock.mockResolvedValue({ data: [], error: null });
 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -83,6 +93,7 @@ describe('MatchSetupPage — permission gate (docs/03 §4)', () => {
     profileSingleMock.mockReset();
     myPlayerMaybeSingleMock.mockReset();
     squadOrderMock.mockReset();
+    matchSquadOrderMock.mockReset();
   });
 
   it('blocks a signed-in user who manages neither team', async () => {

@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { SkeletonText } from '@/components/ui/Skeleton';
 import { supabase } from '@/lib/supabase';
+import { classifyError, userMessage } from '@/lib/errors';
 import { useSquad, useTeamPermissions } from '@/features/teams/hooks';
-import { useMatch } from './hooks';
+import { useMatch, useMatchSquad } from './hooks';
+import { setupProgress } from './setupProgress';
 import type { MatchConfig } from '@/engine/types';
 
 /**
@@ -27,6 +29,12 @@ export function MatchSetupPage() {
   const { data: match, isLoading } = useMatch(matchId);
   const permsA = useTeamPermissions(match?.team_a_id);
   const permsB = useTeamPermissions(match?.team_b_id);
+  // Already-saved squads. `useMatchSquad` has existed since Phase 4 and this
+  // screen never read it, so setup could not tell you what it had already
+  // stored — reopening it showed two empty lists and no way to know the work
+  // was done. That is what made setup feel like it had to be done twice.
+  const savedA = useMatchSquad(matchId, match?.team_a_id);
+  const savedB = useMatchSquad(matchId, match?.team_b_id);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -52,9 +60,21 @@ export function MatchSetupPage() {
 
   const config = match.config as unknown as MatchConfig;
   const tossSet = !!match.toss_winner_team_id;
+  const teamAName = (match.team_a as unknown as { name?: string } | null)?.name ?? 'Team A';
+  const teamBName = (match.team_b as unknown as { name?: string } | null)?.name ?? 'Team B';
+  const { aReady, bReady, canStart, blocker } = setupProgress({
+    tossWinnerTeamId: match.toss_winner_team_id,
+    squadACount: savedA.data?.length ?? 0,
+    squadBCount: savedB.data?.length ?? 0,
+    teamAName,
+    teamBName,
+  });
 
   async function refetchMatch() {
-    await queryClient.invalidateQueries({ queryKey: ['match', matchId] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['match', matchId] }),
+      queryClient.invalidateQueries({ queryKey: ['matchSquad', matchId] }),
+    ]);
   }
 
   async function handleStart() {
@@ -62,8 +82,11 @@ export function MatchSetupPage() {
     setError(null);
     const { error: rpcError } = await supabase.rpc('start_innings', { p_match_id: matchId! });
     setBusy(false);
-    if (rpcError) return setError(rpcError.message);
-    navigate(`/matches/${matchId}`);
+    if (rpcError) return setError(userMessage(classifyError(rpcError)));
+    // Straight to the pad. Sending the scorer back to the hub was the other
+    // half of the loop: the hub's next button is "Continue setup", which is
+    // where they had just come from.
+    navigate(`/matches/${matchId}/score`);
   }
 
   return (
@@ -75,6 +98,15 @@ export function MatchSetupPage() {
           {error}
         </p>
       )}
+
+      {/* Setup is three things and it was never possible to see which were
+          done. The squad sections are below the fold on a phone, so somebody
+          who filled in Team A reasonably assumed they had finished. */}
+      <ul className="panel mb-6 space-y-1 p-3 text-[var(--text-body-sm)]">
+        <SetupStep done={tossSet} label="Toss" />
+        <SetupStep done={aReady} label={`${teamAName} squad`} />
+        <SetupStep done={bReady} label={`${teamBName} squad`} />
+      </ul>
 
       <section className="mb-6">
         <h2 className="label-overline mb-2">Toss</h2>
@@ -89,7 +121,7 @@ export function MatchSetupPage() {
       </section>
 
       <section className="mb-6">
-        <h2 className="label-overline mb-2">Team A — playing squad</h2>
+        <h2 className="label-overline mb-2">{teamAName} — playing squad</h2>
         <SquadEditor
           matchId={matchId!}
           teamId={match.team_a_id}
@@ -99,7 +131,7 @@ export function MatchSetupPage() {
       </section>
 
       <section className="mb-6">
-        <h2 className="label-overline mb-2">Team B — playing squad</h2>
+        <h2 className="label-overline mb-2">{teamBName} — playing squad</h2>
         <SquadEditor
           matchId={matchId!}
           teamId={match.team_b_id}
@@ -108,9 +140,24 @@ export function MatchSetupPage() {
         />
       </section>
 
-      <Button variant="primary" fullWidth disabled={!tossSet || busy} onClick={handleStart}>
+      {/* Gated on all three, not just the toss. The server refuses without
+          both squads (XI_REQUIRED) and refusing here says so before the round
+          trip — but the server stays the authority, this only mirrors what it
+          would answer. */}
+      <Button
+        variant="primary"
+        fullWidth
+        disabled={!canStart || busy}
+        onClick={handleStart}
+        hapticKind="select"
+      >
         {busy ? 'Starting…' : 'Start match'}
       </Button>
+      {blocker && (
+        <p className="mt-2 text-center text-[var(--text-body-sm)] text-[var(--text-secondary)]">
+          {blocker}
+        </p>
+      )}
     </div>
   );
 }
@@ -191,9 +238,24 @@ function SquadEditor({
   onSaved: () => void;
 }) {
   const { data: squad, isLoading } = useSquad(teamId);
+  const { data: existing } = useMatchSquad(matchId, teamId);
   const [selected, setSelected] = useState<string[]>([]);
   const [captainId, setCaptainId] = useState('');
   const [keeperId, setKeeperId] = useState('');
+  const [hydrated, setHydrated] = useState(false);
+
+  // Seed from what is already saved. Without this, reopening setup showed an
+  // empty list for a squad that was stored perfectly well, so the only way to
+  // "fix" it was to pick everyone again — and saving replaces the whole row
+  // set, so a half-remembered re-pick would quietly shrink the squad.
+  // Runs once: after that the checkboxes are the user's, not the server's.
+  useEffect(() => {
+    if (hydrated || !existing || existing.length === 0) return;
+    setSelected(existing.map((row) => row.player_id));
+    setCaptainId(existing.find((row) => row.is_captain)?.player_id ?? '');
+    setKeeperId(existing.find((row) => row.is_wicket_keeper)?.player_id ?? '');
+    setHydrated(true);
+  }, [existing, hydrated]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -225,7 +287,7 @@ function SquadEditor({
       p_keeper_id: keeperId || null,
     });
     setBusy(false);
-    if (rpcError) return setError(rpcError.message);
+    if (rpcError) return setError(userMessage(classifyError(rpcError)));
     setSaved(true);
     onSaved();
   }
@@ -296,5 +358,19 @@ function SquadEditor({
         {busy ? 'Saving…' : saved ? 'Saved' : 'Save team'}
       </Button>
     </div>
+  );
+}
+
+function SetupStep({ done, label }: { done: boolean; label: string }) {
+  return (
+    <li className="flex items-center gap-2">
+      <span aria-hidden className={done ? 'text-[var(--success)]' : 'text-[var(--text-tertiary)]'}>
+        {done ? '\u2713' : '\u25cb'}
+      </span>
+      <span className={done ? 'text-[var(--text-secondary)]' : 'text-[var(--text-primary)]'}>
+        {label}
+      </span>
+      <span className="sr-only">{done ? ' — done' : ' — still to do'}</span>
+    </li>
   );
 }
