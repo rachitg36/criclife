@@ -13,7 +13,9 @@ export function ScorecardTab() {
 
   const nameFor = (id: string) => {
     const squad = [...squadA, ...squadB];
-    return squad.find((p) => p.id === id)?.short_name ?? squad.find((p) => p.id === id)?.full_name ?? '—';
+    return (
+      squad.find((p) => p.id === id)?.short_name ?? squad.find((p) => p.id === id)?.full_name ?? '—'
+    );
   };
 
   return (
@@ -86,7 +88,9 @@ export function ScorecardTab() {
                 {card.bowling.map((row) => (
                   <tr key={row.playerId} className="border-t border-[var(--border-subtle)]">
                     <td className="py-1 font-medium">{nameFor(row.playerId)}</td>
-                    <td className="py-1 text-right">{formatOvers(row.legalBalls, config.ballsPerOver)}</td>
+                    <td className="py-1 text-right">
+                      {formatOvers(row.legalBalls, config.ballsPerOver)}
+                    </td>
                     <td className="py-1 text-right">{row.maidens}</td>
                     <td className="py-1 text-right">{row.runsConceded}</td>
                     <td className="py-1 text-right font-semibold">{row.wickets}</td>

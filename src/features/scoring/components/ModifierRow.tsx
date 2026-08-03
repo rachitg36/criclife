@@ -39,7 +39,9 @@ export function ModifierRow() {
             className={cn(
               'press rounded-[var(--r-md)] text-[13px] font-bold tracking-[0.04em] transition-colors',
               'disabled:pointer-events-none disabled:opacity-30',
-              armed ? 'bg-[var(--extra)] text-[var(--text-inverse)]' : 'panel text-[var(--text-secondary)]'
+              armed
+                ? 'bg-[var(--extra)] text-[var(--text-inverse)]'
+                : 'panel text-[var(--text-secondary)]'
             )}
             onClick={() => (armed ? void recordExtra(0) : armModifier(key))}
           >

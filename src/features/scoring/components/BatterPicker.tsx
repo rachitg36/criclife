@@ -24,9 +24,7 @@ export function BatterPicker() {
 
   return (
     <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-3 py-2">
-      <span className="text-[13px] font-semibold text-[var(--text-secondary)]">
-        Next batter
-      </span>
+      <span className="text-[13px] font-semibold text-[var(--text-secondary)]">Next batter</span>
       <div className="flex flex-col gap-1.5">
         {innings.yetToBat.map((id, i) => (
           <button

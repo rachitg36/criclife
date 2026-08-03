@@ -3,9 +3,12 @@
 Mobile-first PWA for scoring cricket matches, with live audience view, player
 stats and rankings. React 19 + Vite + Supabase. Runs entirely on free tiers.
 
-**Current state: Phase 0 complete** — verified, deployed to
-`criclife.geminirachit.workers.dev`, CI green. Next is Phase 1 (the rules
-engine). Read `HANDOFF.md` for the full picture.
+**Current state: Phases 0–7 complete** — engine, data layer, teams/players,
+match setup, the scorer pad, offline sync, and the public audience view. Next
+is Phase 8 (stats & rankings). The deployed build is still Phase 0's; nothing
+since has been redeployed, and no migration has ever run against a real
+Supabase project. Read `HANDOFF.md` for the full picture — including how to
+bring a fresh container back up, which is not just `npm install`.
 
 ## Commands
 
@@ -42,6 +45,11 @@ npm run deploy         # vite build && wrangler deploy — manual, no CD yet
    Both dark and light must work.
 8. **Stay on free tiers.** Before adding a dependency or service, check
    `docs/14-FREE-TIER-PLAN.md`. Cloudflare Workers (Static Assets), not Vercel.
+9. **The audience route's initial JS is budgeted at 180 kB** and currently sits
+   at 174.69 kB. `/live/:publicSlug` must not statically import
+   `@supabase/supabase-js` — it reads its snapshot over plain `fetch`
+   (`src/lib/publicApi.ts`) and imports the client dynamically for Realtime
+   only. `npm run size` is the gate. See HANDOFF.md § 2.
 
 ## Build order — do not skip ahead
 
@@ -49,21 +57,22 @@ Phases are in `docs/12-ROADMAP.md`, each with acceptance criteria.
 **Phase 1 (the rules engine) comes before any feature UI.** It has no visible
 output and it is tempting to skip. Don't. A wrong engine poisons every screen.
 
-Current: Phase 0 → next: Phase 1.
+Current: Phases 0–7 done → next: Phase 8 (stats & rankings).
 
 ## Layout
 
 ```
 docs/          15 planning docs — README.md is the index
-src/engine/    PURE rules engine (Phase 1, does not exist yet)
+src/engine/    PURE rules engine — 100% covered, the source of every score
 src/app/       router, providers, layouts, guards
 src/features/  home · settings · scoring · audience · ranks · admin · system
 src/components/ui/   Button Card Skeleton CountUp Aurora LivePill ThemeToggle
+src/components/viz/  hand-rolled SVG charts (worm, manhattan, run rate, …)
 src/lib/       env supabase db(Dexie) theme haptics format cn sw
 src/stores/    zustand — uiStore
 src/styles/    tokens.css globals.css animations.css
 tests/         unit (vitest) + e2e (playwright)
-supabase/      migrations (Phase 2, does not exist yet)
+supabase/      migrations + seed + a local Postgres/pgTAP harness (no Docker)
 ```
 
 ## Conventions
@@ -100,7 +109,14 @@ I cannot do these; they need a browser and your accounts. `SETUP.md` has steps.
 
 All of Phase 0's human-only setup is **done** (deploy, GitHub repo, Supabase
 projects, phone auth off, Resend SMTP, Actions secrets, keepalive). What's
-left:
+left — the first one now blocks real use:
+
+- **Run the migrations against a real Supabase project.** Nothing in
+  `supabase/migrations/` has ever touched `criclife-prod` or
+  `criclife-staging`; every green check so far is against a scratch local
+  Postgres. See HANDOFF.md § 4.
+- Measure Phase 7's own bar: audience latency under 1.5s p95 on 4G, and
+  Lighthouse mobile ≥ 90 on `/live/:publicSlug`. Neither is measurable here.
 
 - Merge of the is-a.dev PR ([#45746](https://github.com/is-a-dev/register/pull/45746)),
   then add `criclife.is-a.dev` as a custom domain on the Worker — keep the

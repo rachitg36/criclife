@@ -51,9 +51,24 @@ test.describe('Phase 0 smoke', () => {
     await expect(page.getByText('Played and missed')).toBeVisible();
   });
 
+  // Phase 7 replaced the `<Placeholder>` this used to assert on with the real
+  // audience view, so the old "Live match" text is gone. The point of the test
+  // is unchanged and still worth gating: `/live/:publicSlug` must render for
+  // someone with no session, rather than bouncing them to /login the way every
+  // `authed` route does.
+  //
+  // What it renders here is the not-found or the error state, because a slug
+  // that doesn't exist is exactly what this asks for — and because this sandbox
+  // has no route to a real Supabase project either way (HANDOFF.md § 5.1). Both
+  // are audience-view states; neither is a login page, which is the assertion.
   test('the audience route is reachable without signing in', async ({ page, context }) => {
     await context.clearCookies();
     await page.goto('/live/some-match-slug');
-    await expect(page.getByText('Live match')).toBeVisible();
+
+    await expect(
+      page.getByRole('heading', { name: /No such match|Couldn't load this match/ })
+    ).toBeVisible();
+    await expect(page.getByPlaceholder('you@example.com')).toHaveCount(0);
+    expect(new URL(page.url()).pathname).toBe('/live/some-match-slug');
   });
 });

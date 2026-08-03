@@ -3,6 +3,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { haptic } from '@/lib/haptics';
 import { pendingCount as dexiePendingCount, type PendingDelivery } from '@/lib/db';
+import { toEngineDelivery } from '@/lib/deliveryRow';
 import {
   attachSyncWorker,
   discardQueuedForInnings,
@@ -139,7 +140,11 @@ type ScorerState = {
   pickBowler: (bowlerId: PlayerId) => void;
   pickBatter: (playerId: PlayerId) => void;
   undo: () => Promise<void>;
-  editDelivery: (deliveryId: string, changes: EditableDeliveryChanges, reason?: string) => Promise<void>;
+  editDelivery: (
+    deliveryId: string,
+    changes: EditableDeliveryChanges,
+    reason?: string
+  ) => Promise<void>;
   startNextInnings: () => Promise<void>;
   markRevoked: (revoked: boolean) => void;
   dismissError: () => void;
@@ -193,34 +198,6 @@ function currentInnings(state: MatchState) {
 function effectiveConfig(state: MatchState) {
   const innings = currentInnings(state);
   return innings?.isSuperOver ? superOverConfig(state.config) : state.config;
-}
-
-function toEngineDelivery(row: Database['public']['Tables']['deliveries']['Row']): Delivery {
-  return {
-    inningsNo: 0, // filled by the caller, which knows which innings this row belongs to
-    overNo: row.over_no,
-    ballInOver: row.ball_in_over,
-    isLegal: row.is_legal,
-    strikerId: row.striker_id,
-    nonStrikerId: row.non_striker_id,
-    bowlerId: row.bowler_id,
-    runsBatter: row.runs_batter,
-    runsExtras: row.runs_extras,
-    extraType: row.extra_type,
-    runsTotal: row.runs_total ?? row.runs_batter + row.runs_extras,
-    isWicket: row.is_wicket,
-    wicketType: row.wicket_type,
-    dismissedPlayerId: row.dismissed_player_id,
-    fielderId: row.fielder_id,
-    assistFielderId: row.assist_fielder_id,
-    crossedBeforeDismissal: row.crossed_before_dismissal,
-    isFreeHit: row.is_free_hit,
-    createsFreeHit: row.creates_free_hit,
-    isBoundaryFour: row.is_boundary_four,
-    isBoundarySix: row.is_boundary_six,
-    commentary: row.commentary ?? '',
-    clientDeliveryId: row.client_delivery_id,
-  };
 }
 
 export const useScorerStore = create<ScorerState>((set, get) => ({
@@ -531,7 +508,12 @@ async function commitDelivery(
   if (!state.matchState || state.revoked) return;
 
   const innings = currentInnings(state.matchState);
-  if (!innings || innings.strikerId === null || innings.nonStrikerId === null || innings.bowlerId === null) {
+  if (
+    !innings ||
+    innings.strikerId === null ||
+    innings.nonStrikerId === null ||
+    innings.bowlerId === null
+  ) {
     return;
   }
   const strikerId = innings.strikerId;
@@ -665,8 +647,11 @@ async function handleInningsComplete(
 // ── Sync worker plumbing ───────────────────────────────────────────────
 
 let onlineListenerAttached = false;
-let currentSyncSubscription: { matchId: string; unsubscribe: () => void; detach: () => void } | null =
-  null;
+let currentSyncSubscription: {
+  matchId: string;
+  unsubscribe: () => void;
+  detach: () => void;
+} | null = null;
 
 /** Idempotent per matchId — re-running `init()` for the same match (undo,
     edit, next innings, ...) doesn't pile up duplicate event listeners. */
@@ -751,7 +736,11 @@ async function loadMyIdentity(set: (partial: Partial<ScorerState>) => void) {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id;
   if (!uid) return;
-  const { data: profile } = await supabase.from('profiles').select('display_name').eq('id', uid).single();
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name')
+    .eq('id', uid)
+    .single();
   set({ myProfileId: uid, myDisplayName: profile?.display_name ?? 'A scorer' });
 }
 
@@ -764,18 +753,24 @@ function ensureSoftLockChannelAttached(
   if (currentSoftLockChannel?.matchId === matchId) return;
   currentSoftLockChannel?.unsubscribe();
 
-  const channel = supabase.channel(`scorer-soft-lock:${matchId}`).on(
-    'broadcast',
-    { event: 'soft_lock' },
-    ({ payload }: { payload: { profileId: string; displayName: string; action: string; ttl: number } }) => {
-      if (payload.profileId === get().myProfileId) return; // ignore our own echo
-      const until = Date.now() + payload.ttl * 1000;
-      set({ softLock: { displayName: payload.displayName, action: payload.action, until } });
-      setTimeout(() => {
-        if (get().softLock?.until === until) set({ softLock: null });
-      }, payload.ttl * 1000);
-    }
-  );
+  const channel = supabase
+    .channel(`scorer-soft-lock:${matchId}`)
+    .on(
+      'broadcast',
+      { event: 'soft_lock' },
+      ({
+        payload,
+      }: {
+        payload: { profileId: string; displayName: string; action: string; ttl: number };
+      }) => {
+        if (payload.profileId === get().myProfileId) return; // ignore our own echo
+        const until = Date.now() + payload.ttl * 1000;
+        set({ softLock: { displayName: payload.displayName, action: payload.action, until } });
+        setTimeout(() => {
+          if (get().softLock?.until === until) set({ softLock: null });
+        }, payload.ttl * 1000);
+      }
+    );
   channel.subscribe();
 
   currentSoftLockChannel = {

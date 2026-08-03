@@ -30,9 +30,7 @@ export function OverStrip() {
   if (!innings) return null;
 
   const inningsBalls = deliveries.filter((d) => d.inningsNo === innings.inningsNo);
-  const lastOverNo = inningsBalls.length
-    ? inningsBalls[inningsBalls.length - 1]!.overNo
-    : 0;
+  const lastOverNo = inningsBalls.length ? inningsBalls[inningsBalls.length - 1]!.overNo : 0;
   const thisOver = inningsBalls.filter((d) => d.overNo === lastOverNo);
 
   return (

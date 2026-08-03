@@ -186,10 +186,10 @@ export type Database = {
           bowler_id: string;
           runs_batter: number;
           runs_extras: number;
-          extra_type: Database["public"]["Enums"]["extra_type"] | null;
+          extra_type: Database['public']['Enums']['extra_type'] | null;
           runs_total: number | null;
           is_wicket: boolean;
-          wicket_type: Database["public"]["Enums"]["wicket_type"] | null;
+          wicket_type: Database['public']['Enums']['wicket_type'] | null;
           dismissed_player_id: string | null;
           fielder_id: string | null;
           assist_fielder_id: string | null;
@@ -221,9 +221,9 @@ export type Database = {
           bowler_id: string;
           runs_batter?: number;
           runs_extras?: number;
-          extra_type?: Database["public"]["Enums"]["extra_type"] | null;
+          extra_type?: Database['public']['Enums']['extra_type'] | null;
           is_wicket?: boolean;
-          wicket_type?: Database["public"]["Enums"]["wicket_type"] | null;
+          wicket_type?: Database['public']['Enums']['wicket_type'] | null;
           dismissed_player_id?: string | null;
           fielder_id?: string | null;
           assist_fielder_id?: string | null;
@@ -255,9 +255,9 @@ export type Database = {
           bowler_id?: string;
           runs_batter?: number;
           runs_extras?: number;
-          extra_type?: Database["public"]["Enums"]["extra_type"] | null;
+          extra_type?: Database['public']['Enums']['extra_type'] | null;
           is_wicket?: boolean;
-          wicket_type?: Database["public"]["Enums"]["wicket_type"] | null;
+          wicket_type?: Database['public']['Enums']['wicket_type'] | null;
           dismissed_player_id?: string | null;
           fielder_id?: string | null;
           assist_fielder_id?: string | null;
@@ -465,7 +465,7 @@ export type Database = {
           is_captain: boolean;
           is_wicket_keeper: boolean;
           batting_order: number | null;
-          role_in_match: Database["public"]["Enums"]["player_role"] | null;
+          role_in_match: Database['public']['Enums']['player_role'] | null;
         };
         Insert: {
           id?: string;
@@ -476,7 +476,7 @@ export type Database = {
           is_captain?: boolean;
           is_wicket_keeper?: boolean;
           batting_order?: number | null;
-          role_in_match?: Database["public"]["Enums"]["player_role"] | null;
+          role_in_match?: Database['public']['Enums']['player_role'] | null;
         };
         Update: {
           id?: string;
@@ -487,7 +487,7 @@ export type Database = {
           is_captain?: boolean;
           is_wicket_keeper?: boolean;
           batting_order?: number | null;
-          role_in_match?: Database["public"]["Enums"]["player_role"] | null;
+          role_in_match?: Database['public']['Enums']['player_role'] | null;
         };
         Relationships: [];
       };
@@ -501,12 +501,12 @@ export type Database = {
           team_b_id: string;
           venue: string | null;
           scheduled_at: string | null;
-          status: Database["public"]["Enums"]["match_status"];
+          status: Database['public']['Enums']['match_status'];
           config: Json;
           toss_winner_team_id: string | null;
           toss_decision: string | null;
           current_innings_no: number;
-          result_type: Database["public"]["Enums"]["result_type"] | null;
+          result_type: Database['public']['Enums']['result_type'] | null;
           winner_team_id: string | null;
           win_margin_runs: number | null;
           win_margin_wickets: number | null;
@@ -527,12 +527,12 @@ export type Database = {
           team_b_id: string;
           venue?: string | null;
           scheduled_at?: string | null;
-          status?: Database["public"]["Enums"]["match_status"];
+          status?: Database['public']['Enums']['match_status'];
           config: Json;
           toss_winner_team_id?: string | null;
           toss_decision?: string | null;
           current_innings_no?: number;
-          result_type?: Database["public"]["Enums"]["result_type"] | null;
+          result_type?: Database['public']['Enums']['result_type'] | null;
           winner_team_id?: string | null;
           win_margin_runs?: number | null;
           win_margin_wickets?: number | null;
@@ -553,12 +553,12 @@ export type Database = {
           team_b_id?: string;
           venue?: string | null;
           scheduled_at?: string | null;
-          status?: Database["public"]["Enums"]["match_status"];
+          status?: Database['public']['Enums']['match_status'];
           config?: Json;
           toss_winner_team_id?: string | null;
           toss_decision?: string | null;
           current_innings_no?: number;
-          result_type?: Database["public"]["Enums"]["result_type"] | null;
+          result_type?: Database['public']['Enums']['result_type'] | null;
           winner_team_id?: string | null;
           win_margin_runs?: number | null;
           win_margin_wickets?: number | null;
@@ -788,10 +788,10 @@ export type Database = {
           jersey_number: number | null;
           date_of_birth: string | null;
           photo_url: string | null;
-          primary_role: Database["public"]["Enums"]["player_role"];
-          secondary_role: Database["public"]["Enums"]["player_role"] | null;
-          batting_hand: Database["public"]["Enums"]["batting_hand"];
-          bowling_style: Database["public"]["Enums"]["bowling_style"] | null;
+          primary_role: Database['public']['Enums']['player_role'];
+          secondary_role: Database['public']['Enums']['player_role'] | null;
+          batting_hand: Database['public']['Enums']['batting_hand'];
+          bowling_style: Database['public']['Enums']['bowling_style'] | null;
           bio: string | null;
           role_locked_by_admin: boolean;
           created_by: string | null;
@@ -808,10 +808,10 @@ export type Database = {
           jersey_number?: number | null;
           date_of_birth?: string | null;
           photo_url?: string | null;
-          primary_role?: Database["public"]["Enums"]["player_role"];
-          secondary_role?: Database["public"]["Enums"]["player_role"] | null;
-          batting_hand?: Database["public"]["Enums"]["batting_hand"];
-          bowling_style?: Database["public"]["Enums"]["bowling_style"] | null;
+          primary_role?: Database['public']['Enums']['player_role'];
+          secondary_role?: Database['public']['Enums']['player_role'] | null;
+          batting_hand?: Database['public']['Enums']['batting_hand'];
+          bowling_style?: Database['public']['Enums']['bowling_style'] | null;
           bio?: string | null;
           role_locked_by_admin?: boolean;
           created_by?: string | null;
@@ -828,10 +828,10 @@ export type Database = {
           jersey_number?: number | null;
           date_of_birth?: string | null;
           photo_url?: string | null;
-          primary_role?: Database["public"]["Enums"]["player_role"];
-          secondary_role?: Database["public"]["Enums"]["player_role"] | null;
-          batting_hand?: Database["public"]["Enums"]["batting_hand"];
-          bowling_style?: Database["public"]["Enums"]["bowling_style"] | null;
+          primary_role?: Database['public']['Enums']['player_role'];
+          secondary_role?: Database['public']['Enums']['player_role'] | null;
+          batting_hand?: Database['public']['Enums']['batting_hand'];
+          bowling_style?: Database['public']['Enums']['bowling_style'] | null;
           bio?: string | null;
           role_locked_by_admin?: boolean;
           created_by?: string | null;
@@ -934,7 +934,7 @@ export type Database = {
           id: string;
           player_id: string;
           suggested_by: string;
-          suggested_role: Database["public"]["Enums"]["player_role"];
+          suggested_role: Database['public']['Enums']['player_role'];
           note: string | null;
           status: string;
           resolved_at: string | null;
@@ -945,7 +945,7 @@ export type Database = {
           id?: string;
           player_id: string;
           suggested_by: string;
-          suggested_role: Database["public"]["Enums"]["player_role"];
+          suggested_role: Database['public']['Enums']['player_role'];
           note?: string | null;
           status?: string;
           resolved_at?: string | null;
@@ -956,7 +956,7 @@ export type Database = {
           id?: string;
           player_id?: string;
           suggested_by?: string;
-          suggested_role?: Database["public"]["Enums"]["player_role"];
+          suggested_role?: Database['public']['Enums']['player_role'];
           note?: string | null;
           status?: string;
           resolved_at?: string | null;
@@ -1001,7 +1001,7 @@ export type Database = {
           match_id: string;
           grantee_profile_id: string;
           granted_by_profile_id: string;
-          status: Database["public"]["Enums"]["grant_status"];
+          status: Database['public']['Enums']['grant_status'];
           can_delegate: boolean;
           scope: string;
           granted_at: string;
@@ -1016,7 +1016,7 @@ export type Database = {
           match_id: string;
           grantee_profile_id: string;
           granted_by_profile_id: string;
-          status?: Database["public"]["Enums"]["grant_status"];
+          status?: Database['public']['Enums']['grant_status'];
           can_delegate?: boolean;
           scope?: string;
           granted_at?: string;
@@ -1031,7 +1031,7 @@ export type Database = {
           match_id?: string;
           grantee_profile_id?: string;
           granted_by_profile_id?: string;
-          status?: Database["public"]["Enums"]["grant_status"];
+          status?: Database['public']['Enums']['grant_status'];
           can_delegate?: boolean;
           scope?: string;
           granted_at?: string;
@@ -1048,7 +1048,7 @@ export type Database = {
           id: string;
           team_id: string;
           player_id: string;
-          team_role: Database["public"]["Enums"]["team_role"];
+          team_role: Database['public']['Enums']['team_role'];
           squad_number: number | null;
           joined_at: string;
           left_at: string | null;
@@ -1058,7 +1058,7 @@ export type Database = {
           id?: string;
           team_id: string;
           player_id: string;
-          team_role?: Database["public"]["Enums"]["team_role"];
+          team_role?: Database['public']['Enums']['team_role'];
           squad_number?: number | null;
           joined_at?: string;
           left_at?: string | null;
@@ -1067,7 +1067,7 @@ export type Database = {
           id?: string;
           team_id?: string;
           player_id?: string;
-          team_role?: Database["public"]["Enums"]["team_role"];
+          team_role?: Database['public']['Enums']['team_role'];
           squad_number?: number | null;
           joined_at?: string;
           left_at?: string | null;
@@ -1131,8 +1131,8 @@ export type Database = {
       _insert_scored_delivery: {
         Args: {
           p: Json | null;
-          v_match: Database["public"]["Tables"]["matches"]["Row"] | null;
-          v_innings: Database["public"]["Tables"]["innings"]["Row"] | null;
+          v_match: Database['public']['Tables']['matches']['Row'] | null;
+          v_innings: Database['public']['Tables']['innings']['Row'] | null;
         };
         Returns: Json;
       };
@@ -1140,9 +1140,9 @@ export type Database = {
         Args: {
           p_team_id: string | null;
           p_profile_id: string | null;
-          p_team_role?: Database["public"]["Enums"]["team_role"] | null;
+          p_team_role?: Database['public']['Enums']['team_role'] | null;
         };
-        Returns: Database["public"]["Tables"]["players"]["Row"];
+        Returns: Database['public']['Tables']['players']['Row'];
       };
       archive_team: {
         Args: {
@@ -1168,26 +1168,26 @@ export type Database = {
         Args: {
           p_claim_code: string | null;
         };
-        Returns: Database["public"]["Tables"]["players"]["Row"];
+        Returns: Database['public']['Tables']['players']['Row'];
       };
       complete_match: {
         Args: {
           p_match_id: string | null;
-          p_result_type: Database["public"]["Enums"]["result_type"] | null;
+          p_result_type: Database['public']['Enums']['result_type'] | null;
           p_winner_team_id?: string | null;
           p_win_margin_runs?: number | null;
           p_win_margin_wickets?: number | null;
           p_result_text?: string | null;
           p_player_of_match_id?: string | null;
         };
-        Returns: Database["public"]["Tables"]["matches"]["Row"];
+        Returns: Database['public']['Tables']['matches']['Row'];
       };
       create_handoff_token: {
         Args: {
           p_match_id: string | null;
           p_ttl_seconds?: number | null;
         };
-        Returns: Database["public"]["Tables"]["handoff_tokens"]["Row"];
+        Returns: Database['public']['Tables']['handoff_tokens']['Row'];
       };
       create_match: {
         Args: {
@@ -1198,16 +1198,16 @@ export type Database = {
           p_venue?: string | null;
           p_scheduled_at?: string | null;
         };
-        Returns: Database["public"]["Tables"]["matches"]["Row"];
+        Returns: Database['public']['Tables']['matches']['Row'];
       };
       create_shadow_player: {
         Args: {
           p_team_id: string | null;
           p_full_name: string | null;
-          p_primary_role?: Database["public"]["Enums"]["player_role"] | null;
+          p_primary_role?: Database['public']['Enums']['player_role'] | null;
           p_jersey_number?: number | null;
         };
-        Returns: Database["public"]["Tables"]["players"]["Row"];
+        Returns: Database['public']['Tables']['players']['Row'];
       };
       create_team: {
         Args: {
@@ -1218,7 +1218,7 @@ export type Database = {
           p_home_ground?: string | null;
           p_city?: string | null;
         };
-        Returns: Database["public"]["Tables"]["teams"]["Row"];
+        Returns: Database['public']['Tables']['teams']['Row'];
       };
       edit_delivery: {
         Args: {
@@ -1233,7 +1233,7 @@ export type Database = {
           p_innings_id: string | null;
           p_reason: string | null;
         };
-        Returns: Database["public"]["Tables"]["innings"]["Row"];
+        Returns: Database['public']['Tables']['innings']['Row'];
       };
       get_match_grants: {
         Args: {
@@ -1288,7 +1288,7 @@ export type Database = {
           p_expires_at?: string | null;
           p_note?: string | null;
         };
-        Returns: Database["public"]["Tables"]["scoring_grants"]["Row"];
+        Returns: Database['public']['Tables']['scoring_grants']['Row'];
       };
       rebuild_innings: {
         Args: {
@@ -1312,21 +1312,21 @@ export type Database = {
         Args: {
           p_token: string | null;
         };
-        Returns: Database["public"]["Tables"]["scoring_grants"]["Row"];
+        Returns: Database['public']['Tables']['scoring_grants']['Row'];
       };
       respond_to_role_suggestion: {
         Args: {
           p_suggestion_id: string | null;
           p_accept: boolean | null;
         };
-        Returns: Database["public"]["Tables"]["role_change_suggestions"]["Row"];
+        Returns: Database['public']['Tables']['role_change_suggestions']['Row'];
       };
       revoke_scoring_grant: {
         Args: {
           p_grant_id: string | null;
           p_reason?: string | null;
         };
-        Returns: Database["public"]["Tables"]["scoring_grants"]["Row"];
+        Returns: Database['public']['Tables']['scoring_grants']['Row'];
       };
       search_profiles: {
         Args: {
@@ -1347,7 +1347,7 @@ export type Database = {
           p_captain_id?: string | null;
           p_keeper_id?: string | null;
         };
-        Returns: Database["public"]["Tables"]["match_squads"]["Row"][];
+        Returns: Database['public']['Tables']['match_squads']['Row'][];
       };
       set_toss: {
         Args: {
@@ -1355,21 +1355,21 @@ export type Database = {
           p_winner_team_id: string | null;
           p_decision: string | null;
         };
-        Returns: Database["public"]["Tables"]["matches"]["Row"];
+        Returns: Database['public']['Tables']['matches']['Row'];
       };
       start_innings: {
         Args: {
           p_match_id: string | null;
         };
-        Returns: Database["public"]["Tables"]["innings"]["Row"];
+        Returns: Database['public']['Tables']['innings']['Row'];
       };
       suggest_role_change: {
         Args: {
           p_player_id: string | null;
-          p_suggested_role: Database["public"]["Enums"]["player_role"] | null;
+          p_suggested_role: Database['public']['Enums']['player_role'] | null;
           p_note?: string | null;
         };
-        Returns: Database["public"]["Tables"]["role_change_suggestions"]["Row"];
+        Returns: Database['public']['Tables']['role_change_suggestions']['Row'];
       };
       transfer_scoring_grant: {
         Args: {
@@ -1377,7 +1377,7 @@ export type Database = {
           p_to_profile_id: string | null;
           p_keep_mine?: boolean | null;
         };
-        Returns: Database["public"]["Tables"]["scoring_grants"]["Row"];
+        Returns: Database['public']['Tables']['scoring_grants']['Row'];
       };
       transfer_team_ownership: {
         Args: {
@@ -1403,15 +1403,40 @@ export type Database = {
       };
     };
     Enums: {
-      batting_hand: "right" | "left";
-      bowling_style: "right_arm_fast" | "right_arm_fast_medium" | "right_arm_medium" | "right_arm_off_break" | "right_arm_leg_break" | "left_arm_fast" | "left_arm_fast_medium" | "left_arm_medium" | "left_arm_orthodox" | "left_arm_chinaman" | "none";
-      extra_type: "wide" | "no_ball" | "bye" | "leg_bye" | "penalty";
-      grant_status: "active" | "revoked" | "expired" | "transferred";
-      match_status: "scheduled" | "toss" | "live" | "innings_break" | "super_over" | "completed" | "abandoned";
-      player_role: "batter" | "bowler" | "all_rounder" | "wicket_keeper" | "wk_batter";
-      result_type: "win" | "tie" | "draw" | "no_result" | "abandoned" | "super_over_win" | "forfeit";
-      team_role: "owner" | "admin" | "captain" | "vice_captain" | "player";
-      wicket_type: "bowled" | "caught" | "lbw" | "run_out" | "stumped" | "hit_wicket" | "retired_out" | "retired_hurt" | "obstructing_the_field" | "handled_the_ball" | "timed_out" | "hit_ball_twice";
+      batting_hand: 'right' | 'left';
+      bowling_style:
+        | 'right_arm_fast'
+        | 'right_arm_fast_medium'
+        | 'right_arm_medium'
+        | 'right_arm_off_break'
+        | 'right_arm_leg_break'
+        | 'left_arm_fast'
+        | 'left_arm_fast_medium'
+        | 'left_arm_medium'
+        | 'left_arm_orthodox'
+        | 'left_arm_chinaman'
+        | 'none';
+      extra_type: 'wide' | 'no_ball' | 'bye' | 'leg_bye' | 'penalty';
+      grant_status: 'active' | 'revoked' | 'expired' | 'transferred';
+      match_status:
+        'scheduled' | 'toss' | 'live' | 'innings_break' | 'super_over' | 'completed' | 'abandoned';
+      player_role: 'batter' | 'bowler' | 'all_rounder' | 'wicket_keeper' | 'wk_batter';
+      result_type:
+        'win' | 'tie' | 'draw' | 'no_result' | 'abandoned' | 'super_over_win' | 'forfeit';
+      team_role: 'owner' | 'admin' | 'captain' | 'vice_captain' | 'player';
+      wicket_type:
+        | 'bowled'
+        | 'caught'
+        | 'lbw'
+        | 'run_out'
+        | 'stumped'
+        | 'hit_wicket'
+        | 'retired_out'
+        | 'retired_hurt'
+        | 'obstructing_the_field'
+        | 'handled_the_ball'
+        | 'timed_out'
+        | 'hit_ball_twice';
     };
     CompositeTypes: Record<string, never>;
   };

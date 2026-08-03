@@ -260,10 +260,14 @@ async function handleBatchLevelError(
   if (code === 'NO_GRANT') {
     await Promise.all(
       batch.map((item) =>
-        db.pendingDeliveries.update(item.clientDeliveryId, { status: 'rejected', lastError: message })
+        db.pendingDeliveries.update(item.clientDeliveryId, {
+          status: 'rejected',
+          lastError: message,
+        })
       )
     );
-    for (const item of batch) emit(matchId, { type: 'rejected', clientDeliveryId: item.clientDeliveryId, message });
+    for (const item of batch)
+      emit(matchId, { type: 'rejected', clientDeliveryId: item.clientDeliveryId, message });
     return;
   }
 
@@ -290,7 +294,10 @@ async function handleItemError(
   message: string
 ): Promise<void> {
   if (code === 'NO_GRANT') {
-    await db.pendingDeliveries.update(item.clientDeliveryId, { status: 'rejected', lastError: message });
+    await db.pendingDeliveries.update(item.clientDeliveryId, {
+      status: 'rejected',
+      lastError: message,
+    });
     emit(matchId, { type: 'rejected', clientDeliveryId: item.clientDeliveryId, message });
     return;
   }
@@ -359,7 +366,10 @@ export async function retryQueuedForInnings(matchId: string, inningsId: string):
   const items = await unresolvedForInnings(matchId, inningsId);
   await Promise.all(
     items.map((item) =>
-      db.pendingDeliveries.update(item.clientDeliveryId, { expectedSeq: freshSeq, status: 'queued' })
+      db.pendingDeliveries.update(item.clientDeliveryId, {
+        expectedSeq: freshSeq,
+        status: 'queued',
+      })
     )
   );
   kickSync(matchId);

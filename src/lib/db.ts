@@ -74,7 +74,8 @@ db.version(1).stores({
 // and [matchId+status] for the sync-pill/Review-Tray counts. Dexie carries
 // existing rows forward untouched; nothing here needs a data migration.
 db.version(2).stores({
-  pendingDeliveries: 'clientDeliveryId, matchId, createdAt, status, [matchId+inningsId], [matchId+status]',
+  pendingDeliveries:
+    'clientDeliveryId, matchId, createdAt, status, [matchId+inningsId], [matchId+status]',
 });
 
 export { db };
@@ -88,18 +89,12 @@ export async function pendingCount(matchId?: string): Promise<number> {
 
 /** Queued balls that have failed at least once, for the sync pill's `error` state. */
 export async function erroredCount(matchId: string): Promise<number> {
-  return db.pendingDeliveries
-    .where('[matchId+status]')
-    .equals([matchId, 'error'])
-    .count();
+  return db.pendingDeliveries.where('[matchId+status]').equals([matchId, 'error']).count();
 }
 
 /** Balls the server refused (e.g. scoring rights revoked while offline). */
 export async function rejectedDeliveries(matchId: string): Promise<PendingDelivery[]> {
-  return db.pendingDeliveries
-    .where('[matchId+status]')
-    .equals([matchId, 'rejected'])
-    .toArray();
+  return db.pendingDeliveries.where('[matchId+status]').equals([matchId, 'rejected']).toArray();
 }
 
 /** Queued/erroring balls for one innings, oldest first — what the sync

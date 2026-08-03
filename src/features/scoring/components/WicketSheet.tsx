@@ -29,7 +29,12 @@ type Step =
   | { name: 'runout-who' }
   | { name: 'runout-runs'; dismissedPlayerId: PlayerId }
   | { name: 'runout-fielder'; dismissedPlayerId: PlayerId; runs: number }
-  | { name: 'runout-crossed'; dismissedPlayerId: PlayerId; runs: number; fielderId: PlayerId | null }
+  | {
+      name: 'runout-crossed';
+      dismissedPlayerId: PlayerId;
+      runs: number;
+      fielderId: PlayerId | null;
+    }
   | { name: 'retired-who' };
 
 /** docs/05-SCORER-VIEW.md § 2 — the wicket sheet: a bottom sheet over the run
@@ -50,16 +55,22 @@ export function WicketSheet() {
   const fieldingSquad = innings.bowlingTeamId === teamAId ? squadA : squadB;
   const nameFor = (id: PlayerId | null) => {
     const squad = [...squadA, ...squadB];
-    return squad.find((p) => p.id === id)?.short_name ?? squad.find((p) => p.id === id)?.full_name ?? '—';
+    return (
+      squad.find((p) => p.id === id)?.short_name ?? squad.find((p) => p.id === id)?.full_name ?? '—'
+    );
   };
 
   const isFreeHit = innings.isFreeHit;
 
-  function commit(type: WicketType, dismissedPlayerId: PlayerId, opts?: {
-    fielderId?: PlayerId | null;
-    runs?: number;
-    crossedBeforeDismissal?: boolean;
-  }) {
+  function commit(
+    type: WicketType,
+    dismissedPlayerId: PlayerId,
+    opts?: {
+      fielderId?: PlayerId | null;
+      runs?: number;
+      crossedBeforeDismissal?: boolean;
+    }
+  ) {
     void recordWicket(
       {
         type,
@@ -171,7 +182,9 @@ export function WicketSheet() {
           <button
             type="button"
             className="press panel min-h-16 rounded-[var(--r-md)] text-[15px] font-bold"
-            onClick={() => setStep({ name: 'runout-runs', dismissedPlayerId: innings.nonStrikerId! })}
+            onClick={() =>
+              setStep({ name: 'runout-runs', dismissedPlayerId: innings.nonStrikerId! })
+            }
           >
             {nameFor(innings.nonStrikerId)}
           </button>
@@ -193,7 +206,11 @@ export function WicketSheet() {
               type="button"
               className="press panel min-h-14 rounded-[var(--r-md)] text-[18px] font-bold tabular-nums"
               onClick={() =>
-                setStep({ name: 'runout-fielder', dismissedPlayerId: step.dismissedPlayerId, runs: r })
+                setStep({
+                  name: 'runout-fielder',
+                  dismissedPlayerId: step.dismissedPlayerId,
+                  runs: r,
+                })
               }
             >
               {r}
@@ -221,7 +238,11 @@ export function WicketSheet() {
                 fielderId,
               });
             } else {
-              commit('run_out', step.dismissedPlayerId, { fielderId, runs: 0, crossedBeforeDismissal: false });
+              commit('run_out', step.dismissedPlayerId, {
+                fielderId,
+                runs: 0,
+                crossedBeforeDismissal: false,
+              });
             }
           }}
           onBack={() => setStep({ name: 'runout-runs', dismissedPlayerId: step.dismissedPlayerId })}

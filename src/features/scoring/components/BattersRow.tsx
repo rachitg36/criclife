@@ -11,9 +11,8 @@ export function BattersRow() {
   if (!innings) return null;
 
   const squad = [...squadA, ...squadB];
-  const nameFor = (id: string | null) => squad.find((p) => p.id === id)?.short_name
-    ?? squad.find((p) => p.id === id)?.full_name
-    ?? '—';
+  const nameFor = (id: string | null) =>
+    squad.find((p) => p.id === id)?.short_name ?? squad.find((p) => p.id === id)?.full_name ?? '—';
 
   const striker = innings.strikerId ? innings.batters[innings.strikerId] : null;
   const nonStriker = innings.nonStrikerId ? innings.batters[innings.nonStrikerId] : null;

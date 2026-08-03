@@ -2,6 +2,7 @@ import { applyDelivery, setBowler, setNewBatter } from './applyDelivery';
 import type {
   Delivery,
   DeliveryInput,
+  EngineResult,
   InningsState,
   MatchConfig,
   MatchState,
@@ -149,6 +150,28 @@ export function deliveryToInput(config: MatchConfig, delivery: Delivery): Delive
 }
 
 /**
+ * One step of a replay: brings the innings, the crease and the bowler up to
+ * what this persisted row implies, then applies it.
+ *
+ * `replay` is a fold over this. It is exported separately because a consumer
+ * that receives the log one row at a time — the audience view, which gets
+ * balls over Realtime — must not re-fold the whole innings on every delivery
+ * just to add one ball, and must be able to see the `EngineEvent[]` the ball
+ * produced (milestones, over completion, the result) rather than only the
+ * resulting state.
+ */
+export function applyLoggedDelivery(
+  state: MatchState,
+  delivery: Delivery,
+  seeds: InningsSeed[]
+): EngineResult {
+  let next = ensureInningsStarted(state, delivery, seeds);
+  next = ensureCrease(next, delivery);
+  next = ensureBowler(next, delivery);
+  return applyDelivery(next, deliveryToInput(next.config, delivery));
+}
+
+/**
  * Folds an ordered delivery log back into a `MatchState` — the same
  * `applyDelivery` reducer used for live scoring, ball by ball. This is the
  * safety net docs/04-RULES-ENGINE.md §10 describes: undo and edit both work
@@ -163,12 +186,7 @@ export function replay(
   let state = createInitialMatchState(matchId, config);
 
   for (const delivery of deliveries) {
-    state = ensureInningsStarted(state, delivery, seeds);
-    state = ensureCrease(state, delivery);
-    state = ensureBowler(state, delivery);
-
-    const input = deliveryToInput(config, delivery);
-    const result = applyDelivery(state, input);
+    const result = applyLoggedDelivery(state, delivery, seeds);
     if (!result.ok) {
       throw new Error(
         `REPLAY: applyDelivery failed at innings ${delivery.inningsNo} over ${delivery.overNo}.${delivery.ballInOver}: ${result.error}`

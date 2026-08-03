@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "CricLife — futuristic, mobile-first, real-time cricket scoring and statistics PWA",
+  "description": "CricLife \u2014 futuristic, mobile-first, real-time cricket scoring and statistics PWA",
   "engines": {
     "node": ">=20.19.0"
   },
@@ -123,7 +123,12 @@
         "!dist/assets/NewMatchPage-*.js",
         "!dist/assets/MatchSetupPage-*.js",
         "!dist/assets/ScoringRightsMapPage-*.js",
-        "!dist/assets/db-*.js"
+        "!dist/assets/db-*.js",
+        "!dist/assets/ChartsTab-*.js",
+        "!dist/assets/ScorecardTab-*.js",
+        "!dist/assets/SquadsTab-*.js",
+        "!dist/assets/TvLayout-*.js",
+        "!dist/assets/VirtualFeed-*.js"
       ],
       "limit": "180 kB"
     }

@@ -1,8 +1,8 @@
 # CricLife — Handoff
 
 **Date:** 2026-08-03
-**State:** **Phases 0–6 complete and pushed** to `claude/session-context-ifpggh`.
-Phase 7 (audience view) has **not** started.
+**State:** **Phases 0–7 complete and pushed** to `claude/continue-session-uhh3e8`.
+Phase 8 (stats & rankings) has **not** started.
 
 Read this file, then `CLAUDE.md`. Skip straight to **§ 2** for what to do next.
 
@@ -25,62 +25,65 @@ Decisions already locked in are logged in `docs/13-OPEN-QUESTIONS.md` § A and �
 
 ## 2. Continue here — exact next step
 
-### Next: Phase 7 — audience view
+### Next: Phase 8 — stats & rankings
 
-> Start Phase 7: `/live:publicSlug` (public, unauthenticated), the hero with
-> count-up score/aurora/team tinting, a Realtime subscription targeting
-> <1.5s p95 latency, the ball-by-ball feed, scorecard tab, charts tab (worm,
-> manhattan, run-rate, partnerships, wagon wheel), the win-probability bar,
-> moments (four/six/wicket/fifty/hundred/maiden/hat-trick/last-over/match-won),
-> calm mode + `prefers-reduced-motion`, big-screen `?tv=1` mode, an OG share
-> image edge function, and the completed-match replay scrubber.
+> Start Phase 8: `player_match_stats` / `player_career_stats` rollups, the
+> `finalize_match` and `recompute_rankings` edge functions, the exponential-decay
+> rating from `docs/07-STATS-AND-RANKINGS.md`, `/ranks`, `/ranks/compare`,
+> `/stats`, `/teams/:teamId/stats` and `/teams/:teamId/matches`.
 
-Or: `/phase` (the skill re-reads the roadmap and confirms Phase 6's
+Or: `/phase` (the skill re-reads the roadmap and confirms Phase 7's
 acceptance criteria still pass before building).
 
-Before writing code: **re-verify Phase 6's foundation is still green.**
-Container restarts kill the local Postgres server (this sandbox has no
-Docker — see § 5.1). Bring it back and re-run the pgTAP suite:
+Before writing code: **re-verify the foundation is still green.** A fresh
+container has neither `node_modules`, nor `.env.local`, nor a running Postgres,
+nor pgTAP (see § 3 and § 5.1). Full cold-start sequence:
 
 ```bash
-sudo service postgresql start   # or: sudo pg_ctlcluster <ver> <cluster> start
-bash supabase/tests/run-local.sh --seed --pgtap   # expect 155/155 "ok", 0 "not ok"
-npm run typecheck && npm run lint && npm run test   # expect 253/253
+npm install
+cp .env.example .env.local   # then fill it in — values are in § 4
+sudo service postgresql start
+sudo apt-get install -y postgresql-16-pgtap    # gone after every container restart
+bash supabase/tests/run-local.sh --seed --pgtap   # expect 169/169 "ok", 0 "not ok"
+npm run typecheck && npm run lint && npm run test  # expect 331/331
+npm run build && npm run size                      # expect 174.69 kB / 180 kB
 ```
 
-### Why Phase 6 mattered more than it looked
+### The one thing to know before touching the audience view
 
-CLAUDE.md's rule 4 ("scoring writes to IndexedDB first, network second — the
-pad must never await a request") was already satisfied for the *synchronous*
-half since Phase 5: `commitDelivery` applies the pure engine result and calls
-`set()` before it ever touches the network. What Phase 6 added was the
-*durable* half — a closed tab or a crash between the optimistic `set()` and
-the RPC resolving no longer loses that ball's server confirmation, because
-every delivery is written to Dexie (`pendingDeliveries`) before the sync
-worker ever gets a chance to run, and the sync worker itself is a plain
-poll/retry loop with no assumption that the tab survives long enough to see
-a request resolve.
+`src/features/audience/store.ts` deliberately does **not** import
+`@/lib/supabase` at the top of the file. It reads the initial snapshot over
+plain `fetch` (`src/lib/publicApi.ts`) and only `await import()`s the real
+Supabase client afterwards, for the Realtime socket. That is not stylistic:
+`@supabase/supabase-js` is 216 kB raw / ~57 kB gzipped, and a static import
+there puts all of it on the critical path of the one route with a hard
+performance budget. A single innocent-looking `import { supabase }` at the top
+of any eagerly-loaded audience module undoes it, and `npm run size` is what
+will tell you.
 
-### What a fresh session should know about Phase 6's actual risk surface
+### What Phase 7 actually changed, beyond the screen
 
-Phase 6 is the first phase where the *hard* part isn't the happy path — a
-single scorer scoring offline and reconnecting works and is tested. The
-genuinely load-bearing, still-underverified part is **two scorers
-disagreeing**, and specifically:
+Two of the three most consequential things this phase did are not in
+`src/features/audience/` at all:
 
-- The merge screen (`MergeScreen.tsx`) only offers "keep both" or "keep
-  theirs" — never a true "keep mine, discard the other scorer's already-
-  committed ball," which is deliberately not offered (see § 8.8). If a real
-  match ever needs that, today's answer is "undo and re-enter," same as
-  every other correction path.
-- Every place a drain attempt marks an item `'syncing'` and then can't
-  reach a terminal state for it (STALE_SEQ, an item-level conflict, or the
-  batch stopping partway through) has to explicitly revert that item back to
-  `'queued'`, or it's stuck forever and invisible to the merge-resolution
-  helpers. Three instances of exactly this bug were found and fixed this
-  phase (§ 6.4) — if you add a fourth error path to `handleBatchLevelError`
-  or `handleItemError` in `syncWorker.ts`, check whether it needs the same
-  treatment.
+1. **`postgres_changes` had never worked.** Phases 5 and 6 subscribe to
+   `scoring_grants` for live grant revocation, and both looked healthy — the
+   channel connects, the client reports `SUBSCRIBED`. But nothing had ever
+   added a table to the `supabase_realtime` publication, and Supabase's
+   Realtime server only replays changes for tables in it. Every one of those
+   subscriptions was silently inert. `20260803180000_audience_realtime.sql`
+   fixes it for `deliveries`, `innings`, `matches` and `scoring_grants`. **This
+   means Phase 5's live-revocation behaviour has still never been seen to
+   work** — it was untestable before and is merely un-_tested_ now.
+2. **Zod was costing more than it was worth.** `src/lib/env.ts` imported it to
+   validate five environment variables, and was the _only_ importer in the
+   app — so ~260 kB of Zod rode the eager main chunk on every route including
+   `/live/:publicSlug`. Replacing it with hand-rolled checks (identical
+   messages, identical exported shape, now covered by `tests/lib/env.test.ts`)
+   is what paid for the entire audience view inside the 180 kB budget, and it
+   roughly halved size-limit's modelled Snapdragon-410 execution time.
+
+The third is the ordinary one: the audience view itself.
 
 ---
 
@@ -89,7 +92,7 @@ disagreeing**, and specifically:
 ```bash
 git clone https://github.com/rachitg36/criclife.git
 cd criclife
-git checkout claude/session-context-ifpggh   # this branch, not main
+git checkout claude/continue-session-uhh3e8   # this branch, not main
 npm install
 ```
 
@@ -119,7 +122,7 @@ Local Postgres + pgTAP (see § 5.1 for why this exists instead of `supabase star
 
 ```bash
 sudo service postgresql start
-bash supabase/tests/run-local.sh --seed --pgtap   # expect 155/155 "ok", 0 "not ok"
+bash supabase/tests/run-local.sh --seed --pgtap   # expect 169/169 "ok", 0 "not ok"
 ```
 
 (`npm run test:e2e` needs Playwright browsers, and this sandbox only has a
@@ -137,10 +140,10 @@ deploy`). First time on a new machine, run `npx wrangler login` first
 ## 4. Live infrastructure reference
 
 | Thing                                                             | Value                                                                                                                                                                                                       |
-| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Deployed app (Phase 0 build only — Phases 1–5 not yet redeployed) | `https://criclife.geminirachit.workers.dev`                                                                                                                                                                 |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deployed app (Phase 0 build only — Phases 1–7 not yet redeployed) | `https://criclife.geminirachit.workers.dev`                                                                                                                                                                 |
 | GitHub repo                                                       | `https://github.com/rachitg36/criclife` (public)                                                                                                                                                            |
-| Working branch                                                    | `claude/session-context-ifpggh` — all of Phases 1–5 are here, not on `main`                                                                                                                                 |
+| Working branch                                                    | `claude/continue-session-uhh3e8` — all of Phases 1–7 are here, not on `main`                                                                                                                                |
 | is-a.dev PR                                                       | [is-a-dev/register#45746](https://github.com/is-a-dev/register/pull/45746) — still pending merge                                                                                                            |
 | Supabase `criclife-prod`                                          | Project ID `tljbwnbjwgdpmdhvttai`, region `eu-central-1`. **No migrations pushed to it yet** — everything so far has run against a local Postgres, not this cloud project.                                  |
 | Supabase `criclife-prod` publishable key                          | `sb_publishable_oyHY2XoW3H2sk3ckL8JyQA_FLYJD6OM`                                                                                                                                                            |
@@ -195,6 +198,15 @@ way each time — worth knowing before you re-discover them:
      If `sudo -u postgres psql` refuses the connection, run
      `sudo service postgresql start` (or `pg_ctlcluster <version> <cluster>
 start` — check with `pg_lsclusters`) before anything else.
+   - **Nor does pgTAP itself.** `create extension pgtap` failing with
+     "extension is not available" means the package is gone, not that the
+     suite is broken: `sudo apt-get install -y postgresql-16-pgtap` restores
+     it. (Confirmed working in Phase 7 despite § 5.1's note about the network
+     policy — the Ubuntu archives are reachable, unlike the Docker registry.)
+   - `create publication` warns `wal_level is insufficient to publish logical
+changes` on this bare install. Harmless here — a real Supabase project
+     runs `wal_level=logical` already; the publication is still created and
+     the pgTAP assertions about it pass.
    - **`psql`'s `:'var'` substitution does not reach inside `$...$`
      dollar-quoted bodies** (DO blocks, function bodies). A pgTAP fixture
      that needs per-iteration state should use repeated top-level statements
@@ -222,11 +234,11 @@ start` — check with `pg_lsclusters`) before anything else.
    etc.), which isn't installed here at any revision. When you need to run
    e2e locally, temporarily add
    `channel: 'chromium'` and `launchOptions: { executablePath:
-   '/opt/pw-browsers/chromium' }` to the top-level `use` block in
+'/opt/pw-browsers/chromium' }` to the top-level `use` block in
    `playwright.config.ts`, run `--project=desktop` only, then **revert the
    config change** — don't leave it committed. Real CI
    (`.github/workflows/ci.yml`) runs `npx playwright install --with-deps
-   chromium webkit` fresh and is unaffected by any of this.
+chromium webkit` fresh and is unaffected by any of this.
 
 ### 5.2 Documentation — complete, 15 files in `docs/`
 
@@ -317,7 +329,7 @@ algorithm), `strike.ts`, `dismissals.ts`, `inningsEnd.ts`, `result.ts`,
   (`docs/05` § 5's state table) and by `scorerTab` — the active tab lives in
   the store, not the route, so switching tabs never touches the pad's state.
 - **`RequireScoringGrant.tsx`** is real: checks `can_score(match_id,
-  auth.uid())` via RPC, subscribes to `scoring_grants` over Realtime for
+auth.uid())` via RPC, subscribes to `scoring_grants` over Realtime for
   live revocation, and — this matters, see § 6.4 — deliberately does **not**
   sit behind the usual `<RequireAuth>`. It folds "not signed in" into its
   own render instead, because `RequireAuth`'s `<Navigate>` would unmount
@@ -399,16 +411,81 @@ algorithm), `strike.ts`, `dismissals.ts`, `inningsEnd.ts`, `result.ts`,
   now runs for real (not mocked) in every test that touches the scorer store
   or the sync worker.
 
+### 5.10 Phase 7 — the audience view
+
+- **Migration** (`20260803180000_audience_realtime.sql`) creates the
+  `supabase_realtime` publication if absent and adds `deliveries`, `innings`,
+  `matches` and `scoring_grants` to it, plus `replica identity full` on
+  `deliveries` only. See § 2 for why this is the most consequential thing in
+  the phase. `supabase/tests/pgtap/13_audience_realtime_phase7.sql` (14
+  assertions) pins both the publication membership and the anonymous read
+  surface — including that `profiles` is still _not_ publicly readable.
+- **`src/lib/publicApi.ts`** — a ~60-line PostgREST reader (plain `fetch`,
+  anon key, GET only) so the audience's first paint never waits on
+  `@supabase/supabase-js`. See § 2's warning before changing any import in
+  the audience feature.
+- **`src/lib/deliveryRow.ts`** — `toEngineDelivery`, extracted from the scorer
+  store so the scorer and the audience cannot drift into two different
+  mappings of the same row. Two views disagreeing about the same match is the
+  exact failure the append-only log exists to prevent.
+- **`src/engine/replay.ts`** grows one export, `applyLoggedDelivery` — the body
+  of `replay`'s loop. `replay` is now a fold over it. The audience needs it
+  because a ball arriving over Realtime must be folded onto the existing state
+  in O(1), not by re-replaying the innings (O(n) per ball is a visible hitch by
+  the death overs), and because it needs the `EngineEvent[]` a ball produced in
+  order to fire milestones. No behaviour change; the engine's 100 % coverage
+  gate still passes.
+- **Pure, unit-tested modules** in `src/features/audience/`:
+  `winProbability.ts` (docs/06 § 5's heuristic — invented constants, clamped so
+  a live match never reads as a certainty, and _always_ labelled an estimate;
+  the first innings is explicitly a "par comparison", not a win probability),
+  `moments.ts` (docs/06 § 4's nine reactions plus the anticipatory hat-trick
+  ball, which reuses the engine's `CREDIT_TABLE` rather than restating which
+  dismissals a bowler is credited with), `feed.ts` (newest-first feed with over
+  and innings dividers; substitutes real names into the engine's id-based
+  commentary rather than growing a second commentary generator), and
+  `chartData.ts` (all five chart series).
+- **`store.ts`** — load by slug → replay → lazily attach Realtime. Reconnect is
+  exponential backoff to 30 s, then the pill becomes "PAUSED — tap to resume".
+  A backgrounded tab closes its socket after 5 minutes and, on return,
+  refetches and shows the "you missed 18 balls" card. **A reconcile deliberately
+  fires no moments** — catching up on eighteen balls must not replay eighteen
+  celebrations; the card stands in for all of them.
+- **The view** (`src/features/audience/components/`): `AudienceHeader`
+  (sticky, `LivePill`, calm-mode toggle, share, TV link), `Hero` (aurora,
+  count-up, team tint, FINAL OVER and HAT-TRICK BALL states), `WinProbabilityBar`,
+  `ThisOverStrip`, `BattersPanel`, `AudienceTabs`, `LiveFeedTab` + `FeedRow` +
+  `VirtualFeed`, `ScorecardTab`, `SquadsTab`, `ChartsTab`, `MomentOverlay`,
+  `CatchUpCard`, `ReplayScrubber`, `TvLayout`.
+- **Charts** live in `src/components/viz/` (the location docs/01 names) as
+  hand-rolled SVG: `WormChart`, `ManhattanChart`, `RunRateChart`,
+  `PartnershipChart`, `WagonWheel`, over a shared `ChartFrame`/`scales`. **This
+  is a deliberate deviation from docs/01, which names Recharts** — see § 6.4.
+- **The replay scrubber** re-folds a prefix of the delivery log through the same
+  engine that produced the live state. There is no separate "historical" code
+  path that could disagree with the live one — which is the whole payoff of
+  CLAUDE.md rules 1 and 3.
+- **Bundle work.** The audience route's initial JS is measured at **174.69 kB
+  brotli against a 180 kB budget** — 0.86 kB _more_ than before Phase 7, for the
+  entire view. That is only true because of the Zod removal (§ 2) plus four
+  honest lazy boundaries: `ChartsTab`, `ScorecardTab`, `SquadsTab` and
+  `TvLayout` are none of them on screen at first paint, and `VirtualFeed`
+  (`@tanstack/virtual-core`, ~45 kB of source) loads behind a `Suspense` whose
+  fallback is the plain first 60 rows — so nothing a reader can see is ever
+  waiting on it. All five are excluded from the `size-limit` glob for exactly
+  that reason; `@supabase/supabase-js` was already excluded and remains so
+  because the route no longer needs it to render.
+
 ### 5.9 Current verification numbers (all re-confirmed at end of Phase 6)
 
-| Check                                                   | Result                                                                                                                       |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| pgTAP                                                   | **155/155** ("not ok": 0) across 12 files in `supabase/tests/pgtap/`                                                        |
-| Unit/component tests (`npm run test`)                   | **253/253** across 25 files, confirmed clean across 6+ repeated full-suite runs (no flakiness)                             |
-| `npm run typecheck` / `npm run lint`                    | clean                                                                                                                        |
-| `npm run build` + `npm run size`                        | audience route **173.83 kB** brotli, budget 180 kB                                                                          |
-| e2e (`npm run test:e2e`, desktop/Chromium project only) | **9 passed, 4 intentionally skipped** — with the local `channel`/`executablePath` override from § 5.1, not committed        |
-| e2e, the four mobile/WebKit viewports                   | **could not run in this sandbox** — no WebKit binary at all (see § 5.1); real CI installs it fresh and is not affected      |
+| Check                                                        | Result                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| pgTAP                                                        | **169/169** ("not ok": 0) across 13 files in `supabase/tests/pgtap/`                                                                                                                                                                                                  |
+| Unit/component tests (`npm run test`)                        | **331/331** across 30 files                                                                                                                                                                                                                                           |
+| `npm run typecheck` / `npm run lint`                         | clean                                                                                                                                                                                                                                                                 |
+| `npm run build` + `npm run size`                             | audience route **174.69 kB** brotli, budget 180 kB (was 173.83 kB pre-Phase-7 — see § 5.10)                                                                                                                                                                           |
+| e2e (`npm run test:e2e`, desktop/Chromium project only)      | **9 passed, 4 intentionally skipped** — with the local `channel`/`executablePath` override from § 5.1, not committed. The audience smoke test was rewritten this phase: it asserted the Phase 0 `<Placeholder>` text, which no longer exists.                         |
+| e2e, the four mobile/WebKit viewports                        | **could not run in this sandbox** — no WebKit binary at all (see § 5.1); real CI installs it fresh and is not affected                                                                                                                                                |
 | E2E flows 5/6/7 (`docs/09` § 9 — the Phase 6 acceptance bar) | **not run as actual Playwright specs** — see § 8.9. Verified instead at the unit/integration layer against a mocked RPC (`tests/lib/syncWorker.test.ts`), which is the closest this sandbox can get without a live, multi-context, network-throttled Supabase backend |
 
 ---
@@ -417,21 +494,24 @@ algorithm), `strike.ts`, `dismissals.ts`, `inningsEnd.ts`, `result.ts`,
 
 ### 6.1 Whole features, by phase
 
-| Thing                                                                        | Why                                                                            |
-| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| The audience view (`/live/:publicSlug`), charts, moments, replay scrubber   | Phase 7 — next up, see § 2                                                     |
-| Advanced Mode (shot/pitch overlay after each ball)                          | `docs/05` § 8 explicitly says off by default and not a Phase 5 roadmap bullet |
-| Full wicket-edit UI in `BallHistorySheet`                                   | `edit_delivery` supports it server-side; only run corrections are wired client-side — see § 6.2 |
-| The `⋯` overflow's rarer actions (retire batter, declare, abandon, penalty runs, drinks interval, correct the over count) | Not named Phase 5 roadmap bullets; `⋯` currently only reaches ball history/edit |
-| `/matches` (list: Live · Upcoming · Completed)                              | Not an explicit roadmap bullet yet; still a `<Placeholder>`                    |
-| `/matches/:matchId/settings`                                                 | Phase 4 per roadmap; still a stub                                              |
-| `/teams/:teamId/matches`, `/teams/:teamId/stats`, `/ranks/compare`, `/stats` | Phase 8 (stats/rankings) — stubs                                               |
-| Most of `/settings/*` (only `/settings/appearance` is real)                  | Phase 9                                                                        |
-| `/admin/*`                                                                   | Phase 9                                                                        |
-| Real file upload for team logos / player photos                              | URL fields only; no storage wiring yet                                       |
-| A true ball-by-ball merge diff (server sequence vs. this device's queue, side by side) | The merge screen resolves at the innings level instead — see § 6.2 and § 8.8 |
-| A "keep mine" merge-resolution action (discard the *other* scorer's already-committed ball) | Deliberately never offered — see § 8.8 |
-| E2E Playwright specs for roadmap flows 4 through 8 (token handoff, concurrent scoring, offline sync, revoked-grant review, post-match stats) | Only flows 1–3-adjacent smoke/viewport checks exist as actual Playwright specs; the rest are verified at the unit/component layer against mocked RPCs — see § 8.9 |
+| Thing                                                                                                                                        | Why                                                                                                                                                                                                                                                                                               |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stats rollups, rankings, `/ranks/compare`, `/stats`                                                                                          | Phase 8 — next up, see § 2                                                                                                                                                                                                                                                                        |
+| A dynamic per-match OG share image                                                                                                           | Deferred to Phase 9 **by `docs/14` § "Deliberate deviations"**, which overrides the Phase 7 roadmap bullet. v1 ships the static card in `public/og-default.png`; a per-match card needs server-side rendering, which an SPA on Cloudflare static assets cannot do without adding a Worker script. |
+| Pitch map chart                                                                                                                              | `docs/06` § 2 lists it as "if available"; no scorer flow captures pitch coords yet (Advanced Mode only records shot coords), so there would be nothing to draw                                                                                                                                    |
+| Web push on wicket / 50 / 100 / result, "follow a match"                                                                                     | `docs/06` § 6; needs the notifications work that `docs/13` B8 has open                                                                                                                                                                                                                            |
+| Advanced Mode (shot/pitch overlay after each ball)                                                                                           | `docs/05` § 8 explicitly says off by default and not a Phase 5 roadmap bullet                                                                                                                                                                                                                     |
+| Full wicket-edit UI in `BallHistorySheet`                                                                                                    | `edit_delivery` supports it server-side; only run corrections are wired client-side — see § 6.2                                                                                                                                                                                                   |
+| The `⋯` overflow's rarer actions (retire batter, declare, abandon, penalty runs, drinks interval, correct the over count)                    | Not named Phase 5 roadmap bullets; `⋯` currently only reaches ball history/edit                                                                                                                                                                                                                   |
+| `/matches` (list: Live · Upcoming · Completed)                                                                                               | Not an explicit roadmap bullet yet; still a `<Placeholder>`                                                                                                                                                                                                                                       |
+| `/matches/:matchId/settings`                                                                                                                 | Phase 4 per roadmap; still a stub                                                                                                                                                                                                                                                                 |
+| `/teams/:teamId/matches`, `/teams/:teamId/stats`, `/ranks/compare`, `/stats`                                                                 | Phase 8 (stats/rankings) — stubs                                                                                                                                                                                                                                                                  |
+| Most of `/settings/*` (only `/settings/appearance` is real)                                                                                  | Phase 9                                                                                                                                                                                                                                                                                           |
+| `/admin/*`                                                                                                                                   | Phase 9                                                                                                                                                                                                                                                                                           |
+| Real file upload for team logos / player photos                                                                                              | URL fields only; no storage wiring yet                                                                                                                                                                                                                                                            |
+| A true ball-by-ball merge diff (server sequence vs. this device's queue, side by side)                                                       | The merge screen resolves at the innings level instead — see § 6.2 and § 8.8                                                                                                                                                                                                                      |
+| A "keep mine" merge-resolution action (discard the _other_ scorer's already-committed ball)                                                  | Deliberately never offered — see § 8.8                                                                                                                                                                                                                                                            |
+| E2E Playwright specs for roadmap flows 4 through 8 (token handoff, concurrent scoring, offline sync, revoked-grant review, post-match stats) | Only flows 1–3-adjacent smoke/viewport checks exist as actual Playwright specs; the rest are verified at the unit/component layer against mocked RPCs — see § 8.9                                                                                                                                 |
 
 ### 6.2 Simplifications inside phases that did ship
 
@@ -457,6 +537,24 @@ algorithm), `strike.ts`, `dismissals.ts`, `inningsEnd.ts`, `result.ts`,
   up/down-style selection, not full drag-and-drop. **The Scoring Rights
   Map's graph view** (Phase 4) is a real but intentionally simple radial SVG
   layout. **Handoff QR** (Phase 4) redeems via URL, not an in-app scanner.
+- **The six/match-won particle effects are a fixed set of GPU-composited
+  `motion` divs, not `docs/06` § 8's "single pooled canvas, destroyed after 2s
+  idle".** Same visual job, no canvas to pool or tear down, no per-frame
+  main-thread work, and nothing retained once the overlay unmounts.
+- **`?tv=1` auto-cycles between the at-the-crease panel and the scorecard**,
+  not `docs/06` § 6's "scorecard and charts". Charts are a lazy chunk and a
+  kiosk has nobody to watch a spinner; cycling into a `Suspense` fallback every
+  12 seconds would look broken. Both cycled panels are already loaded.
+- **The wagon wheel is usually empty**, because only Advanced Mode captures
+  shot coordinates and it is off by default (`docs/05` § 8). It says so in
+  words rather than drawing an empty field, which reads as a bug.
+- **The audience view's "Edited" badge (`docs/06` § 7) is not built.**
+  `delivery_edits` is deliberately _not_ publicly readable (only match managers
+  and Super Admins can see the audit trail), so an anonymous spectator has no
+  way to learn that a ball was amended. Showing the badge would need either a
+  new public column on `deliveries` or a narrow security-definer RPC — a real
+  data-model decision, not a UI detail, so it was left alone rather than
+  half-built.
 - **`MergeScreen` resolves conflicts at the innings level**, not `docs/05`
   § 6.6's full "both sequences side by side, ball by ball" spec — see § 8.8.
 - **No "keep mine" merge-resolution action.** Only "keep both" (re-anchor and
@@ -469,7 +567,7 @@ algorithm), `strike.ts`, `dismissals.ts`, `inningsEnd.ts`, `result.ts`,
 ### 6.3 Human-only tasks — status (unchanged since Phase 0 unless noted)
 
 - [x] Deploy to Cloudflare Workers — live at `criclife.geminirachit.workers.dev`
-      (**still the Phase 0 build** — Phases 1–6 haven't been redeployed; see § 4)
+      (**still the Phase 0 build** — Phases 1–7 haven't been redeployed; see § 4)
 - [x] Push to GitHub as a public repo
 - [x] Open the is-a.dev PR — still pending merge
 - [x] Create both Supabase projects
@@ -491,6 +589,10 @@ algorithm), `strike.ts`, `dismissals.ts`, `inningsEnd.ts`, `result.ts`,
 - [ ] Score a real 20-over match on a real phone end to end — the literal
       Phase 5 "Done when" bar; unverifiable in this sandbox (no device, no
       live backend) and not yet done by a human either
+- [ ] **New (Phase 7):** measure the two halves of Phase 7's "Done when" bar —
+      scorer-tap → audience-render **under 1.5s p95 on 4G**, and **Lighthouse
+      mobile perf ≥ 90** on `/live/:publicSlug`. Both need a live Supabase
+      project and a real device; neither has been measured. See § 8.10.
 
 > The keepalive matters. Free Supabase projects pause after 7 idle days and need
 > a manual dashboard click plus a 60s cold start to wake.
@@ -502,25 +604,30 @@ schema, RLS, or router as literally specified couldn't actually support it,
 or where a genuine bug was found and fixed. All are called out with a
 comment at the top of the relevant file too.
 
-| Gap                                                                                                                             | Where it lives | Fix                                                                                                         |
-| ---------------------------------------------------------------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------- |
-| Shadow player claiming: no policy can move `profile_id` from null to a real user                                                | Phase 2        | `claim_player` RPC (security definer)                                                                       |
-| Creating a team is chicken-and-egg                                                                                              | Phase 3        | `create_team` RPC does both atomically                                                                      |
-| "Invite an existing user" needs to search locked-down `profiles`                                                                | Phase 3        | `search_profiles` RPC — narrow, authenticated-only                                                          |
-| "Archive team" is owner-only, stricter than the general update policy                                                          | Phase 3        | `archive_team` / `transfer_team_ownership` RPCs enforce the tighter rule directly                          |
-| Handoff QR has no backing table in `docs/02`                                                                                    | Phase 4        | New `handoff_tokens` table, RLS enabled with zero policies                                                  |
-| Scoring Rights Map needs grant holders' names, but `profiles` is locked down                                                    | Phase 4        | `get_match_grants` RPC                                                                                      |
-| `start_innings` doesn't persist openers — `innings` has no column for it pre-first-ball                                        | Phase 4        | Openers are the scorer pad's job, as the first `deliveries` row                                             |
-| The engine needs `crossed_before_dismissal` on a run-out replay, but neither `docs/02` nor the original migration defined it   | Phase 5        | Added the column                                                                                            |
-| Phase 4's `start_innings` super-over batting-team logic only worked by coincidence for innings 2, was wrong for innings ≥ 3     | Phase 5        | Real-cricket rule: the team that bowled first in innings 1 bats first in the super over, alternating on repeat ties |
-| `deliveries_innings_seq_idx` (not partial) would have made `edit_delivery`'s documented same-`seq` replacement fail in production | Phase 5        | Made the index partial: `where not is_deleted`                                                              |
-| The accidental-tap guard compared `clientDeliveryId` — a fresh UUID every call — against itself, so it could never match and was silently inert | Phase 5 | Rekeyed on the tap's content (runs/extras/wicket fields), not its generated id |
-| Wrapping the scorer route in the same `<RequireAuth>` as every other authed screen breaks `docs/05` § 3's "the shell always renders": `RequireAuth`'s `<Navigate>` on redirect swaps out `ScoringLayout` itself, not just its content | Phase 5 | `RequireScoringGrant` absorbs the "not signed in" case into its own render (still inside `ScoringLayout`); the scorer route is deliberately not behind `<RequireAuth>` |
-| Anything a static import in `router.tsx` pulls in rides the eager main chunk — `RequireScoringGrant` naively importing `supabase`/the store blew the bundle-size budget by 36 kB | Phase 5 | Both are dynamically imported inside the guard's effect instead |
-| `kickSync`'s fire-and-forget `drainMatch(matchId)` call had no `.catch()` — any rejection (including one only reachable in a test's torn-down mock context) became a genuinely unhandled promise rejection, not just test flakiness | Phase 6 | Wraps the call in `.catch()`, emitting an `error` event instead of letting it escape |
-| Three separate places left a Dexie row stuck at `'syncing'` forever whenever a drain attempt marked it `'syncing'` but then couldn't reach a terminal state for it: `drainInnings` when the batch RPC's `results` array is shorter than the batch (the documented "stops at first hard error" case), `handleBatchLevelError`'s `STALE_SEQ` branch, and `handleItemError`'s per-item conflict branch (`ILLEGAL_DISMISSAL`/`CONSECUTIVE_OVER`/`BOWLER_LIMIT`/`INNINGS_COMPLETE`) | Phase 6 | All three now explicitly reset the affected row(s) back to `'queued'` before returning/emitting, so the merge-resolution helpers (which query unresolved rows) can actually find and act on them |
-| `queuedForInnings` (status `queued`/`error`) was used everywhere "is there unresolved work for this innings" was actually the question — but it excludes `'syncing'`, so a ball enqueued while a drain of an earlier ball was already in flight would race, and the merge-resolution actions couldn't find a ball mid-drain | Phase 6 | Added `unresolvedForInnings` (adds `'syncing'`) as the distinct "is anything not yet settled" query; `enqueueDelivery`'s streak-anchor detection and both merge-resolution helpers now use it, while `drainInnings` itself correctly keeps using `queuedForInnings` ("what to send next") |
-| Bundle-size budget: wiring Dexie into the scorer store pulled `db-*.js` (97 kB) into the audience-route `size-limit` measurement, since a new lazy chunk isn't excluded until someone adds it to the config | Phase 6 | Added `!dist/assets/db-*.js` to the exclusion list, same pattern as the existing lazy-chunk exclusions |
+| Gap                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Where it lives | Fix                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shadow player claiming: no policy can move `profile_id` from null to a real user                                                                                                                                                                                                                                                                                                                                                                                               | Phase 2        | `claim_player` RPC (security definer)                                                                                                                                                                                                                                                     |
+| Creating a team is chicken-and-egg                                                                                                                                                                                                                                                                                                                                                                                                                                             | Phase 3        | `create_team` RPC does both atomically                                                                                                                                                                                                                                                    |
+| "Invite an existing user" needs to search locked-down `profiles`                                                                                                                                                                                                                                                                                                                                                                                                               | Phase 3        | `search_profiles` RPC — narrow, authenticated-only                                                                                                                                                                                                                                        |
+| "Archive team" is owner-only, stricter than the general update policy                                                                                                                                                                                                                                                                                                                                                                                                          | Phase 3        | `archive_team` / `transfer_team_ownership` RPCs enforce the tighter rule directly                                                                                                                                                                                                         |
+| Handoff QR has no backing table in `docs/02`                                                                                                                                                                                                                                                                                                                                                                                                                                   | Phase 4        | New `handoff_tokens` table, RLS enabled with zero policies                                                                                                                                                                                                                                |
+| Scoring Rights Map needs grant holders' names, but `profiles` is locked down                                                                                                                                                                                                                                                                                                                                                                                                   | Phase 4        | `get_match_grants` RPC                                                                                                                                                                                                                                                                    |
+| `start_innings` doesn't persist openers — `innings` has no column for it pre-first-ball                                                                                                                                                                                                                                                                                                                                                                                        | Phase 4        | Openers are the scorer pad's job, as the first `deliveries` row                                                                                                                                                                                                                           |
+| The engine needs `crossed_before_dismissal` on a run-out replay, but neither `docs/02` nor the original migration defined it                                                                                                                                                                                                                                                                                                                                                   | Phase 5        | Added the column                                                                                                                                                                                                                                                                          |
+| Phase 4's `start_innings` super-over batting-team logic only worked by coincidence for innings 2, was wrong for innings ≥ 3                                                                                                                                                                                                                                                                                                                                                    | Phase 5        | Real-cricket rule: the team that bowled first in innings 1 bats first in the super over, alternating on repeat ties                                                                                                                                                                       |
+| `deliveries_innings_seq_idx` (not partial) would have made `edit_delivery`'s documented same-`seq` replacement fail in production                                                                                                                                                                                                                                                                                                                                              | Phase 5        | Made the index partial: `where not is_deleted`                                                                                                                                                                                                                                            |
+| The accidental-tap guard compared `clientDeliveryId` — a fresh UUID every call — against itself, so it could never match and was silently inert                                                                                                                                                                                                                                                                                                                                | Phase 5        | Rekeyed on the tap's content (runs/extras/wicket fields), not its generated id                                                                                                                                                                                                            |
+| Wrapping the scorer route in the same `<RequireAuth>` as every other authed screen breaks `docs/05` § 3's "the shell always renders": `RequireAuth`'s `<Navigate>` on redirect swaps out `ScoringLayout` itself, not just its content                                                                                                                                                                                                                                          | Phase 5        | `RequireScoringGrant` absorbs the "not signed in" case into its own render (still inside `ScoringLayout`); the scorer route is deliberately not behind `<RequireAuth>`                                                                                                                    |
+| Anything a static import in `router.tsx` pulls in rides the eager main chunk — `RequireScoringGrant` naively importing `supabase`/the store blew the bundle-size budget by 36 kB                                                                                                                                                                                                                                                                                               | Phase 5        | Both are dynamically imported inside the guard's effect instead                                                                                                                                                                                                                           |
+| `kickSync`'s fire-and-forget `drainMatch(matchId)` call had no `.catch()` — any rejection (including one only reachable in a test's torn-down mock context) became a genuinely unhandled promise rejection, not just test flakiness                                                                                                                                                                                                                                            | Phase 6        | Wraps the call in `.catch()`, emitting an `error` event instead of letting it escape                                                                                                                                                                                                      |
+| Three separate places left a Dexie row stuck at `'syncing'` forever whenever a drain attempt marked it `'syncing'` but then couldn't reach a terminal state for it: `drainInnings` when the batch RPC's `results` array is shorter than the batch (the documented "stops at first hard error" case), `handleBatchLevelError`'s `STALE_SEQ` branch, and `handleItemError`'s per-item conflict branch (`ILLEGAL_DISMISSAL`/`CONSECUTIVE_OVER`/`BOWLER_LIMIT`/`INNINGS_COMPLETE`) | Phase 6        | All three now explicitly reset the affected row(s) back to `'queued'` before returning/emitting, so the merge-resolution helpers (which query unresolved rows) can actually find and act on them                                                                                          |
+| `queuedForInnings` (status `queued`/`error`) was used everywhere "is there unresolved work for this innings" was actually the question — but it excludes `'syncing'`, so a ball enqueued while a drain of an earlier ball was already in flight would race, and the merge-resolution actions couldn't find a ball mid-drain                                                                                                                                                    | Phase 6        | Added `unresolvedForInnings` (adds `'syncing'`) as the distinct "is anything not yet settled" query; `enqueueDelivery`'s streak-anchor detection and both merge-resolution helpers now use it, while `drainInnings` itself correctly keeps using `queuedForInnings` ("what to send next") |
+| **No table had ever been added to the `supabase_realtime` publication**, so every `postgres_changes` subscription since Phase 5 connected, reported `SUBSCRIBED`, and then received nothing. `docs/02` describes tables, not replication, and `docs/09` § 4 assumes Realtime "just works"                                                                                                                                                                                      | Phase 7        | `20260803180000_audience_realtime.sql` creates the publication when absent and adds `deliveries`/`innings`/`matches`/`scoring_grants`, plus `replica identity full` on `deliveries` so a filtered undo (an UPDATE) still matches. Pinned by 14 pgTAP assertions                           |
+| `docs/01` names **Recharts** for the charts tab. It is ~100 kB gzipped for what are, in four of five cases, a polyline or a row of rects — on the one route with a hard "LCP < 1.8s on 4G, initial JS < 180 kB" bar (`docs/06` § 8) — and CLAUDE.md rule 7 means every series would have been fed `var(--…)` through its props anyway                                                                                                                                          | Phase 7        | Hand-rolled SVG in `src/components/viz/`, zero new dependencies. `docs/01` itself already specifies hand-rolled SVG for the field/pitch maps. **Flagged, not silently swapped** — revisit if a chart turns up that genuinely needs a library                                              |
+| The Phase 7 roadmap bullet says "OG share image edge function"; `docs/14` § "Deliberate deviations" says the opposite — deferred to Phase 9, static image in v1                                                                                                                                                                                                                                                                                                                | Phase 7        | Followed `docs/14`, since that table exists precisely to override the other docs on cost grounds. Recorded in `docs/12` next to the bullet so the conflict is visible                                                                                                                     |
+| `src/lib/env.ts` imported Zod to validate five environment variables and was the app's **only** Zod importer, so ~260 kB of it rode the eager main chunk on every route — including the one with the 180 kB budget                                                                                                                                                                                                                                                             | Phase 7        | Hand-rolled validation with identical messages and identical exported shape, covered by `tests/lib/env.test.ts`. This alone paid for the whole audience view inside the budget                                                                                                            |
+| The Phase 0 e2e smoke test asserted the audience route by looking for the `<Placeholder>`'s "Live match" text, which Phase 7 deleted                                                                                                                                                                                                                                                                                                                                           | Phase 7        | Rewritten to assert the intent instead: the route renders one of its own states for an anonymous visitor and does **not** bounce to `/login`                                                                                                                                              |
+| Bundle-size budget: wiring Dexie into the scorer store pulled `db-*.js` (97 kB) into the audience-route `size-limit` measurement, since a new lazy chunk isn't excluded until someone adds it to the config                                                                                                                                                                                                                                                                    | Phase 6        | Added `!dist/assets/db-*.js` to the exclusion list, same pattern as the existing lazy-chunk exclusions                                                                                                                                                                                    |
 
 ---
 
@@ -528,25 +635,30 @@ comment at the top of the relevant file too.
 
 Reasoning is in `docs/13-OPEN-QUESTIONS.md` § A. Short version:
 
-| Decision                                              | Because                                                                                                              |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| PWA, not React Native                                 | No app stores wanted; one codebase serves phone, laptop and the TV at the ground                                     |
-| Supabase over Firebase                                | The scoring token is a row-level auth problem — that's what Postgres RLS is for. Rankings are aggregate SQL.         |
-| Cloudflare (Workers Static Assets) over Vercel        | Vercel Hobby is non-commercial and caps at 100 GB, then **pauses your site**. Terrible failure mode for live scores. |
-| Rules engine before UI                                | Only part where a mistake is expensive to undo, and it needs no design decisions                                     |
-| Undo by replay, not reversal                          | Reversal logic is where scoring apps get subtly wrong.                                                               |
-| Append-only delivery log                              | Disputed scores are the #1 social problem in amateur cricket                                                         |
-| "Scoring map" = a rights topology graph               | Best reading of the request; the wagon wheel is separately planned as Advanced Mode                                  |
-| Team admins can only _suggest_ roles                  | Owner said players own their roles                                                                                   |
-| Exponential decay ranking, 20-match half-life         | Recent form should matter; one lucky innings shouldn't top the board                                                 |
-| Local Postgres + pgTAP instead of `supabase start`    | This sandbox has no Docker; see § 5.1. Deliberate, disclosed deviation — not silently swapped for a mock.            |
-| Handoff QR encodes a URL, not a custom in-app scanner | Any phone camera already handles it; see § 6.2.                                                                      |
-| `record_delivery` re-validates a critical subset server-side, not the engine's full ruleset | Avoids maintaining two copies of a 37-case dismissal table in two languages; the TS engine is already 100%-covered. |
-| The active scorer tab lives in Zustand, not the route | `docs/05` § 7 requires tapping away and back to restore the pad instantly; a route change would remount it.          |
-| The scorer route skips `<RequireAuth>` in favour of `RequireScoringGrant` handling "signed out" itself | The alternative unmounts `ScoringLayout` on redirect, breaking the no-scroll guarantee for anyone without a session — see § 6.4. |
-| `record_deliveries_batch` checks staleness once per batch (against the first item only), not once per item | `seq` is one global Postgres sequence, and nothing else can write mid-transaction — a per-item check would be redundant work for the same answer. |
-| The sync worker is framework-free (pub/sub events, no direct Zustand import) | Keeps it independently testable and reusable; the store subscribes to it rather than the worker depending on the store. |
-| Merge-resolution "keep both"/"keep theirs" only, never "keep mine" | Discarding another scorer's server-confirmed ball is categorically more destructive than anything else in the app; undo-and-re-enter is the existing fallback — see § 8.8. |
+| Decision                                                                                                       | Because                                                                                                                                                                                      |
+| -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PWA, not React Native                                                                                          | No app stores wanted; one codebase serves phone, laptop and the TV at the ground                                                                                                             |
+| Supabase over Firebase                                                                                         | The scoring token is a row-level auth problem — that's what Postgres RLS is for. Rankings are aggregate SQL.                                                                                 |
+| Cloudflare (Workers Static Assets) over Vercel                                                                 | Vercel Hobby is non-commercial and caps at 100 GB, then **pauses your site**. Terrible failure mode for live scores.                                                                         |
+| Rules engine before UI                                                                                         | Only part where a mistake is expensive to undo, and it needs no design decisions                                                                                                             |
+| Undo by replay, not reversal                                                                                   | Reversal logic is where scoring apps get subtly wrong.                                                                                                                                       |
+| Append-only delivery log                                                                                       | Disputed scores are the #1 social problem in amateur cricket                                                                                                                                 |
+| "Scoring map" = a rights topology graph                                                                        | Best reading of the request; the wagon wheel is separately planned as Advanced Mode                                                                                                          |
+| Team admins can only _suggest_ roles                                                                           | Owner said players own their roles                                                                                                                                                           |
+| Exponential decay ranking, 20-match half-life                                                                  | Recent form should matter; one lucky innings shouldn't top the board                                                                                                                         |
+| Local Postgres + pgTAP instead of `supabase start`                                                             | This sandbox has no Docker; see § 5.1. Deliberate, disclosed deviation — not silently swapped for a mock.                                                                                    |
+| Handoff QR encodes a URL, not a custom in-app scanner                                                          | Any phone camera already handles it; see § 6.2.                                                                                                                                              |
+| `record_delivery` re-validates a critical subset server-side, not the engine's full ruleset                    | Avoids maintaining two copies of a 37-case dismissal table in two languages; the TS engine is already 100%-covered.                                                                          |
+| The active scorer tab lives in Zustand, not the route                                                          | `docs/05` § 7 requires tapping away and back to restore the pad instantly; a route change would remount it.                                                                                  |
+| The scorer route skips `<RequireAuth>` in favour of `RequireScoringGrant` handling "signed out" itself         | The alternative unmounts `ScoringLayout` on redirect, breaking the no-scroll guarantee for anyone without a session — see § 6.4.                                                             |
+| `record_deliveries_batch` checks staleness once per batch (against the first item only), not once per item     | `seq` is one global Postgres sequence, and nothing else can write mid-transaction — a per-item check would be redundant work for the same answer.                                            |
+| The sync worker is framework-free (pub/sub events, no direct Zustand import)                                   | Keeps it independently testable and reusable; the store subscribes to it rather than the worker depending on the store.                                                                      |
+| The audience route reads its snapshot over plain `fetch`, importing `supabase-js` only afterwards for Realtime | 216 kB raw / ~57 kB gzipped on the critical path of the one route with a hard performance budget, to do three GETs that PostgREST answers over ordinary HTTP. See § 2.                       |
+| Hand-rolled SVG charts instead of Recharts                                                                     | ~100 kB gzipped for four trivial plots, on a free-tier mobile PWA. Flagged as a docs deviation rather than made silently — see § 6.4.                                                        |
+| A Realtime reconcile fires no moments                                                                          | Catching up on eighteen missed balls must not replay eighteen celebrations; the "you missed 18 balls" card exists for exactly that.                                                          |
+| One ball in, one ball folded (`applyLoggedDelivery`) — never a full re-replay                                  | O(n) per ball is a visible hitch by the death overs. Corrections (undo, edit) still re-replay from ball one, because that is the only honest way to rebuild state the log no longer implies. |
+| Win probability is clamped to 2–98 % while a match is live                                                     | A bar pinned at 100 % with a ball still to be bowled is a claim the heuristic never made. 0 and 100 are reserved for genuinely decided states.                                               |
+| Merge-resolution "keep both"/"keep theirs" only, never "keep mine"                                             | Discarding another scorer's server-confirmed ball is categorically more destructive than anything else in the app; undo-and-re-enter is the existing fallback — see § 8.8.                   |
 
 Still open, none blocking: who can create teams (B2), tournaments in v1 (B4),
 a team ladder as well as player ranks (B6), web push in v1 (B8), importing
@@ -618,6 +730,37 @@ Genuine uncertainty, not false modesty:
 
 ---
 
+10. **Neither half of Phase 7's "Done when" bar has been measured, and one
+    half cannot be measured from code at all.** The roadmap asks for
+    scorer-tap → audience-render **under 1.5s p95 on 4G** and **Lighthouse
+    mobile ≥ 90** on `/live/:publicSlug`. What exists is a client written
+    against that target and a bundle measured at 174.69 kB of a 180 kB budget —
+    which is evidence about one input to Lighthouse, not a Lighthouse score.
+    The latency figure needs a real Supabase project, a real scorer's phone and
+    a real 4G connection. Do not report Phase 7 as meeting its own bar until
+    someone has run both.
+11. **The Realtime path has never actually carried a message.** The publication
+    migration is verified by pgTAP — the tables _are_ published, the replica
+    identity _is_ right — and the client's subscribe/reconnect/teardown logic is
+    unit-tested against a stubbed channel. Neither of those is the same as a row
+    event having travelled from Postgres to a browser. This is the single
+    largest untested surface in the phase, and it is untestable here for the
+    same reason everything else is (§ 5.1, § 8.6).
+12. **The win-probability constants are invented**, exactly like the rating
+    constants in `docs/07` § 2 (§ 8.1). They are chosen to behave sensibly at
+    the edges a spectator notices — 3 off 12 with 8 wickets should read as
+    near-certain, 60 off 12 should not — and the tests pin those edges rather
+    than the curve between them. The bar is always labelled "estimate" and
+    always explains its inputs, which is the honest mitigation; tuning needs a
+    season of real matches.
+13. **The moment durations and the whole celebration layer have only been seen
+    in jsdom.** `docs/06` § 4's timings (350ms four, 900ms six, 1.2s wicket) are
+    implemented as specified and the queue-drain logic is tested, but nobody has
+    watched a six celebrate on a phone. Whether the confetti reads as joyful or
+    as jank on a mid-range Android is genuinely unknown.
+
+---
+
 ## 9. File map
 
 ```
@@ -638,26 +781,32 @@ criclife/
 │  │  ├─ matches/         ← Phase 4; ReviewTrayPage.tsx is Phase 6
 │  │  ├─ scoring/         ← Phase 5 — store.ts, ScorerRoute.tsx, components/
 │  │  │                      (MergeScreen.tsx is Phase 6)
-│  │  ├─ home, settings, audience, ranks, admin, system
+│  │  ├─ audience/        ← Phase 7 — AudienceRoute, store, useAudienceView,
+│  │  │                      winProbability · moments · feed · chartData (pure),
+│  │  │                      components/ (hero, tabs, moments, TV, scrubber)
+│  │  ├─ home, settings, ranks, admin, system
 │  ├─ components/ui/      ← Button Card Skeleton CountUp Aurora LivePill
 │  │                         ThemeToggle Crest Avatar
+│  ├─ components/viz/     ← Phase 7 — hand-rolled SVG charts (see § 6.4)
 │  ├─ components/system/  ← UpdatePrompt.tsx (Phase 6)
 │  ├─ lib/                ← env supabase db(Dexie) theme haptics format cn sw
-│  │                         wakeLock (Phase 5), syncWorker (Phase 6)
+│  │                         wakeLock (Phase 5), syncWorker (Phase 6),
+│  │                         publicApi + deliveryRow (Phase 7)
 │  ├─ stores/             ← zustand uiStore
 │  ├─ styles/             ← tokens.css globals.css animations.css
 │  └─ types/database.ts   ← generated (see § 5.1 for how, since no Docker)
 ├─ supabase/
-│  ├─ migrations/         ← Phases 2–6, 12 files, chronologically ordered
+│  ├─ migrations/         ← Phases 2–7, 13 files, chronologically ordered
 │  ├─ seed.sql            ← local-dev only, never runs against cloud
 │  └─ tests/
 │     ├─ run-local.sh     ← the local Postgres+pgTAP harness — see § 5.1
 │     ├─ 00_local_auth_stub.sql  ← LOCAL ONLY, never push to real Supabase
-│     └─ pgtap/           ← 12 files, 155 assertions
+│     └─ pgtap/           ← 13 files, 169 assertions
 ├─ tests/
 │  ├─ engine/             ← Phase 1 — 100%-covered pure engine tests
 │  ├─ features/           ← auth, matches, players, scoring component tests
 │  │                         (MergeScreen.test.tsx, ReviewTrayPage.test.tsx — Phase 6)
+│  │                         audience/ — Phase 7, incl. AudienceRoute.test.tsx
 │  ├─ lib/                ← unit tests, incl. syncWorker.test.ts (Phase 6)
 │  ├─ e2e/                ← Playwright (no-scroll gate, viewport gate, smoke) —
 │  │                         no specs yet for roadmap flows 4–8, see § 8.9

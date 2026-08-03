@@ -9,7 +9,11 @@ export function FeedTab() {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
 
-  const items = deliveries.map((delivery, index) => ({ delivery, id: deliveryIds[index] ?? null, index }));
+  const items = deliveries.map((delivery, index) => ({
+    delivery,
+    id: deliveryIds[index] ?? null,
+    index,
+  }));
 
   return (
     <div className="flex-1 overflow-y-auto px-3 py-2">

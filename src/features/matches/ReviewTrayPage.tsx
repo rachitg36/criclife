@@ -5,7 +5,8 @@ import { db, type PendingDelivery } from '@/lib/db';
 function ballLabel(item: PendingDelivery): string {
   const { payload } = item;
   if (payload.wicket) return `WICKET (${payload.wicket.type})`;
-  if (payload.extraType === 'wide') return payload.runsOffBat + payload.extraRuns > 1 ? 'wide+' : 'wide';
+  if (payload.extraType === 'wide')
+    return payload.runsOffBat + payload.extraRuns > 1 ? 'wide+' : 'wide';
   if (payload.extraType === 'no_ball') return 'no-ball';
   if (payload.extraType === 'bye') return `${payload.extraRuns} bye`;
   if (payload.extraType === 'leg_bye') return `${payload.extraRuns} leg bye`;
@@ -45,8 +46,8 @@ export function ReviewTrayPage() {
     <div className="px-4 pt-4 pb-8">
       <h1 className="mb-1 text-[var(--text-heading-lg)] font-bold">Review tray</h1>
       <p className="mb-4 text-[var(--text-body-sm)] text-[var(--text-secondary)]">
-        Balls this device scored offline that the server rejected — usually because scoring
-        rights moved on before they synced.
+        Balls this device scored offline that the server rejected — usually because scoring rights
+        moved on before they synced.
       </p>
 
       {matchId && (
@@ -58,9 +59,7 @@ export function ReviewTrayPage() {
         </Link>
       )}
 
-      {rejected === undefined && (
-        <p className="text-[var(--text-secondary)]">Loading…</p>
-      )}
+      {rejected === undefined && <p className="text-[var(--text-secondary)]">Loading…</p>}
       {rejected && rejected.length === 0 && (
         <div className="panel p-5 text-center text-[var(--text-secondary)]">
           Nothing here — every ball this device scored has synced.

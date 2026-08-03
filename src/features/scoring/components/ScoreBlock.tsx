@@ -1,5 +1,11 @@
 import { CountUp } from '@/components/ui/CountUp';
-import { oversDisplay, currentRunRate, requiredRuns, ballsRemaining, requiredRunRate } from '@/engine';
+import {
+  oversDisplay,
+  currentRunRate,
+  requiredRuns,
+  ballsRemaining,
+  requiredRunRate,
+} from '@/engine';
 import { useScorerStore } from '../store';
 
 /** docs/05-SCORER-VIEW.md § 1 — the 92px score block, the hero of the screen. */

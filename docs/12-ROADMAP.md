@@ -166,22 +166,42 @@ offline syncing exactly once.
 ## Phase 7 — Audience view
 *Goal: the shareable, beautiful, live experience.*
 
-- [ ] `/live/:publicSlug`, public and unauthenticated
-- [ ] Hero with count-up score, aurora, team tinting
-- [ ] Realtime subscription, <1.5s p95 latency
-- [ ] Ball-by-ball feed with spring entry and over dividers
-- [ ] Scorecard tab
-- [ ] Charts tab: worm, manhattan, run-rate, partnerships, wagon wheel
-- [ ] Win probability bar
-- [ ] Moments: four, six, wicket, fifty, hundred, maiden, hat-trick ball,
+- [x] `/live/:publicSlug`, public and unauthenticated
+- [x] Hero with count-up score, aurora, team tinting
+- [x] Realtime subscription, <1.5s p95 latency — *client built and the
+      `supabase_realtime` publication now exists (it never did before, so every
+      `postgres_changes` subscription since Phase 5 was silently dead). The
+      **latency number itself is unmeasured**: it needs a real Supabase project
+      and a real network.*
+- [x] Ball-by-ball feed with spring entry and over dividers
+- [x] Scorecard tab
+- [x] Charts tab: worm, manhattan, run-rate, partnerships, wagon wheel —
+      *hand-rolled SVG, not Recharts. Deviation from [01](./01-TECH-STACK.md);
+      reasoning in `src/features/audience/chartData.ts` and HANDOFF.md § 6.4.*
+- [x] Win probability bar
+- [x] Moments: four, six, wicket, fifty, hundred, maiden, hat-trick ball,
       last over, match won
-- [ ] Calm mode + `prefers-reduced-motion` respected everywhere
-- [ ] Big-screen `?tv=1` mode
-- [ ] OG share image edge function
-- [ ] Completed-match **replay scrubber**
+- [x] Calm mode + `prefers-reduced-motion` respected everywhere
+- [x] Big-screen `?tv=1` mode
+- [ ] OG share image edge function — **deferred to Phase 9 by
+      [14](./14-FREE-TIER-PLAN.md) § "Deliberate deviations"**, which overrides
+      this bullet: v1 ships the static OG card that is already in
+      `public/og-default.png`. Per-match cards need server-side rendering,
+      which an SPA on static assets cannot do.
+- [x] Completed-match **replay scrubber**
+- [x] Squads tab — *in [06](./06-AUDIENCE-VIEW.md) § 2 and
+      [11](./11-SCREENS-AND-ROUTES.md) § 2 but missing from this list.*
 
 **Done when:** a spectator on 4G sees a six celebrate within 1.5s of the tap,
 and Lighthouse mobile perf on `/live/:publicSlug` is ≥ 90.
+
+> **Status 2026-08-03:** built and green — 331 unit/component tests, 169 pgTAP
+> assertions, and the audience route's initial JS measured at **174.69 kB
+> brotli against the 180 kB budget** (it was 173.83 kB *before* this phase;
+> dropping Zod from the eager chunk paid for the entire view). **Neither
+> half of the "Done when" bar has actually been measured**: both need a live
+> Supabase project and a real 4G device, and this sandbox has neither. See
+> HANDOFF.md § 8.
 
 ---
 

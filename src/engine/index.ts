@@ -19,7 +19,7 @@ export {
   requiredRuns,
 } from './projections';
 export type { PartnershipEntry } from './projections';
-export { createInitialMatchState, deliveryToInput, replay } from './replay';
+export { applyLoggedDelivery, createInitialMatchState, deliveryToInput, replay } from './replay';
 export type { InningsSeed } from './replay';
 export {
   DEFAULT_MAX_SUPER_OVER_ATTEMPTS,
