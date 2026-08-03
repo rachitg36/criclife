@@ -131,26 +131,46 @@ version, and no WebKit at all — see § 5.1's e2e note before assuming
 `npx playwright install --with-deps` will get you a working local run.)
 
 To redeploy after any change: `npm run deploy` (builds, then `wrangler
-deploy`). First time on a new machine, run `npx wrangler login` first
-(browser-based auth, opens dash.cloudflare.com). **Deploys are still manual**
-— no CD wiring yet (see § 7).
+deploy`). In this cloud environment `CLOUDFLARE_API_TOKEN` is already set, so
+wrangler authenticates with no browser step; on a personal machine without it,
+run `npx wrangler login` first. **Deploys are still manual** — no CD wiring yet
+(see § 7).
+
+**Create `.env.production.local` before deploying** — it is gitignored, so a
+fresh container will not have one, and without it a production build silently
+inherits `.env.local` (Vite ranks `.env.local` _above_ `.env.production`).
+That would bake `VITE_PUBLIC_URL=http://localhost:5173` into the bundle and
+every share link Phase 7 generates would point at localhost:
+
+```
+VITE_SUPABASE_URL=https://tljbwnbjwgdpmdhvttai.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_oyHY2XoW3H2sk3ckL8JyQA_FLYJD6OM
+VITE_APP_ENV=production
+VITE_PUBLIC_URL=https://criclife.geminirachit.workers.dev
+```
+
+After deploying, confirm the right version is live with
+`npx wrangler deployments list`. Fetching the deployed URL over HTTP does not
+work from this sandbox (the agent proxy returns 403 for it), so wrangler's own
+output is the only verification available here — nobody has _loaded_ the
+deployed Phase 7 build in a browser.
 
 ---
 
 ## 4. Live infrastructure reference
 
-| Thing                                                             | Value                                                                                                                                                                                                       |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Deployed app (Phase 0 build only — Phases 1–7 not yet redeployed) | `https://criclife.geminirachit.workers.dev`                                                                                                                                                                 |
-| GitHub repo                                                       | `https://github.com/rachitg36/criclife` (public)                                                                                                                                                            |
-| Working branch                                                    | `claude/continue-session-uhh3e8` — all of Phases 1–7 are here, not on `main`                                                                                                                                |
-| is-a.dev PR                                                       | [is-a-dev/register#45746](https://github.com/is-a-dev/register/pull/45746) — still pending merge                                                                                                            |
-| Supabase `criclife-prod`                                          | Project ID `tljbwnbjwgdpmdhvttai`, region `eu-central-1`. **No migrations pushed to it yet** — everything so far has run against a local Postgres, not this cloud project.                                  |
-| Supabase `criclife-prod` publishable key                          | `sb_publishable_oyHY2XoW3H2sk3ckL8JyQA_FLYJD6OM`                                                                                                                                                            |
-| Supabase `criclife-staging`                                       | Project ID `mkzgwwqkwcjcggxuavlr`                                                                                                                                                                           |
-| Supabase `criclife-staging` publishable key                       | `sb_publishable_AOlNgi5MClWG1zHMbtofaA_v-Zb0XsE`                                                                                                                                                            |
-| Phone auth                                                        | Disabled on both Supabase projects (confirmed, Phase 0)                                                                                                                                                     |
-| Google OAuth                                                      | Code-complete (`signInWithOAuth({provider:'google'})` wired in `LoginPage`) but **unverified end-to-end** — no Google Cloud OAuth client exists yet, and this sandbox has no route to real Supabase anyway. |
+| Thing                                                                     | Value                                                                                                                                                                                                       |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deployed app (**Phase 7 build**, deployed 2026-08-03, version `fd6a1bd0`) | `https://criclife.geminirachit.workers.dev`                                                                                                                                                                 |
+| GitHub repo                                                               | `https://github.com/rachitg36/criclife` (public)                                                                                                                                                            |
+| Working branch                                                            | `claude/continue-session-uhh3e8` — all of Phases 1–7 are here, not on `main`                                                                                                                                |
+| is-a.dev PR                                                               | [is-a-dev/register#45746](https://github.com/is-a-dev/register/pull/45746) — still pending merge                                                                                                            |
+| Supabase `criclife-prod`                                                  | Project ID `tljbwnbjwgdpmdhvttai`, region `eu-central-1`. **No migrations pushed to it yet** — everything so far has run against a local Postgres, not this cloud project.                                  |
+| Supabase `criclife-prod` publishable key                                  | `sb_publishable_oyHY2XoW3H2sk3ckL8JyQA_FLYJD6OM`                                                                                                                                                            |
+| Supabase `criclife-staging`                                               | Project ID `mkzgwwqkwcjcggxuavlr`                                                                                                                                                                           |
+| Supabase `criclife-staging` publishable key                               | `sb_publishable_AOlNgi5MClWG1zHMbtofaA_v-Zb0XsE`                                                                                                                                                            |
+| Phone auth                                                                | Disabled on both Supabase projects (confirmed, Phase 0)                                                                                                                                                     |
+| Google OAuth                                                              | Code-complete (`signInWithOAuth({provider:'google'})` wired in `LoginPage`) but **unverified end-to-end** — no Google Cloud OAuth client exists yet, and this sandbox has no route to real Supabase anyway. |
 
 These are publishable/anon-tier credentials, safe to keep in plain text here
 and in `.env.local`. **Never** put a Supabase personal access token, service
@@ -566,8 +586,11 @@ auth.uid())` via RPC, subscribes to `scoring_grants` over Realtime for
 
 ### 6.3 Human-only tasks — status (unchanged since Phase 0 unless noted)
 
-- [x] Deploy to Cloudflare Workers — live at `criclife.geminirachit.workers.dev`
-      (**still the Phase 0 build** — Phases 1–7 haven't been redeployed; see § 4)
+- [x] Deploy to Cloudflare Workers — live at `criclife.geminirachit.workers.dev`,
+      now carrying the **Phase 7 build**. **The deployed app talks to a Supabase
+      project with no schema in it** (see the next item), so every screen that
+      reads data will fail until the migrations are pushed. The audience view
+      degrades honestly — "Couldn't load this match" — rather than looking broken.
 - [x] Push to GitHub as a public repo
 - [x] Open the is-a.dev PR — still pending merge
 - [x] Create both Supabase projects

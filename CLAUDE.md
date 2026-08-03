@@ -5,10 +5,11 @@ stats and rankings. React 19 + Vite + Supabase. Runs entirely on free tiers.
 
 **Current state: Phases 0–7 complete** — engine, data layer, teams/players,
 match setup, the scorer pad, offline sync, and the public audience view. Next
-is Phase 8 (stats & rankings). The deployed build is still Phase 0's; nothing
-since has been redeployed, and no migration has ever run against a real
-Supabase project. Read `HANDOFF.md` for the full picture — including how to
-bring a fresh container back up, which is not just `npm install`.
+is Phase 8 (stats & rankings). The Phase 7 build is deployed, but **no
+migration has ever run against a real Supabase project**, so every screen that
+reads data fails in production. Read `HANDOFF.md` for the full picture —
+including how to bring a fresh container back up (not just `npm install`) and
+what `.env.production.local` is for before you redeploy.
 
 ## Commands
 
