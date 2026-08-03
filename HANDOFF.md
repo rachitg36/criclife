@@ -37,7 +37,7 @@ RLS has been evaluated for real rather than in pgTAP.
 |                                         |                                                          |
 | --------------------------------------- | -------------------------------------------------------- |
 | Sign-in                                 | **working** on staging, end to end                       |
-| `criclife-staging` schema               | applied and verified, but **13 of 15 migrations** — § 4  |
+| `criclife-staging` schema               | all 15 migrations, 56 functions — § 4                    |
 | `criclife-prod` schema                  | applied 2026-08-03 from the 15-file version — § 4        |
 | Deployed Worker                         | Phase 7 build, version `fd6a1bd0` — Phases 8/9 not on it |
 | Add-to-Home-Screen                      | verified on a real phone                                 |
@@ -62,9 +62,8 @@ app reported as the same wrong thing:
 
 **Now unblocked, and the next thing worth doing:** an actual match. Nobody has
 called a scoring RPC against real hosted Postgres. See § 8.6 and § 8.11 — that
-pair of unproven claims is what a single real match would knock down. **Apply the two
-missing migrations to staging first** (§ 4), or the scoring you do there will
-be wrong in exactly the two ways § 8.14 describes.
+pair of unproven claims is what a single real match would knock down. Both
+projects carry the full schema now, so there is nothing left in the way.
 
 **Open question nobody has answered yet — worth resolving before more building.**
 
@@ -75,7 +74,7 @@ switch. It is local to that machine and has never been pushed. It contains:
 
 - a complete, _different_ set of Phase 2 migrations on their own timestamp
   series (`20260802000100_…` … `20260802000700_rls.sql`) — this branch's are
-  `20260802120000_…` onward, 13 files covering Phases 2–7;
+  `20260802120000_…` onward, 15 files covering Phases 2–8;
 - a different pgTAP layout (`supabase/tests/database/01_rls_personas.test.sql`);
 - a different auth approach (`src/lib/env.schema.ts`, `src/lib/session.ts`);
 - edits to `src/app/router.tsx` and `tests/e2e/smoke.spec.ts` — the same two
@@ -132,7 +131,7 @@ npm install
 cp .env.example .env.local   # then fill it in — values are in § 4
 sudo service postgresql start
 sudo apt-get install -y postgresql-16-pgtap    # gone after every container restart
-bash supabase/tests/run-local.sh --seed --pgtap   # expect 169/169 "ok", 0 "not ok"
+bash supabase/tests/run-local.sh --seed --pgtap   # expect 221/221 "ok", 0 "not ok"
 npm run typecheck && npm run lint && npm run test  # expect 331/331
 npm run build && npm run size                      # expect 174.69 kB / 180 kB
 ```
@@ -210,7 +209,7 @@ Local Postgres + pgTAP (see § 5.1 for why this exists instead of `supabase star
 
 ```bash
 sudo service postgresql start
-bash supabase/tests/run-local.sh --seed --pgtap   # expect 169/169 "ok", 0 "not ok"
+bash supabase/tests/run-local.sh --seed --pgtap   # expect 221/221 "ok", 0 "not ok"
 ```
 
 (`npm run test:e2e` needs Playwright browsers, and this sandbox only has a
@@ -282,21 +281,19 @@ with a checklist query. Every count matched a clean local apply exactly:
 | `deliveries` replica identity  | `f` (FULL)   |
 | seed data leaked in            | 0            |
 
-`criclife-prod` was done later the same day, the same way, and reported
-successful — but from the **15**-migration file, i.e. after Phase 8 added
-`20260803190000_stats_and_rankings.sql` and
-`20260803191000_fix_json_null_wicket.sql`.
+`criclife-prod` was done later the same day, the same way, from the
+**15**-migration file. Staging was then brought level by applying the two
+Phase 8 files (`20260803190000_stats_and_rankings.sql` and
+`20260803191000_fix_json_null_wicket.sql`) on their own, and both projects
+now report **56 functions**. They are the same schema.
 
-**So staging is two migrations behind prod, and staging is what `.env.local`
-points at.** That is the wrong way round, and it matters more than it sounds:
-`20260803191000` is the fix for the two live scoring bugs (§ 8.14) — a
-staging `record_delivery` still flags every ball a wicket and still drops a
-run off every wide. Anyone testing a match against staging will see nonsense
-and reasonably blame the client.
+That second file matters more than a version number suggests: without it
+`record_delivery` flags every ball a wicket and drops a run off every wide
+(§ 8.14). For the roughly two hours staging was behind prod, anything scored
+against it would have been wrong in exactly those two ways — worth knowing if
+any test data from today looks strange.
 
-Fix it by pasting those two files, in that order, into the staging SQL
-Editor. **The expected counts change** once they are in — this table is the
-one to check either project against now:
+**This is the table to check either project against now:**
 
 | check                            | expect for all 15 migrations |
 | -------------------------------- | ---------------------------- |
@@ -321,25 +318,18 @@ exercise, because there the migration creates the publication itself. And
 the `on_auth_user_created` trigger on `auth.users` was created successfully,
 which the SQL Editor's role is privileged enough to do.
 
-**What this still does not prove.** The schema is structurally right; it has
-not been _exercised_. Nobody has signed up, so no RLS policy has ever been
-evaluated against a real JWT, and no Realtime message has travelled from
-Postgres to a browser. Structure and behaviour are different claims — see
-§ 8.6 and § 8.11.
+**What this still does not prove.** The schema is structurally right, and as
+of 2026-08-03 sign-up and sign-in have run through it for real — so the
+`auth.users` trigger, the `profiles` insert policy and the onboarding write
+have all been exercised against a real JWT. Everything past that has not. No
+scoring RPC has been called on either project, and no Realtime message has
+travelled from Postgres to a browser. Structure and behaviour are different
+claims — see § 8.6 and § 8.11.
 
-**Still to do:** bring staging up to 15 migrations (above), and confirm prod's
-counts with the checklist query — "the SQL ran successfully" and "the schema
-is what this repo says it is" are different claims, and only the second one
-lets the next person stop wondering. And
-`src/types/database.ts` is still the introspection-script output (§ 5.1) —
-now that a real project has the schema, regenerate it properly with
-`npx supabase gen types typescript --linked` and expect the hand-fixed
+**Still to do:** `src/types/database.ts` is still the introspection-script
+output (§ 5.1). Now that both projects have the schema, regenerate it properly
+with `npx supabase gen types typescript --linked` and expect the hand-fixed
 `returns table(...)` shapes to come back correct for the first time.
-
-**Confirmed on a real device, 2026-08-03:** the deployed Phase 7 build
-redirects to `/login` and the magic link fails — exactly what an empty
-database produces (no `profiles` table, so the signup trigger has nothing to
-write to). Not a bug in the app; the migration gap below is the whole cause.
 
 **Two routes to fix it.** Neither can be driven from this sandbox: outbound
 HTTP to `supabase.co` is blocked, no Supabase credentials are in the
@@ -754,10 +744,10 @@ screen is free.
 
 | Check                                                        | Result                                                                                                                                                                                                                                                                |
 | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| pgTAP                                                        | **169/169** ("not ok": 0) across 13 files in `supabase/tests/pgtap/`                                                                                                                                                                                                  |
-| Unit/component tests (`npm run test`)                        | **331/331** across 30 files                                                                                                                                                                                                                                           |
+| pgTAP                                                        | **221/221** ("not ok": 0) across 15 files in `supabase/tests/pgtap/`                                                                                                                                                                                                  |
+| Unit/component tests (`npm run test`)                        | **403/403** across 35 files                                                                                                                                                                                                                                           |
 | `npm run typecheck` / `npm run lint`                         | clean                                                                                                                                                                                                                                                                 |
-| `npm run build` + `npm run size`                             | audience route **174.69 kB** brotli, budget 180 kB (was 173.83 kB pre-Phase-7 — see § 5.10)                                                                                                                                                                           |
+| `npm run build` + `npm run size`                             | audience route **177.05 kB** brotli, budget 180 kB — see § 5.13 for how little room that is                                                                                                                                                                           |
 | e2e (`npm run test:e2e`, desktop/Chromium project only)      | **9 passed, 4 intentionally skipped** — with the local `channel`/`executablePath` override from § 5.1, not committed. The audience smoke test was rewritten this phase: it asserted the Phase 0 `<Placeholder>` text, which no longer exists.                         |
 | e2e, the four mobile/WebKit viewports                        | **could not run in this sandbox** — no WebKit binary at all (see § 5.1); real CI installs it fresh and is not affected                                                                                                                                                |
 | E2E flows 5/6/7 (`docs/09` § 9 — the Phase 6 acceptance bar) | **not run as actual Playwright specs** — see § 8.9. Verified instead at the unit/integration layer against a mocked RPC (`tests/lib/syncWorker.test.ts`), which is the closest this sandbox can get without a live, multi-context, network-throttled Supabase backend |
@@ -853,14 +843,9 @@ screen is free.
 - [x] Add `SUPABASE_URL` / `SUPABASE_ANON_KEY` as GitHub Actions secrets
 - [x] Run the keepalive workflow once manually — succeeded
 - [x] CI green on all four jobs (Phase 0 baseline)
-- [x] Push `supabase/migrations/*.sql` to **`criclife-staging`** — done
-      2026-08-03, structurally verified (see § 4). **13 of 15 files** — the
-      two Phase 8 migrations still need applying there.
-- [x] The same for **`criclife-prod`** — done 2026-08-03 from the 15-file
-      version, reported successful; counts not yet read back (see § 4)
-- [ ] Apply `20260803190000_stats_and_rankings.sql` and
-      `20260803191000_fix_json_null_wicket.sql` to **staging**, which is
-      behind prod and is what local dev points at (see § 4)
+- [x] Push `supabase/migrations/*.sql` to **both** Supabase projects — done
+      2026-08-03, all 15 files, both verified at 56 functions (see § 4)
+- [x] Sign in end to end against a real project — done 2026-08-03 (see § 2)
 - [ ] **Still unproven:** no RLS policy has been evaluated against a real JWT
       and no scoring RPC has been called on either project. `record_delivery`,
       `record_deliveries_batch` and friends are the endpoints a real match
@@ -1069,10 +1054,19 @@ Genuine uncertainty, not false modesty:
     **Why nothing caught them:** pgTAP asserted the RPC returned a row, not
     what was in it, and the client never re-read what it wrote — the scorer
     projects from its own local log through the engine, so the pad looked
-    perfect while the database filled with nonsense. The lesson generalises:
-    a write path that is never read back is not tested, however green the
-    suite is. Any future RPC that stores a projection of engine state needs a
-    test that reads the row and compares it to the engine's own answer.
+    perfect while the database filled with nonsense. Worse, and the part worth
+    carrying forward: **every existing test sent a payload the client never
+    sends.** They omit `wicket` entirely, so no test could have reached the
+    `'null'::jsonb` case however many of them there were.
+
+    **The guard now exists:** `supabase/tests/pgtap/15_delivery_readback.sql`,
+    22 assertions, which sends exactly what `src/features/scoring/store.ts`
+    sends — `"wicket": null` and all — and asserts on the stored columns and
+    the innings totals they feed. Verified the only way a regression test is
+    worth anything: re-applied the migrations with the fix file skipped, and
+    **14 of the 22 fail**. If you add an RPC that stores a projection of
+    engine state, add its read-back assertions here. A write path nothing
+    reads back is not tested, however green the suite is.
 
 ---
 
@@ -1111,12 +1105,12 @@ criclife/
 │  ├─ styles/             ← tokens.css globals.css animations.css
 │  └─ types/database.ts   ← generated (see § 5.1 for how, since no Docker)
 ├─ supabase/
-│  ├─ migrations/         ← Phases 2–7, 13 files, chronologically ordered
+│  ├─ migrations/         ← Phases 2–8, 15 files, chronologically ordered
 │  ├─ seed.sql            ← local-dev only, never runs against cloud
 │  └─ tests/
 │     ├─ run-local.sh     ← the local Postgres+pgTAP harness — see § 5.1
 │     ├─ 00_local_auth_stub.sql  ← LOCAL ONLY, never push to real Supabase
-│     └─ pgtap/           ← 13 files, 169 assertions
+│     └─ pgtap/           ← 15 files, 221 assertions
 ├─ tests/
 │  ├─ engine/             ← Phase 1 — 100%-covered pure engine tests
 │  ├─ features/           ← auth, matches, players, scoring component tests
