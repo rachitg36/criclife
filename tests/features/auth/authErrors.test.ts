@@ -38,6 +38,20 @@ describe('humanAuthError', () => {
     );
   });
 
+  it('never shows an empty error body as the explanation', () => {
+    // Regression guard: the login screen once displayed a literal red "{}"
+    // as the entire reason sign-in had failed.
+    for (const message of ['{}', '', '   ', '[]', 'null', 'undefined', '[object Object]']) {
+      const out = humanAuthError({ message, status: 500 });
+      expect(out).toMatch(/failing on the server/);
+      expect(out).toContain('error 500');
+    }
+  });
+
+  it('omits the code when there is no status to report', () => {
+    expect(humanAuthError({ message: '{}' })).toMatch(/failing on the server\. This is not/);
+  });
+
   it('does NOT treat a missing status as a network failure', () => {
     // Regression guard. An earlier version of this helper did, and swallowed
     // real server messages whose mock simply had no status on it.
