@@ -98,7 +98,8 @@ block stays visible, still no scroll):
 ```
 
 - `BOWLED` / `LBW` → **committed immediately**. 2 taps total.
-- `CAUGHT` → a fielder grid appears (11 avatars of the fielding XI, 3 columns).
+- `CAUGHT` → a fielder grid appears (one avatar per fielder — `playersPerSide`,
+  not necessarily 11 — in 3 columns).
   Tap the fielder → committed. 3 taps.
 - `RUN OUT` → "Who's out?" two huge buttons (striker / non-striker), then the
   fielder grid, then "Did they cross?" if runs > 0. Up to 4 taps — acceptable,
@@ -112,7 +113,7 @@ remaining batting order as a tappable list, next-in-order pre-highlighted at the
 top. Tap a name → back to the pad. A `Change order` link reveals the full squad.
 
 ### New bowler — 1 tap
-At the end of an over, the pad is replaced by the bowler grid: the fielding XI
+At the end of an over, the pad is replaced by the bowler grid: the fielding side
 as tiles showing `O-M-R-W`, with:
 - the previous over's bowler greyed out (cannot bowl consecutively),
 - anyone at `maxOversPerBowler` greyed out with `4/4`,

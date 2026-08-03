@@ -129,7 +129,7 @@ oppositionFactor = clamp(0.85 + oppTeamRating / 2000, 0.85, 1.25)
 ratingPoints = matchRating × oppositionFactor
 ```
 
-`oppTeamRating` = mean overall rating of the opposition's playing XI at the time
+`oppTeamRating` = mean overall rating of the opposition's playing squad at the time
 of the match, snapshotted so it never changes retroactively.
 
 ### 2.2 Career rating — exponentially weighted

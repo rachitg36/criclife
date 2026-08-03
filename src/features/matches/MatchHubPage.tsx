@@ -61,7 +61,7 @@ export function MatchHubPage() {
       {match.status === 'scheduled' && isManager && (
         <Link to={`/matches/${match.id}/setup`}>
           <Button variant="primary" fullWidth hapticKind="select">
-            Set up match — toss & XI
+            Set up match — toss & teams
           </Button>
         </Link>
       )}

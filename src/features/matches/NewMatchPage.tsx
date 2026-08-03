@@ -266,10 +266,15 @@ function FormatStep({
         max={8}
         onChange={(v) => onConfig({ ...config, ballsPerOver: v })}
       />
+      {/* Two is the real floor: a striker and a non-striker. Anything above
+          that is somebody's actual game — gully cricket is played 3-a-side and
+          up. This used to start at 5, which quietly refused matches people
+          play every weekend. Everything downstream reads `playersPerSide`
+          (all-out is `playersPerSide - 1`), so nothing here assumes eleven. */}
       <NumberField
         label="Players per side"
         value={config.playersPerSide}
-        min={5}
+        min={2}
         max={15}
         onChange={(v) => onConfig({ ...config, playersPerSide: v })}
       />

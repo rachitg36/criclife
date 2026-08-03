@@ -11,7 +11,7 @@ import type { MatchConfig } from '@/engine/types';
 
 /**
  * docs/11-SCREENS-AND-ROUTES.md § 5 — `/matches/:matchId/setup`. Toss, then
- * XI selection (captain + keeper) for both teams. Picking openers and the
+ * squad selection (captain + keeper) for both teams. Picking openers and the
  * opening bowler stays with Phase 5's scorer pad — the `innings` table has
  * no column to hold that pre-first-ball (see the migration's own note).
  */
@@ -84,8 +84,8 @@ export function MatchSetupPage() {
       </section>
 
       <section className="mb-6">
-        <h2 className="label-overline mb-2">Team A — playing XI</h2>
-        <XiEditor
+        <h2 className="label-overline mb-2">Team A — playing squad</h2>
+        <SquadEditor
           matchId={matchId!}
           teamId={match.team_a_id}
           squadSize={config.playersPerSide}
@@ -94,8 +94,8 @@ export function MatchSetupPage() {
       </section>
 
       <section className="mb-6">
-        <h2 className="label-overline mb-2">Team B — playing XI</h2>
-        <XiEditor
+        <h2 className="label-overline mb-2">Team B — playing squad</h2>
+        <SquadEditor
           matchId={matchId!}
           teamId={match.team_b_id}
           squadSize={config.playersPerSide}
@@ -174,7 +174,7 @@ function TossForm({
   );
 }
 
-function XiEditor({
+function SquadEditor({
   matchId,
   teamId,
   squadSize,
@@ -232,6 +232,18 @@ function XiEditor({
       <p className="text-[var(--text-body-sm)] text-[var(--text-secondary)]">
         {selected.length} / {squadSize} selected
       </p>
+      {/* `squadSize` is the match's own `playersPerSide`, not eleven — a side
+          can be any size from two up. Picking fewer than that is allowed,
+          because sides do turn up short, but it is worth saying out loud: the
+          engine ends an innings at `playersPerSide - 1` wickets, so a side
+          picked short cannot actually be bowled out. */}
+      {selected.length > 0 && selected.length < squadSize && (
+        <p className="text-[var(--text-body-sm)] text-[var(--warning)]">
+          This match is set up for {squadSize} a side. With {selected.length}, the innings will
+          still need {squadSize - 1} wickets to end — change players per side if the whole match is
+          smaller.
+        </p>
+      )}
       <ul className="space-y-2">
         {(squad ?? []).map((row) => {
           const isSelected = selected.includes(row.player_id);
@@ -276,7 +288,7 @@ function XiEditor({
         </p>
       )}
       <Button variant="secondary" disabled={!canSave || busy} onClick={submit}>
-        {busy ? 'Saving…' : saved ? 'Saved' : 'Save XI'}
+        {busy ? 'Saving…' : saved ? 'Saved' : 'Save team'}
       </Button>
     </div>
   );

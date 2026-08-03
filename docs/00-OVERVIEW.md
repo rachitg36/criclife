@@ -52,7 +52,8 @@ also a Scorer.
 - Create a match: two teams, venue, date/time, **overs per innings (configurable)**,
   and a full config block (see § Match Configuration in the rules doc).
 - Toss: winner, decision (bat/bowl).
-- Playing XI selection per team (or playing-any-N — squad size is configurable).
+- Playing squad selection per team. Size is `playersPerSide` from the match
+  config — 11 by default, valid from 2 upwards. Nothing assumes eleven.
 - Match states: `scheduled → toss → live → innings_break → live → completed`
   plus `abandoned` and `super_over`.
 
@@ -126,7 +127,7 @@ also a Scorer.
 | Audience score latency after scorer tap | < 1.5s p95 |
 | Scoring works with no network | Yes, unlimited duration |
 | Lighthouse mobile performance | ≥ 90 |
-| Time to create a team with 11 players | < 3 minutes |
+| Time to create a team with a full side | < 3 minutes |
 
 ---
 

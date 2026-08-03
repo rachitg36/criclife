@@ -54,8 +54,8 @@ $$;
 | Role | Can |
 |---|---|
 | `owner` | Everything for that team, including deleting it and transferring ownership |
-| `admin` | Add/remove players, create matches for the team, pick the XI, issue scoring grants for the team's matches |
-| `captain` | Pick the XI, set batting order, issue scoring grants |
+| `admin` | Add/remove players, create matches for the team, pick the squad, issue scoring grants for the team's matches |
+| `captain` | Pick the squad, set batting order, issue scoring grants |
 | `vice_captain` | Same as captain |
 | `player` | View team, view own stats, edit **own** player profile |
 
@@ -235,7 +235,7 @@ Legend: ✅ allowed · ⚠️ allowed with conditions · ❌ denied
 | Create match | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Edit match config (pre-toss) | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Edit match config (live) | ✅ | ⚠️ audit-logged | ❌ | ❌ | ❌ | ❌ |
-| Select playing XI | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Select playing squad | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Record toss | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Record a delivery** | ✅ | ❌ | ❌ | **✅** | ❌ | ❌ |
 | Undo last delivery | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |

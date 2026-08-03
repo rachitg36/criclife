@@ -6,6 +6,29 @@ before the previous one's acceptance criteria pass.
 The ordering is deliberate: **the rules engine is built before any UI**, because
 everything else is a view over it, and a wrong engine poisons every screen.
 
+## Status — 2026-08-03
+
+| Phase                              | State                                                        |
+| ---------------------------------- | ------------------------------------------------------------ |
+| 0 Foundations                      | ✅ done — 3 open items are deferred by design, see the phase |
+| 1 Rules engine                     | ✅ done                                                      |
+| 2 Data layer & auth                | ✅ done — sign-in now works against a real project           |
+| 3 Teams, players & roles           | ✅ done                                                      |
+| 4 Match setup & scoring token      | ✅ done                                                      |
+| 5 Scorer view                      | ✅ built; **never run a full match on a phone**              |
+| 6 Offline & concurrency            | ✅ built; never run on a real network                        |
+| 7 Audience view                    | ✅ built; neither half of its "Done when" bar measured       |
+| 8 Stats & ranks                    | ✅ built; end-to-end finalisation never run                  |
+| 9 Admin, polish & launch           | 🚧 roughly half                                              |
+
+A tick here means the code exists and its tests pass. It does **not** mean the
+phase's "Done when" bar has been met — several of those need a phone, a real
+network, or a browser this project has never had. Each phase says which.
+
+The distinction earned itself on 2026-08-03: Phases 5 and 6 were ticked and
+green, and the first time the pad opened against real hosted Postgres it hit
+three faults none of the tests could see. See HANDOFF.md § 6.4.
+
 ---
 
 ## Phase 0 — Foundations
@@ -55,15 +78,15 @@ workflow has run at least once.
 ## Phase 1 — The rules engine
 *Goal: cricket, correctly, with no UI at all.*
 
-- [ ] `src/engine/types.ts` — MatchState, InningsState, DeliveryInput
-- [ ] `config.ts` — defaults + the 6 built-in rules profiles
-- [ ] `applyDelivery.ts` — the 13-step algorithm from [04](./04-RULES-ENGINE.md) §4
-- [ ] `strike.ts`, `dismissals.ts`, `inningsEnd.ts`, `result.ts`
-- [ ] `replay.ts` — fold a `Delivery[]` into `MatchState`
-- [ ] `scorecard.ts`, `projections.ts`, `commentary.ts`
-- [ ] Unit tests for every row of the §5.2 legality table
-- [ ] Property tests (fast-check) for the invariants in §12
-- [ ] **Three full real-match fixtures replayed to a byte-identical scorecard**
+- [x] `src/engine/types.ts` — MatchState, InningsState, DeliveryInput
+- [x] `config.ts` — defaults + the 6 built-in rules profiles
+- [x] `applyDelivery.ts` — the 13-step algorithm from [04](./04-RULES-ENGINE.md) §4
+- [x] `strike.ts`, `dismissals.ts`, `inningsEnd.ts`, `result.ts`
+- [x] `replay.ts` — fold a `Delivery[]` into `MatchState`
+- [x] `scorecard.ts`, `projections.ts`, `commentary.ts`
+- [x] Unit tests for every row of the §5.2 legality table
+- [x] Property tests (fast-check) for the invariants in §12
+- [x] **Three full real-match fixtures replayed to a byte-identical scorecard**
 
 **Done when:** 100% branch coverage on `src/engine`, all three fixtures pass,
 and `applyDelivery` runs in under 1ms.
@@ -76,32 +99,43 @@ and `applyDelivery` runs in under 1ms.
 ## Phase 2 — Data layer & auth
 *Goal: real users, real teams, real players, correct permissions.*
 
-- [ ] All migrations from [02](./02-DATA-MODEL.md): tables, enums, indexes, triggers
-- [ ] `is_super_admin()`, `is_team_manager()`, `can_manage_match()`, `can_score()`
-- [ ] RLS policies on every table, deny-by-default
-- [ ] pgTAP suite: every policy tested as anon / player / team admin / grant
+- [x] All migrations from [02](./02-DATA-MODEL.md): tables, enums, indexes, triggers
+- [x] `is_super_admin()`, `is_team_manager()`, `can_manage_match()`, `can_score()`
+- [x] RLS policies on every table, deny-by-default
+- [x] pgTAP suite: every policy tested as anon / player / team admin / grant
       holder / super admin
-- [ ] Seed script: 4 teams, 44 players, 1 super admin
-- [ ] Supabase Auth: magic link (Resend custom SMTP) + Google. Phone OTP disabled.
-- [ ] `/login`, `/auth/callback`, `/onboarding`
-- [ ] TanStack Query setup, typed Supabase client (generated types)
+- [x] Seed script: 4 teams, 44 players, 1 super admin
+- [~] Supabase Auth: magic link + Google. Phone OTP disabled. **Magic link works
+      end to end as of 2026-08-03** — but on Supabase's built-in sender, not
+      Resend: custom SMTP was returning 500 and is switched off, so mail only
+      reaches addresses on the Supabase org. Google is code-complete and never
+      exercised; no Google Cloud OAuth client exists.
+- [x] `/login`, `/auth/callback`, `/onboarding`
+- [~] TanStack Query setup, typed Supabase client — types are the output of an
+      introspection script, not `supabase gen types`, which needs Docker. Both
+      projects now have the schema, so this can finally be done properly.
 
 **Done when:** the pgTAP suite is green and a non-admin cannot write a delivery
 by any route.
+
+> **Status 2026-08-03:** 221 pgTAP assertions green, and RLS has now been
+> evaluated against a real JWT for the first time — somebody has signed up,
+> which exercised the `auth.users` trigger and the `profiles` insert policy on
+> hosted Postgres rather than the local stub.
 
 ---
 
 ## Phase 3 — Teams, players & self-managed roles
 *Goal: the first genuinely useful feature.*
 
-- [ ] `/teams`, `/teams/new`, `/teams/:teamId`, `/teams/:teamId/squad`
-- [ ] Add player: invite existing user **and** create shadow player + claim code
-- [ ] `/players/:playerId` profile
-- [ ] **`/players/:playerId/edit` — self-service role management** (primary/secondary
+- [x] `/teams`, `/teams/new`, `/teams/:teamId`, `/teams/:teamId/squad`
+- [x] Add player: invite existing user **and** create shadow player + claim code
+- [x] `/players/:playerId` profile
+- [x] **`/players/:playerId/edit` — self-service role management** (primary/secondary
       role, batting hand, bowling style)
-- [ ] Role suggestion flow: admin suggests → player accepts/rejects
-- [ ] `role_locked_by_admin` respected in the UI
-- [ ] Team settings: colours, logo, member roles, ownership transfer
+- [x] Role suggestion flow: admin suggests → player accepts/rejects
+- [x] `role_locked_by_admin` respected in the UI
+- [x] Team settings: colours, logo, member roles, ownership transfer
 
 **Done when:** E2E flows 2 and 3 pass — a player can change their own role, and
 a team admin provably cannot.
@@ -111,15 +145,15 @@ a team admin provably cannot.
 ## Phase 4 — Match setup & the scoring token
 *Goal: the permission model, visible and working.*
 
-- [ ] `/matches/new` — the 4-step wizard, **overs per innings configurable**
-- [ ] Rules profile picker + custom config
-- [ ] `/matches/:matchId/setup` — toss, XI selection, batting order, captain, keeper
-- [ ] `scoring_grants` RPCs: issue, revoke, transfer, handoff token
-- [ ] **`/matches/:matchId/rights` — the Scoring Rights Map**, animated graph +
+- [x] `/matches/new` — the 4-step wizard, **overs per innings configurable**
+- [x] Rules profile picker + custom config
+- [x] `/matches/:matchId/setup` — toss, squad selection, batting order, captain, keeper
+- [x] `scoring_grants` RPCs: issue, revoke, transfer, handoff token
+- [x] **`/matches/:matchId/rights` — the Scoring Rights Map**, animated graph +
       accessible list view
-- [ ] QR handoff (generate + scan)
-- [ ] Realtime grant propagation: revoke locks an open pad within 2s
-- [ ] Notifications on grant issued / revoked
+- [x] QR handoff (generate + scan)
+- [x] Realtime grant propagation: revoke locks an open pad within 2s
+- [x] Notifications on grant issued / revoked
 
 **Done when:** E2E flow 4 passes — Scorer A passes the token to Scorer B, A's
 pad locks and B's unlocks, both seeing the map update live.
@@ -129,33 +163,42 @@ pad locks and B's unlocks, both seeing the map update live.
 ## Phase 5 — The scorer view
 *Goal: score a full match on a phone without scrolling.*
 
-- [ ] `ScoringLayout` — 100dvh, `overflow: hidden`, safe areas
-- [ ] Score block, batters row, bowler row, over-dot strip
-- [ ] Run pad 0–6 + `7+`, modifier row, action row
-- [ ] Wicket sheet with the free-hit legality gating
-- [ ] Batter picker, bowler picker (limits + consecutive-over exclusion)
-- [ ] Undo, edit-a-previous-ball, ball history
-- [ ] `record_delivery` RPC + optimistic store updates
-- [ ] Haptics, wake lock, handedness mirroring, accidental-tap guard
-- [ ] Innings break and match-complete flows, super over
-- [ ] Scorer sub-tabs: Scorecard, Map, Feed, Settings
+- [x] `ScoringLayout` — 100dvh, `overflow: hidden`, safe areas
+- [x] Score block, batters row, bowler row, over-dot strip
+- [x] Run pad 0–6 + `7+`, modifier row, action row
+- [x] Wicket sheet with the free-hit legality gating
+- [x] Batter picker, bowler picker (limits + consecutive-over exclusion)
+- [x] Undo, edit-a-previous-ball, ball history
+- [x] `record_delivery` RPC + optimistic store updates — *shipped with two bugs
+      that survived until Phase 8 read the rows back. HANDOFF.md § 8.14.*
+- [x] Haptics, wake lock, handedness mirroring, accidental-tap guard
+- [x] Innings break and match-complete flows, super over
+- [x] Scorer sub-tabs: Scorecard, Map, Feed, Settings
 
 **Done when:** the scroll assertion passes at all four viewports, E2E flow 1
 passes, and a real 20-over match can be scored end to end on a phone.
+
+> **Status 2026-08-03:** built. The scroll assertion passes at all four
+> viewports **in Chromium only** — the pad has never rendered in WebKit, let
+> alone on a phone, and `dvh` plus safe-area handling is exactly where WebKit
+> differs. The 20-over match has not happened either. First contact with a
+> real project found three things this list could not: no pad state for an
+> unstarted innings, swallowed query errors, and a shared Realtime topic that
+> crashed the route.
 
 ---
 
 ## Phase 6 — Offline & concurrency
 *Goal: it works at a ground with no signal and two scorers.*
 
-- [ ] Dexie schema + write-first-locally delivery path
-- [ ] Sync worker with backoff, batching, idempotency
-- [ ] Sync pill UI: synced / pending / offline / error
-- [ ] `STALE_SEQ` conflict handling + the merge screen
-- [ ] Soft locks broadcast between co-scorers
-- [ ] Review Tray for balls rejected because a grant was revoked while offline
-- [ ] Service worker update blocked while scoring or while the queue is non-empty
-- [ ] Workbox caching strategies
+- [x] Dexie schema + write-first-locally delivery path
+- [x] Sync worker with backoff, batching, idempotency
+- [x] Sync pill UI: synced / pending / offline / error
+- [x] `STALE_SEQ` conflict handling + the merge screen
+- [x] Soft locks broadcast between co-scorers
+- [x] Review Tray for balls rejected because a grant was revoked while offline
+- [x] Service worker update blocked while scoring or while the queue is non-empty
+- [x] Workbox caching strategies
 
 **Done when:** E2E flows 5, 6 and 7 pass — including 12 balls scored fully
 offline syncing exactly once.

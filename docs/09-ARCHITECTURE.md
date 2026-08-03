@@ -253,7 +253,7 @@ entirely while `padState !== 'READY'` or the queue is non-empty.**
 /matches                       → list, filterable
 /matches/new                   → 4-step wizard
 /matches/:matchId              → hub (routes by role & status)
-/matches/:matchId/setup        → toss, XI
+/matches/:matchId/setup        → toss, squads
 /matches/:matchId/score        → SCORER VIEW    (RequireScoringGrant)
 /matches/:matchId/rights       → SCORING RIGHTS MAP
 /matches/:matchId/scorecard
@@ -317,7 +317,8 @@ must not include the scoring pad, and vice versa.
 | A11y | axe-core in Playwright | Zero serious violations |
 
 **E2E flows that must always pass:**
-1. Sign up → create team → add 11 players → create match → toss → score 2 overs.
+1. Sign up → create team → add a full side (`playersPerSide` for the match — 11 by
+   default, but 2 upwards is valid) → create match → toss → score 2 overs.
 2. Player logs in, changes own role to all-rounder, verifies it persists.
 3. Team admin tries to change another player's role → blocked, offered "suggest".
 4. Scorer A passes the token to Scorer B; A's pad locks, B's unlocks.

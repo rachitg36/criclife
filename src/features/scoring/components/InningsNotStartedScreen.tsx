@@ -11,7 +11,7 @@ import { useScorerStore } from '../store';
  * is what the first real match on the first real project looked like.
  *
  * `start_innings` needs `can_manage_match`, and refuses without a toss and
- * both playing XIs. So the button is offered to everyone and the server is
+ * a squad for both sides. So the button is offered to everyone and the server is
  * left to say which of those is missing: the alternative is mirroring three
  * server-side conditions client-side and getting them subtly out of step,
  * which is the trap `record_delivery` already fell into once (HANDOFF § 8.14).
@@ -27,7 +27,7 @@ export function InningsNotStartedScreen() {
         Not started
       </span>
       <p className="text-[15px] text-[var(--text-secondary)]">
-        The first innings hasn&rsquo;t begun. Starting it needs the toss and a playing XI for both
+        The first innings hasn&rsquo;t begun. Starting it needs the toss and a squad picked for both
         teams.
       </p>
 

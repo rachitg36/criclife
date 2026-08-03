@@ -77,7 +77,7 @@ Empty state: an illustrated "Let's get you started" with two CTAs.
 | `/matches` | authed | Segmented: **Live · Upcoming · Completed**. Filter by team. |
 | `/matches/new` | manager | **4-step wizard**, one step per screen, no scrolling: ① Teams ② Format & settings (rules profile picker, then **overs per innings**, balls/over, players/side, max overs per bowler, powerplays, free hit, super over) ③ Venue & time ④ Scoring rights (pick who can score — pre-filled with you) |
 | `/matches/:matchId` | public read | **Hub.** Routes by context: pre-toss → setup CTA; live + you hold a grant → big "Resume scoring" button; live otherwise → audience view; completed → scorecard |
-| `/matches/:matchId/setup` | manager | Toss (coin animation, winner, bat/bowl) → XI selection for both teams (drag to reorder batting order, tap to set captain and keeper) → openers and opening bowler |
+| `/matches/:matchId/setup` | manager | Toss (coin animation, winner, bat/bowl) → squad selection for both teams (drag to reorder batting order, tap to set captain and keeper) → openers and opening bowler |
 | `/matches/:matchId/score` | **grant holder** | **THE SCORER VIEW.** See [05](./05-SCORER-VIEW.md). Sub-tabs: Score · Scorecard · Map · Feed · Settings |
 | `/matches/:matchId/rights` | manager or holder | **SCORING RIGHTS MAP.** See [03](./03-ROLES-PERMISSIONS.md) §3.4. Graph of who holds scoring rights; issue, pass, revoke, scope, expiry, QR handoff |
 | `/matches/:matchId/scorecard` | public read | Full cards, both innings |

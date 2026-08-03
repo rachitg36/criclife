@@ -74,7 +74,7 @@ const DOMAIN_CODES: Record<string, { kind: ErrorKind; message: string }> = {
   TOSS_REQUIRED: { kind: 'validation', message: 'Set the toss before starting the innings.' },
   XI_REQUIRED: {
     kind: 'validation',
-    message: 'Both teams need a playing XI before the innings can start.',
+    message: 'Both teams need a playing squad before the innings can start.',
   },
   FORBIDDEN: {
     kind: 'permission',

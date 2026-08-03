@@ -24,14 +24,14 @@ describe('start_innings refusals', () => {
     expect(message).not.toMatch(/something went wrong/i);
   });
 
-  it('names the playing XI', () => {
-    expect(
-      userMessage(
-        classifyError({
-          message: 'XI_REQUIRED: set the playing XI for both teams before starting',
-        })
-      )
-    ).toMatch(/playing XI/i);
+  it('names the squad, and does not call it an XI — a side can be any size', () => {
+    const message = userMessage(
+      classifyError({ message: 'XI_REQUIRED: set the playing XI for both teams before starting' })
+    );
+    expect(message).toMatch(/squad/i);
+    // `playersPerSide` is per match and ranges from 2 up. The server code is
+    // still named XI_REQUIRED; what the user reads must not be.
+    expect(message).not.toMatch(/\bXI\b/);
   });
 
   it('says who is allowed rather than blaming the request', () => {

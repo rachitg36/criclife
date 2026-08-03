@@ -4,7 +4,7 @@ import { formatBowlingFigures } from '@/lib/format';
 import { useScorerStore } from '../store';
 import { EmptySquadNotice } from './EmptySquadNotice';
 
-/** docs/05-SCORER-VIEW.md § 2/5 — AWAITING_BOWLER: the fielding XI as tiles
+/** docs/05-SCORER-VIEW.md § 2/5 — AWAITING_BOWLER: the fielding side as tiles
     showing O-M-R-W. The previous over's bowler and anyone already at their
     over limit are greyed out and unselectable. */
 export function BowlerPicker() {
