@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { openChangeChannel } from '@/lib/realtime';
 import { useAuth } from '@/features/auth/authContext';
 
 type Status = 'checking' | 'allowed' | 'denied';
@@ -73,8 +74,11 @@ export function RequireScoringGrant({ children }: { children: ReactNode }) {
       }
 
       await check();
-      const channel = supabase
-        .channel(`scoring-grants:${mid}`)
+      // Two awaits have gone by; the cleanup may already have run, in which
+      // case subscribing now would leak a channel that nothing tears down.
+      if (cancelled) return;
+
+      const channel = openChangeChannel(supabase, `scoring-grants:${mid}`)
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'scoring_grants', filter: `match_id=eq.${mid}` },
@@ -82,7 +86,7 @@ export function RequireScoringGrant({ children }: { children: ReactNode }) {
         )
         .subscribe();
       unsubscribe = () => {
-        supabase.removeChannel(channel);
+        void supabase.removeChannel(channel);
       };
     })();
 

@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { haptic } from '@/lib/haptics';
 import { pendingCount as dexiePendingCount, type PendingDelivery } from '@/lib/db';
 import { toEngineDelivery } from '@/lib/deliveryRow';
+import { classifyError, userMessage } from '@/lib/errors';
 import {
   attachSyncWorker,
   discardQueuedForInnings,
@@ -243,17 +244,30 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
       return;
     }
 
-    const { data: inningsRows } = await supabase
+    // These three were previously fetched with their errors discarded, and an
+    // empty result is indistinguishable from a failed one once it reaches the
+    // pad: no squad rows renders AWAITING_OPENERS with the "Who is on strike?"
+    // prompt and no names under it, which reads as a broken app rather than a
+    // failed request. Surface them the same way the match query is surfaced.
+    const { data: inningsRows, error: inningsError } = await supabase
       .from('innings')
       .select('*')
       .eq('match_id', matchId)
       .order('innings_no');
+    if (inningsError) {
+      set({ mode: 'ERROR', error: userMessage(classifyError(inningsError)) });
+      return;
+    }
 
-    const { data: squadRows } = await supabase
+    const { data: squadRows, error: squadError } = await supabase
       .from('match_squads')
       .select('*, player:players(*)')
       .eq('match_id', matchId)
       .eq('is_playing_xi', true);
+    if (squadError) {
+      set({ mode: 'ERROR', error: userMessage(classifyError(squadError)) });
+      return;
+    }
 
     const config = match.config as unknown as MatchConfig;
     const seeds: InningsSeed[] = (inningsRows ?? []).map((i) => ({
@@ -271,12 +285,19 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     if (inningsRows && inningsRows.length > 0) {
       const ids = inningsRows.map((i) => i.id);
       for (const id of ids) syncedSeq[id] = 0;
-      const { data: deliveryRows } = await supabase
+      const { data: deliveryRows, error: deliveryError } = await supabase
         .from('deliveries')
         .select('*')
         .in('innings_id', ids)
         .eq('is_deleted', false)
         .order('seq');
+      // Silently treating this as "no balls bowled" is the worst of the three:
+      // the pad would open at 0/0 on a match already in progress, and the
+      // scorer's next ball would be seq 1 against a server that has fifty.
+      if (deliveryError) {
+        set({ mode: 'ERROR', error: userMessage(classifyError(deliveryError)) });
+        return;
+      }
 
       const noByInningsId = new Map(inningsRows.map((i) => [i.id, i.innings_no]));
       deliveries = (deliveryRows ?? []).map((row) => ({

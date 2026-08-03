@@ -104,6 +104,7 @@
         "!dist/assets/LoginPage-*.js",
         "!dist/assets/AuthCallbackPage-*.js",
         "!dist/assets/authErrors-*.js",
+        "!dist/assets/errors-*.js",
         "!dist/assets/OnboardingPage-*.js",
         "!dist/assets/ClaimPlayerPage-*.js",
         "!dist/assets/TeamsPage-*.js",

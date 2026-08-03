@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
 import { SkeletonText } from '@/components/ui/Skeleton';
 import { supabase } from '@/lib/supabase';
+import { openChangeChannel } from '@/lib/realtime';
 import { useMatch, useMatchGrants, type MatchGrant } from './hooks';
 
 /**
@@ -26,8 +27,7 @@ export function ScoringRightsMapPage() {
 
   useEffect(() => {
     if (!matchId) return;
-    const channel = supabase
-      .channel(`scoring-grants:${matchId}`)
+    const channel = openChangeChannel(supabase, `scoring-grants:${matchId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'scoring_grants', filter: `match_id=eq.${matchId}` },
@@ -38,7 +38,7 @@ export function ScoringRightsMapPage() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
   }, [matchId, queryClient]);
 

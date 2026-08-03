@@ -4,6 +4,7 @@ import type { MatchConfig, MatchState, MatchStatus } from '@/engine/types';
 import type { InningsSeed } from '@/engine/replay';
 import { toEngineDelivery, type DeliveryRow } from '@/lib/deliveryRow';
 import { PublicApiError, selectAll, selectMany, selectOne } from '@/lib/publicApi';
+import { openChangeChannel } from '@/lib/realtime';
 import { setTeamAccent } from '@/lib/theme';
 import type { ConnectionState } from '@/components/ui/LivePill';
 import { detectMoments, type Moment } from './moments';
@@ -490,8 +491,13 @@ function attachRealtime(set: Setter, get: Getter, matchId: string, gen: number):
     const { supabase } = await import('@/lib/supabase');
     if (gen !== generation) return;
 
-    const channel = supabase
-      .channel(`audience:${matchId}`)
+    // `openChangeChannel`, not `supabase.channel`, and it matters most here:
+    // `scheduleReconnect` re-enters this function on the same match, and
+    // `removeChannel` has not finished dropping the old channel by then. The
+    // reused channel is still joined, so the first `.on()` below would throw —
+    // and the throw would be inside the reconnect, which is the one moment the
+    // route has to get right. See `@/lib/realtime`.
+    const channel = openChangeChannel(supabase, `audience:${matchId}`)
       .on(
         'postgres_changes',
         {

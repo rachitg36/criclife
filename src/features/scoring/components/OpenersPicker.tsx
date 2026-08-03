@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/cn';
 import type { PlayerId } from '@/engine/types';
 import { useScorerStore } from '../store';
+import { EmptySquadNotice } from './EmptySquadNotice';
 
 /** docs/05-SCORER-VIEW.md § 2/5 — AWAITING_OPENERS: a two-slot picker at
     innings start. Tap the striker, then the non-striker; one tap each. */
@@ -11,12 +12,14 @@ export function OpenersPicker() {
   const squadA = useScorerStore((s) => s.squadA);
   const squadB = useScorerStore((s) => s.squadB);
   const pickOpeners = useScorerStore((s) => s.pickOpeners);
+  const matchId = useScorerStore((s) => s.matchId);
   const [striker, setStriker] = useState<PlayerId | null>(null);
 
   const innings = matchState?.innings[matchState.currentInningsIndex];
   if (!innings) return null;
 
   const battingSquad = innings.battingTeamId === teamAId ? squadA : squadB;
+  if (battingSquad.length === 0) return <EmptySquadNotice matchId={matchId} side="batting" />;
 
   return (
     <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-3 py-2">

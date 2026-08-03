@@ -2,6 +2,7 @@ import { cn } from '@/lib/cn';
 import { resolveMaxOversPerBowler } from '@/engine';
 import { formatBowlingFigures } from '@/lib/format';
 import { useScorerStore } from '../store';
+import { EmptySquadNotice } from './EmptySquadNotice';
 
 /** docs/05-SCORER-VIEW.md § 2/5 — AWAITING_BOWLER: the fielding XI as tiles
     showing O-M-R-W. The previous over's bowler and anyone already at their
@@ -13,11 +14,14 @@ export function BowlerPicker() {
   const squadA = useScorerStore((s) => s.squadA);
   const squadB = useScorerStore((s) => s.squadB);
   const pickBowler = useScorerStore((s) => s.pickBowler);
+  const matchId = useScorerStore((s) => s.matchId);
 
   const innings = matchState?.innings[matchState.currentInningsIndex];
   if (!innings || !config) return null;
 
   const fieldingSquad = innings.bowlingTeamId === teamAId ? squadA : squadB;
+  if (fieldingSquad.length === 0) return <EmptySquadNotice matchId={matchId} side="fielding" />;
+
   const maxOvers = resolveMaxOversPerBowler(config);
 
   return (
