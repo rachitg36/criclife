@@ -1128,6 +1128,14 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      _insert_scored_delivery: {
+        Args: {
+          p: Json | null;
+          v_match: Database["public"]["Tables"]["matches"]["Row"] | null;
+          v_innings: Database["public"]["Tables"]["innings"]["Row"] | null;
+        };
+        Returns: Json;
+      };
       add_existing_profile_to_team: {
         Args: {
           p_team_id: string | null;
@@ -1287,6 +1295,12 @@ export type Database = {
           p_innings_id: string | null;
         };
         Returns: undefined;
+      };
+      record_deliveries_batch: {
+        Args: {
+          p: Json | null;
+        };
+        Returns: Json;
       };
       record_delivery: {
         Args: {

@@ -1,6 +1,7 @@
 import { Outlet, ScrollRestoration } from 'react-router';
 import { Suspense } from 'react';
 import { SkeletonText } from '@/components/ui/Skeleton';
+import { UpdatePrompt } from '@/components/system/UpdatePrompt';
 
 export function RootLayout() {
   return (
@@ -15,6 +16,7 @@ export function RootLayout() {
         <Outlet />
       </Suspense>
       <ScrollRestoration />
+      <UpdatePrompt />
     </>
   );
 }

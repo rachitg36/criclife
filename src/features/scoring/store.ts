@@ -1,6 +1,16 @@
 import { create } from 'zustand';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { haptic } from '@/lib/haptics';
+import { pendingCount as dexiePendingCount, type PendingDelivery } from '@/lib/db';
+import {
+  attachSyncWorker,
+  discardQueuedForInnings,
+  enqueueDelivery,
+  retryQueuedForInnings,
+  subscribeSyncEvents,
+  type SyncEvent,
+} from '@/lib/syncWorker';
 import {
   applyDelivery,
   computeMatchResult,
@@ -97,6 +107,28 @@ type ScorerState = {
       tapping away to another scorer tab and back must restore the pad
       instantly, so which tab is active lives here rather than as a route. */
   scorerTab: 'score' | 'scorecard' | 'map' | 'feed' | 'settings';
+  /** Last server seq known to be durably committed, per innings id. Used
+      instead of a per-ball network read (Phase 5's `currentServerSeq`) so
+      committing a ball never depends on connectivity — docs/09 § 5. */
+  syncedSeq: Record<string, number>;
+  /** Mirrors `navigator.onLine`. Drives the sync pill's `offline` state. */
+  online: boolean;
+  /** A drain attempt hit a non-network, non-conflict error (MATCH_LOCKED,
+      a genuine exception, ...) that a plain retry won't fix on its own.
+      Drives the sync pill's `error` state — docs/05 § 6.3. */
+  hasSyncError: boolean;
+  /** Set when the sync worker reports STALE_SEQ or a business-rule clash
+      that only makes sense if a co-scorer scored differently while this
+      device was offline. Non-null blocks the pad — docs/05 § 6.6. */
+  conflict: { inningsId: string; pending: PendingDelivery[] } | null;
+  /** This device's own signed-in identity — needed to broadcast (and to
+      ignore its own echo of) soft locks. docs/03 § 3.6. */
+  myProfileId: string | null;
+  myDisplayName: string | null;
+  /** A co-scorer's soft lock received over realtime broadcast — never set
+      by this device's own actions. Dims the pad for its duration —
+      docs/03 § 3.6: "Arjun is entering a wicket…", 8s. */
+  softLock: { displayName: string; action: string; until: number } | null;
 
   init: (matchId: string) => Promise<void>;
   armModifier: (m: ExtraType | null) => void;
@@ -117,6 +149,15 @@ type ScorerState = {
   closeHistory: () => void;
   setScorerTab: (tab: ScorerState['scorerTab']) => void;
   dismissDuplicateWarning: () => void;
+  /** docs/05-SCORER-VIEW.md § 6.6 "Keep theirs" — discard this device's
+      queued balls for the conflicted innings and resync from the server. */
+  resolveConflictKeepTheirs: () => Promise<void>;
+  /** "Keep both" — re-anchor this device's queued balls to the current
+      server seq and retry, landing them after whatever the other scorer
+      wrote. True "Keep mine" (discarding the other scorer's committed
+      ball) isn't offered here; see syncWorker.ts's own comment on why. */
+  resolveConflictKeepMine: () => Promise<void>;
+  dismissSyncError: () => void;
 };
 
 /** Identifies "the same button" across taps — deliberately excludes
@@ -204,6 +245,13 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
   historyOpen: false,
   preWicketSheetMode: null,
   scorerTab: 'score',
+  syncedSeq: {},
+  online: typeof navigator === 'undefined' || navigator.onLine,
+  hasSyncError: false,
+  conflict: null,
+  myProfileId: null,
+  myDisplayName: null,
+  softLock: null,
 
   init: async (matchId) => {
     set({ mode: 'LOADING', matchId, error: null });
@@ -242,8 +290,10 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
 
     let deliveries: Delivery[] = [];
     let deliveryIds: string[] = [];
+    const syncedSeq: Record<string, number> = {};
     if (inningsRows && inningsRows.length > 0) {
       const ids = inningsRows.map((i) => i.id);
+      for (const id of ids) syncedSeq[id] = 0;
       const { data: deliveryRows } = await supabase
         .from('deliveries')
         .select('*')
@@ -257,6 +307,9 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
         inningsNo: noByInningsId.get(row.innings_id) ?? 0,
       }));
       deliveryIds = (deliveryRows ?? []).map((row) => row.id);
+      for (const row of deliveryRows ?? []) {
+        syncedSeq[row.innings_id] = Math.max(syncedSeq[row.innings_id] ?? 0, row.seq);
+      }
     }
 
     let matchState: MatchState;
@@ -311,11 +364,17 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
       deliveries,
       deliveryIds,
       inningsIdByNo,
+      syncedSeq,
       squadA,
       squadB,
       mode,
       error: null,
     });
+
+    ensureSyncWorkerAttached(set, get, matchId);
+    void refreshPendingCount(set, get);
+    ensureSoftLockChannelAttached(set, get, matchId);
+    void loadMyIdentity(set);
   },
 
   armModifier: (m) => set((s) => ({ armedModifier: s.armedModifier === m ? null : m })),
@@ -433,6 +492,7 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     const { mode } = get();
     if (mode !== 'READY') return;
     set({ preWicketSheetMode: mode, mode: 'WICKET_SHEET' });
+    broadcastSoftLock(get(), 'entering a wicket');
   },
   closeWicketSheet: () => {
     const { preWicketSheetMode } = get();
@@ -442,6 +502,21 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
   closeHistory: () => set({ historyOpen: false }),
   setScorerTab: (tab) => set({ scorerTab: tab }),
   dismissDuplicateWarning: () => set({ duplicateWarning: false }),
+
+  resolveConflictKeepTheirs: async () => {
+    const { matchId, conflict } = get();
+    if (!matchId || !conflict) return;
+    await discardQueuedForInnings(matchId, conflict.inningsId);
+    set({ conflict: null });
+    await get().init(matchId);
+  },
+  resolveConflictKeepMine: async () => {
+    const { matchId, conflict } = get();
+    if (!matchId || !conflict) return;
+    await retryQueuedForInnings(matchId, conflict.inningsId);
+    set({ conflict: null });
+  },
+  dismissSyncError: () => set({ hasSyncError: false }),
 }));
 
 async function commitDelivery(
@@ -456,7 +531,12 @@ async function commitDelivery(
   if (!state.matchState || state.revoked) return;
 
   const innings = currentInnings(state.matchState);
-  if (!innings || innings.strikerId === null || innings.bowlerId === null) return;
+  if (!innings || innings.strikerId === null || innings.nonStrikerId === null || innings.bowlerId === null) {
+    return;
+  }
+  const strikerId = innings.strikerId;
+  const nonStrikerId = innings.nonStrikerId;
+  const bowlerId = innings.bowlerId;
 
   const result = applyDelivery(state.matchState, input);
   if (!result.ok) {
@@ -465,9 +545,10 @@ async function commitDelivery(
     return;
   }
 
-  // Optimistic: the pad reflects the new state instantly, before the network
-  // call below ever resolves. docs/05 § 2 — "no confirm, no dialog."
-  const deliveryIndex = state.deliveries.length;
+  // Optimistic: the pad reflects the new state instantly. docs/05 § 2 —
+  // "no confirm, no dialog." Everything below this point — the Dexie write
+  // and the sync worker it kicks — is durable-but-background: none of it
+  // is awaited by anything the UI is waiting on.
   set({
     matchState: result.state,
     deliveries: [...state.deliveries, result.delivery],
@@ -480,63 +561,28 @@ async function commitDelivery(
   fireHaptic(result.delivery, input);
   applyEvents(set, get, result.events);
 
+  const matchId = get().matchId;
   const inningsId = get().inningsIdByNo[innings.inningsNo];
-  if (!inningsId) {
+  if (!matchId || !inningsId) {
     set({ error: 'No innings id for the current innings — cannot record this ball' });
     return;
   }
-  const expectedSeq = await currentServerSeq(inningsId);
 
-  set({ pendingCount: get().pendingCount + 1 });
-  const { data, error } = await supabase.rpc('record_delivery', {
-    p: {
-      inningsId,
-      clientDeliveryId: input.clientDeliveryId,
-      expectedSeq,
-      strikerId: innings.strikerId,
-      nonStrikerId: innings.nonStrikerId,
-      bowlerId: innings.bowlerId,
-      runsOffBat: input.runsOffBat,
-      extraType: input.extraType,
-      extraRuns: input.extraRuns,
-      isBoundary: input.isBoundary,
-      wicket: input.wicket,
-      shot: input.shot ?? null,
-      pitch: input.pitch ?? null,
+  const syncedSeq = get().syncedSeq[inningsId] ?? 0;
+  await enqueueDelivery(
+    matchId,
+    inningsId,
+    input.clientDeliveryId,
+    {
+      ...input,
+      strikerId,
+      nonStrikerId,
+      bowlerId,
       commentaryOverride: result.delivery.commentary,
-    } as unknown as Json,
-  });
-  set({ pendingCount: Math.max(0, get().pendingCount - 1) });
-
-  if (error) {
-    // The optimistic apply already reflects locally; surface the failure
-    // and resync from server truth (full Dexie-backed offline retry queue
-    // is Phase 6 — this sandbox's network is always "up" or "down", never
-    // queued).
-    set({ error: error.message });
-    const matchId = get().matchId;
-    if (matchId) await get().init(matchId);
-    return;
-  }
-
-  const returnedId = (data as { delivery?: { id?: string } } | null)?.delivery?.id;
-  if (returnedId) {
-    const ids = [...get().deliveryIds];
-    if (ids[deliveryIndex] === null) ids[deliveryIndex] = returnedId;
-    set({ deliveryIds: ids });
-  }
-}
-
-async function currentServerSeq(inningsId: string): Promise<number> {
-  const { data } = await supabase
-    .from('deliveries')
-    .select('seq')
-    .eq('innings_id', inningsId)
-    .eq('is_deleted', false)
-    .order('seq', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return data?.seq ?? 0;
+    },
+    syncedSeq
+  );
+  void refreshPendingCount(set, get);
 }
 
 function fireHaptic(delivery: Delivery, input: DeliveryInput) {
@@ -613,5 +659,142 @@ async function handleInningsComplete(
     p_win_margin_runs: result.marginRuns,
     p_win_margin_wickets: result.marginWickets,
     p_result_text: result.text,
+  });
+}
+
+// ── Sync worker plumbing ───────────────────────────────────────────────
+
+let onlineListenerAttached = false;
+let currentSyncSubscription: { matchId: string; unsubscribe: () => void; detach: () => void } | null =
+  null;
+
+/** Idempotent per matchId — re-running `init()` for the same match (undo,
+    edit, next innings, ...) doesn't pile up duplicate event listeners. */
+function ensureSyncWorkerAttached(
+  set: (partial: Partial<ScorerState>) => void,
+  get: () => ScorerState,
+  matchId: string
+) {
+  if (!onlineListenerAttached && typeof window !== 'undefined') {
+    window.addEventListener('online', () => set({ online: true }));
+    window.addEventListener('offline', () => set({ online: false }));
+    onlineListenerAttached = true;
+  }
+  if (currentSyncSubscription?.matchId === matchId) return;
+  currentSyncSubscription?.unsubscribe();
+  currentSyncSubscription?.detach();
+  const detach = attachSyncWorker(matchId);
+  const unsubscribe = subscribeSyncEvents(matchId, (event) => handleSyncEvent(set, get, event));
+  currentSyncSubscription = { matchId, unsubscribe, detach };
+}
+
+async function refreshPendingCount(
+  set: (partial: Partial<ScorerState>) => void,
+  get: () => ScorerState
+) {
+  const matchId = get().matchId;
+  if (!matchId) return;
+  const n = await dexiePendingCount(matchId);
+  set({ pendingCount: n });
+}
+
+function handleSyncEvent(
+  set: (partial: Partial<ScorerState>) => void,
+  get: () => ScorerState,
+  event: SyncEvent
+) {
+  switch (event.type) {
+    case 'synced':
+    case 'duplicate': {
+      const state = get();
+      const idx = state.deliveries.findIndex((d) => d.clientDeliveryId === event.clientDeliveryId);
+      if (idx !== -1 && state.deliveryIds[idx] == null) {
+        const ids = [...state.deliveryIds];
+        ids[idx] = event.serverDeliveryId;
+        set({ deliveryIds: ids });
+      }
+      const inningsNo = idx !== -1 ? state.deliveries[idx]?.inningsNo : undefined;
+      const inningsId = inningsNo != null ? state.inningsIdByNo[inningsNo] : undefined;
+      if (inningsId) {
+        set({
+          syncedSeq: {
+            ...state.syncedSeq,
+            [inningsId]: Math.max(state.syncedSeq[inningsId] ?? 0, event.serverSeq),
+          },
+        });
+      }
+      set({ hasSyncError: false });
+      void refreshPendingCount(set, get);
+      break;
+    }
+    case 'rejected':
+      void refreshPendingCount(set, get);
+      break;
+    case 'error':
+      set({ hasSyncError: true });
+      break;
+    case 'conflict':
+      set({ conflict: { inningsId: event.inningsId, pending: event.pending } });
+      break;
+  }
+}
+
+// ── Soft locks between co-scorers (docs/03 § 3.6) ───────────────────────
+
+let currentSoftLockChannel: {
+  matchId: string;
+  channel: RealtimeChannel;
+  unsubscribe: () => void;
+} | null = null;
+
+async function loadMyIdentity(set: (partial: Partial<ScorerState>) => void) {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) return;
+  const { data: profile } = await supabase.from('profiles').select('display_name').eq('id', uid).single();
+  set({ myProfileId: uid, myDisplayName: profile?.display_name ?? 'A scorer' });
+}
+
+/** Idempotent per matchId, same rationale as `ensureSyncWorkerAttached`. */
+function ensureSoftLockChannelAttached(
+  set: (partial: Partial<ScorerState>) => void,
+  get: () => ScorerState,
+  matchId: string
+) {
+  if (currentSoftLockChannel?.matchId === matchId) return;
+  currentSoftLockChannel?.unsubscribe();
+
+  const channel = supabase.channel(`scorer-soft-lock:${matchId}`).on(
+    'broadcast',
+    { event: 'soft_lock' },
+    ({ payload }: { payload: { profileId: string; displayName: string; action: string; ttl: number } }) => {
+      if (payload.profileId === get().myProfileId) return; // ignore our own echo
+      const until = Date.now() + payload.ttl * 1000;
+      set({ softLock: { displayName: payload.displayName, action: payload.action, until } });
+      setTimeout(() => {
+        if (get().softLock?.until === until) set({ softLock: null });
+      }, payload.ttl * 1000);
+    }
+  );
+  channel.subscribe();
+
+  currentSoftLockChannel = {
+    matchId,
+    channel,
+    unsubscribe: () => supabase.removeChannel(channel),
+  };
+}
+
+function broadcastSoftLock(state: ScorerState, action: string, ttlSeconds = 8) {
+  if (!currentSoftLockChannel || !state.myProfileId) return;
+  currentSoftLockChannel.channel.send({
+    type: 'broadcast',
+    event: 'soft_lock',
+    payload: {
+      profileId: state.myProfileId,
+      displayName: state.myDisplayName ?? 'A scorer',
+      action,
+      ttl: ttlSeconds,
+    },
   });
 }

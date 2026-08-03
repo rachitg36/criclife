@@ -72,6 +72,9 @@ const ScoringRightsMapPage = lazy(() =>
 const RedeemGrantPage = lazy(() =>
   import('@/features/matches/RedeemGrantPage').then((m) => ({ default: m.RedeemGrantPage }))
 );
+const ReviewTrayPage = lazy(() =>
+  import('@/features/matches/ReviewTrayPage').then((m) => ({ default: m.ReviewTrayPage }))
+);
 
 const stub = (title: string, phase: number, doc?: string, description?: string) => ({
   element: <Placeholder title={title} phase={phase} doc={doc} description={description} />,
@@ -191,15 +194,7 @@ export const router = createBrowserRouter([
               { path: '/matches/:matchId/rights', element: <ScoringRightsMapPage /> },
               { path: '/redeem-grant/:token', element: <RedeemGrantPage /> },
               { path: '/matches/:matchId/settings', ...stub('Match settings', 4) },
-              {
-                path: '/matches/:matchId/review',
-                ...stub(
-                  'Review tray',
-                  6,
-                  '05-SCORER-VIEW.md',
-                  'Offline balls the server rejected.'
-                ),
-              },
+              { path: '/matches/:matchId/review', element: <ReviewTrayPage /> },
 
               /* Settings (Phase 9, appearance ships in Phase 0) */
               { path: '/settings', ...stub('Settings', 9) },

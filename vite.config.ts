@@ -43,12 +43,22 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api/],
         runtimeCaching: [
           {
-            // Fonts and icons — immutable
-            urlPattern: ({ request }) =>
-              request.destination === 'font' || request.destination === 'image',
+            // Fonts and app icons — effectively immutable, so a long TTL is
+            // safe. docs/09 § 5: "Fonts, icons — CacheFirst, 1 year."
+            urlPattern: ({ request }) => request.destination === 'font',
             handler: 'CacheFirst',
             options: {
-              cacheName: 'criclife-assets',
+              cacheName: 'criclife-fonts',
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+          {
+            // Team crests, player photos — user-supplied, so a shorter TTL
+            // and an entry cap. docs/09 § 5: "CacheFirst, 30 days, max 200."
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'criclife-images',
               expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },

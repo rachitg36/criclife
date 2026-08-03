@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
+import type { DeliveryInput, PlayerId } from '@/engine/types';
 
 /**
  * Offline store. A scorer must be able to record an entire match with no
@@ -10,18 +11,32 @@ import Dexie, { type EntityTable } from 'dexie';
 
 export type SyncStatus = 'queued' | 'syncing' | 'synced' | 'rejected' | 'error';
 
+/** Everything `record_deliveries_batch` needs for one item, beyond the
+    innings-level `inningsId`/`expectedSeq` the batch call carries once. */
+export type QueuedDeliveryPayload = DeliveryInput & {
+  strikerId: PlayerId;
+  nonStrikerId: PlayerId;
+  bowlerId: PlayerId;
+};
+
 export type PendingDelivery = {
   /** Client-generated idempotency key — makes replays safe. */
   clientDeliveryId: string;
   matchId: string;
   inningsId: string;
-  /** Full DeliveryInput payload; typed properly once the engine lands. */
-  payload: Record<string, unknown>;
+  payload: QueuedDeliveryPayload;
+  /** The last server seq known for this innings when this ball was applied.
+      Shared by every ball queued in the same unbroken offline streak for
+      this innings — nothing else can have written in between, so they all
+      have the same "seq before me". See the batch RPC's own header comment
+      for why only the group's first item's value is ever actually checked. */
+  expectedSeq: number;
   createdAt: number;
   status: SyncStatus;
   attempts: number;
   lastError?: string;
-  /** Set once the server assigns the authoritative sequence number. */
+  /** Set once the server confirms the row and assigns its real id/seq. */
+  serverDeliveryId?: string;
   serverSeq?: number;
 };
 
@@ -54,6 +69,14 @@ db.version(1).stores({
   cachedTeams: 'id',
 });
 
+// v2 — Phase 6 wires this schema into the real write path. Adds the
+// [matchId+inningsId] index the sync worker groups its drain queries by,
+// and [matchId+status] for the sync-pill/Review-Tray counts. Dexie carries
+// existing rows forward untouched; nothing here needs a data migration.
+db.version(2).stores({
+  pendingDeliveries: 'clientDeliveryId, matchId, createdAt, status, [matchId+inningsId], [matchId+status]',
+});
+
 export { db };
 
 /** How many balls are waiting to reach the server. Drives the sync pill. */
@@ -63,13 +86,66 @@ export async function pendingCount(matchId?: string): Promise<number> {
   return base.filter((d) => d.matchId === matchId).count();
 }
 
+/** Queued balls that have failed at least once, for the sync pill's `error` state. */
+export async function erroredCount(matchId: string): Promise<number> {
+  return db.pendingDeliveries
+    .where('[matchId+status]')
+    .equals([matchId, 'error'])
+    .count();
+}
+
 /** Balls the server refused (e.g. scoring rights revoked while offline). */
 export async function rejectedDeliveries(matchId: string): Promise<PendingDelivery[]> {
   return db.pendingDeliveries
-    .where('status')
-    .equals('rejected')
-    .and((d) => d.matchId === matchId)
+    .where('[matchId+status]')
+    .equals([matchId, 'rejected'])
     .toArray();
+}
+
+/** Queued/erroring balls for one innings, oldest first — what the sync
+    worker actually drains. */
+export async function queuedForInnings(
+  matchId: string,
+  inningsId: string
+): Promise<PendingDelivery[]> {
+  const rows = await db.pendingDeliveries
+    .where('[matchId+inningsId]')
+    .equals([matchId, inningsId])
+    .and((d) => d.status === 'queued' || d.status === 'error')
+    .toArray();
+  return rows.sort((a, b) => a.createdAt - b.createdAt);
+}
+
+/** Everything not yet resolved (synced or rejected) for one innings,
+    including rows a drain attempt currently has marked 'syncing' — used to
+    decide whether a new ball is starting a fresh streak or joining one
+    already in flight. `queuedForInnings` deliberately excludes 'syncing'
+    (it's "what to drain next"); this is "is anything still unresolved". */
+export async function unresolvedForInnings(
+  matchId: string,
+  inningsId: string
+): Promise<PendingDelivery[]> {
+  const rows = await db.pendingDeliveries
+    .where('[matchId+inningsId]')
+    .equals([matchId, inningsId])
+    .and((d) => d.status === 'queued' || d.status === 'error' || d.status === 'syncing')
+    .toArray();
+  return rows.sort((a, b) => a.createdAt - b.createdAt);
+}
+
+/** Every distinct innings with something still queued for this match, in
+    the order they should be drained (oldest first). */
+export async function inningsIdsWithPending(matchId: string): Promise<string[]> {
+  const rows = await db.pendingDeliveries
+    .where('matchId')
+    .equals(matchId)
+    .and((d) => d.status === 'queued' || d.status === 'error')
+    .toArray();
+  const firstSeenAt = new Map<string, number>();
+  for (const r of rows) {
+    if (!firstSeenAt.has(r.inningsId)) firstSeenAt.set(r.inningsId, r.createdAt);
+  }
+  return [...firstSeenAt.entries()].sort((a, b) => a[1] - b[1]).map(([id]) => id);
 }
 
 /** Housekeeping: drop synced rows older than 24h. Never touches unsynced work. */

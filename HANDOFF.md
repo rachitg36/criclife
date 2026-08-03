@@ -1,8 +1,8 @@
 # CricLife — Handoff
 
 **Date:** 2026-08-03
-**State:** **Phases 0–5 complete and pushed** to `claude/session-context-ifpggh`.
-Phase 6 (offline & concurrency) has **not** started.
+**State:** **Phases 0–6 complete and pushed** to `claude/session-context-ifpggh`.
+Phase 7 (audience view) has **not** started.
 
 Read this file, then `CLAUDE.md`. Skip straight to **§ 2** for what to do next.
 
@@ -25,51 +25,62 @@ Decisions already locked in are logged in `docs/13-OPEN-QUESTIONS.md` § A and �
 
 ## 2. Continue here — exact next step
 
-### Next: Phase 6 — offline & concurrency
+### Next: Phase 7 — audience view
 
-> Start Phase 6: build the Dexie schema + write-first-locally delivery path,
-> a sync worker with backoff/batching/idempotency, the sync-pill states
-> (synced/pending/offline/error), `STALE_SEQ` conflict handling + the merge
-> screen, soft locks between co-scorers, the Review Tray, and block the
-> service-worker update while scoring or while the queue is non-empty.
+> Start Phase 7: `/live:publicSlug` (public, unauthenticated), the hero with
+> count-up score/aurora/team tinting, a Realtime subscription targeting
+> <1.5s p95 latency, the ball-by-ball feed, scorecard tab, charts tab (worm,
+> manhattan, run-rate, partnerships, wagon wheel), the win-probability bar,
+> moments (four/six/wicket/fifty/hundred/maiden/hat-trick/last-over/match-won),
+> calm mode + `prefers-reduced-motion`, big-screen `?tv=1` mode, an OG share
+> image edge function, and the completed-match replay scrubber.
 
-Or: `/phase` (the skill re-reads the roadmap and confirms Phase 5's
+Or: `/phase` (the skill re-reads the roadmap and confirms Phase 6's
 acceptance criteria still pass before building).
 
-Before writing code: **re-verify Phase 5's foundation is still green.**
+Before writing code: **re-verify Phase 6's foundation is still green.**
 Container restarts kill the local Postgres server (this sandbox has no
 Docker — see § 5.1). Bring it back and re-run the pgTAP suite:
 
 ```bash
 sudo service postgresql start   # or: sudo pg_ctlcluster <ver> <cluster> start
-bash supabase/tests/run-local.sh --seed --pgtap   # expect 163/163 "ok", 0 "not ok"
-npm run typecheck && npm run lint && npm run test   # expect 235/235
+bash supabase/tests/run-local.sh --seed --pgtap   # expect 155/155 "ok", 0 "not ok"
+npm run typecheck && npm run lint && npm run test   # expect 253/253
 ```
 
-### Why Phase 6 matters more than it looks
+### Why Phase 6 mattered more than it looked
 
 CLAUDE.md's rule 4 ("scoring writes to IndexedDB first, network second — the
-pad must never await a request") is **already satisfied for the synchronous
-half**: Phase 5's `commitDelivery` applies the pure engine result and calls
-`set()` before it ever touches the network. What's still missing is the
-*durable* half — right now, a closed tab or a crash between the optimistic
-`set()` and the `record_delivery` RPC resolving loses that ball's server
-confirmation with no local record to replay from. Dexie is what makes "score
-a whole match with no signal" actually true rather than "true until your
-battery-saver kills the tab."
+pad must never await a request") was already satisfied for the *synchronous*
+half since Phase 5: `commitDelivery` applies the pure engine result and calls
+`set()` before it ever touches the network. What Phase 6 added was the
+*durable* half — a closed tab or a crash between the optimistic `set()` and
+the RPC resolving no longer loses that ball's server confirmation, because
+every delivery is written to Dexie (`pendingDeliveries`) before the sync
+worker ever gets a chance to run, and the sync worker itself is a plain
+poll/retry loop with no assumption that the tab survives long enough to see
+a request resolve.
 
-Two things Phase 6 will need that don't exist yet:
+### What a fresh session should know about Phase 6's actual risk surface
 
-- **A `client_delivery_id`-keyed local queue.** The column already exists on
-  `deliveries` and `record_delivery` already treats a duplicate id as a
-  no-op success (`docs/10` § 3.1) — the idempotency contract Phase 6 needs is
-  already in place server-side. What's missing is the client-side queue that
-  actually retries against it.
-- **A merge screen for `STALE_SEQ`.** `record_delivery` already rejects a
-  stale `expectedSeq` (tested in `supabase/tests/pgtap/11_scoring_rpcs_phase5.sql`),
-  and `commitDelivery` already resyncs via `init()` on any RPC error —
-  but that resync silently prefers server truth. The "Keep mine / Keep
-  theirs / Keep both" UI in `docs/05` § 6 doesn't exist yet.
+Phase 6 is the first phase where the *hard* part isn't the happy path — a
+single scorer scoring offline and reconnecting works and is tested. The
+genuinely load-bearing, still-underverified part is **two scorers
+disagreeing**, and specifically:
+
+- The merge screen (`MergeScreen.tsx`) only offers "keep both" or "keep
+  theirs" — never a true "keep mine, discard the other scorer's already-
+  committed ball," which is deliberately not offered (see § 8.8). If a real
+  match ever needs that, today's answer is "undo and re-enter," same as
+  every other correction path.
+- Every place a drain attempt marks an item `'syncing'` and then can't
+  reach a terminal state for it (STALE_SEQ, an item-level conflict, or the
+  batch stopping partway through) has to explicitly revert that item back to
+  `'queued'`, or it's stuck forever and invisible to the merge-resolution
+  helpers. Three instances of exactly this bug were found and fixed this
+  phase (§ 6.4) — if you add a fourth error path to `handleBatchLevelError`
+  or `handleItemError` in `syncWorker.ts`, check whether it needs the same
+  treatment.
 
 ---
 
@@ -108,7 +119,7 @@ Local Postgres + pgTAP (see § 5.1 for why this exists instead of `supabase star
 
 ```bash
 sudo service postgresql start
-bash supabase/tests/run-local.sh --seed --pgtap
+bash supabase/tests/run-local.sh --seed --pgtap   # expect 155/155 "ok", 0 "not ok"
 ```
 
 (`npm run test:e2e` needs Playwright browsers, and this sandbox only has a
@@ -324,16 +335,81 @@ algorithm), `strike.ts`, `dismissals.ts`, `inningsEnd.ts`, `result.ts`,
   content (runs/extra/wicket fields), with the 250–600ms window now
   surfacing the documented "Recorded twice? Undo" chip.
 
-### 5.8 Current verification numbers (all re-confirmed at end of Phase 5)
+### 5.8 Phase 6 — offline & concurrency
+
+- **Migration** (`20260803120000_offline_sync.sql`) extracts `record_delivery`'s
+  per-ball validation+insert logic into a private `_insert_scored_delivery`
+  helper, then adds `record_deliveries_batch` — the RPC the sync worker
+  actually drains against. It does the grant/lock/innings-status/seq-staleness
+  checks **once per batch** (against the batch's first item only — `seq` is a
+  single global sequence, and nothing else can write mid-transaction), then
+  loops over the batch calling the shared helper inside a nested
+  `begin...exception...end` block (an implicit savepoint), so an earlier
+  item's success in the same call survives a later item's failure.
+  `record_delivery`'s own external behavior is unchanged — verified by
+  re-running Phase 5's pgTAP file unmodified against the refactored function.
+- **`src/lib/db.ts`** — Dexie's `pendingDeliveries` table (a Phase 0 scaffold)
+  is now load-bearing: every delivery is written here, with a
+  client-generated `clientDeliveryId`, before anything touches the network.
+  Two different "what's outstanding" queries exist on purpose:
+  `queuedForInnings` (status `queued`/`error` — what the drain reads next)
+  and `unresolvedForInnings` (adds `syncing` — is anything not yet settled).
+  Conflating them was the root cause of three real bugs this phase (see
+  § 6.4) — a drain in flight is invisible to `queuedForInnings` but must
+  still be found by the merge-resolution actions and by a second ball
+  deciding whether it's starting a new offline streak.
+- **`src/lib/syncWorker.ts`** — framework-free (pub/sub via
+  `subscribeSyncEvents`, no direct Zustand import) so it's testable in
+  isolation. `enqueueDelivery` writes to Dexie then fires `kickSync`
+  (fire-and-forget, never awaited by the caller — CLAUDE.md rule 4).
+  `drainMatch`/`drainInnings` batch up to 50 items per innings against
+  `record_deliveries_batch`, with exponential backoff (1s→30s) on retryable
+  errors. `discardQueuedForInnings` ("Keep theirs") and
+  `retryQueuedForInnings` ("Keep both", re-anchors to the current server seq)
+  back the merge screen. A true "keep mine" — discarding a ball another
+  scorer has already had confirmed by the server — is deliberately **not**
+  offered anywhere; see § 8.8.
+- **Soft locks** (`docs/03` § 3.6): opening the wicket sheet broadcasts
+  `{profileId, displayName, action, ttl}` over a Supabase Realtime channel
+  (`scorer-soft-lock:{matchId}`); other scorers on the same match see a
+  dimmed pad and an "X is entering a wicket…" banner for 8s.
+- **`MergeScreen.tsx`** — blocks the whole pad on conflict, since with the
+  ball order genuinely uncertain nothing else is safe to render. Resolves at
+  the level of "this device's whole run of unsynced balls for the innings,"
+  not a full ball-by-ball diff against the server's sequence — the latter is
+  real additional work, deliberately not half-built here (see § 8.8).
+- **`ReviewTrayPage.tsx`** (`/matches/:matchId/review`) — replaces the Phase 4
+  stub. Lists `rejected`-status Dexie rows reactively via
+  `dexie-react-hooks`' `useLiveQuery`, with per-item and bulk discard. There's
+  no way to auto-hand a rejected ball to whoever now holds scoring rights —
+  Dexie is local to the device — so the page links to the Scoring Rights Map
+  and leaves the hand-off manual.
+- **`UpdatePrompt.tsx`** (mounted in `RootLayout`, so on every route) blocks
+  the "Reload to update" prompt until `pendingCount()` (global, not scoped to
+  the current match — a scorer might have queued balls regardless of route)
+  reaches zero. Statically imports only `@/lib/sw`; `@/lib/db` is a dynamic
+  import inside the effect, so Dexie never rides the eager main chunk despite
+  this component being mounted everywhere.
+- **Workbox caching** — split the single fonts+images `runtimeCaching` rule
+  into two, matching `docs/09` § 5's table exactly: `criclife-fonts`
+  (CacheFirst, 1 year) and `criclife-images` (CacheFirst, 30 days/200
+  entries) — Phase 0 had merged them into one bucket.
+- **`fake-indexeddb`** is a new devDependency (`tests/setup.ts` now does
+  `import 'fake-indexeddb/auto'`) — jsdom has no real IndexedDB, and Dexie
+  now runs for real (not mocked) in every test that touches the scorer store
+  or the sync worker.
+
+### 5.9 Current verification numbers (all re-confirmed at end of Phase 6)
 
 | Check                                                   | Result                                                                                                                       |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| pgTAP                                                   | **163/163** ("not ok": 0) across 11 files in `supabase/tests/pgtap/`                                                        |
-| Unit/component tests (`npm run test`)                   | **235/235** across 22 files                                                                                                 |
+| pgTAP                                                   | **155/155** ("not ok": 0) across 12 files in `supabase/tests/pgtap/`                                                        |
+| Unit/component tests (`npm run test`)                   | **253/253** across 25 files, confirmed clean across 6+ repeated full-suite runs (no flakiness)                             |
 | `npm run typecheck` / `npm run lint`                    | clean                                                                                                                        |
-| `npm run build` + `npm run size`                        | audience route **170.3 kB** brotli, budget 180 kB                                                                           |
+| `npm run build` + `npm run size`                        | audience route **173.83 kB** brotli, budget 180 kB                                                                          |
 | e2e (`npm run test:e2e`, desktop/Chromium project only) | **9 passed, 4 intentionally skipped** — with the local `channel`/`executablePath` override from § 5.1, not committed        |
 | e2e, the four mobile/WebKit viewports                   | **could not run in this sandbox** — no WebKit binary at all (see § 5.1); real CI installs it fresh and is not affected      |
+| E2E flows 5/6/7 (`docs/09` § 9 — the Phase 6 acceptance bar) | **not run as actual Playwright specs** — see § 8.9. Verified instead at the unit/integration layer against a mocked RPC (`tests/lib/syncWorker.test.ts`), which is the closest this sandbox can get without a live, multi-context, network-throttled Supabase backend |
 
 ---
 
@@ -343,16 +419,19 @@ algorithm), `strike.ts`, `dismissals.ts`, `inningsEnd.ts`, `result.ts`,
 
 | Thing                                                                        | Why                                                                            |
 | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Dexie / IndexedDB durable queue, sync worker, merge screen, Review Tray      | Phase 6 — Phase 5 satisfies "never await the network" synchronously, but there's no durable local log yet |
+| The audience view (`/live/:publicSlug`), charts, moments, replay scrubber   | Phase 7 — next up, see § 2                                                     |
 | Advanced Mode (shot/pitch overlay after each ball)                          | `docs/05` § 8 explicitly says off by default and not a Phase 5 roadmap bullet |
 | Full wicket-edit UI in `BallHistorySheet`                                   | `edit_delivery` supports it server-side; only run corrections are wired client-side — see § 6.2 |
 | The `⋯` overflow's rarer actions (retire batter, declare, abandon, penalty runs, drinks interval, correct the over count) | Not named Phase 5 roadmap bullets; `⋯` currently only reaches ball history/edit |
 | `/matches` (list: Live · Upcoming · Completed)                              | Not an explicit roadmap bullet yet; still a `<Placeholder>`                    |
-| `/matches/:matchId/settings`, `/matches/:matchId/review`                     | Phase 4/6 respectively per roadmap; stubs                                      |
+| `/matches/:matchId/settings`                                                 | Phase 4 per roadmap; still a stub                                              |
 | `/teams/:teamId/matches`, `/teams/:teamId/stats`, `/ranks/compare`, `/stats` | Phase 8 (stats/rankings) — stubs                                               |
 | Most of `/settings/*` (only `/settings/appearance` is real)                  | Phase 9                                                                        |
 | `/admin/*`                                                                   | Phase 9                                                                        |
 | Real file upload for team logos / player photos                              | URL fields only; no storage wiring yet                                       |
+| A true ball-by-ball merge diff (server sequence vs. this device's queue, side by side) | The merge screen resolves at the innings level instead — see § 6.2 and § 8.8 |
+| A "keep mine" merge-resolution action (discard the *other* scorer's already-committed ball) | Deliberately never offered — see § 8.8 |
+| E2E Playwright specs for roadmap flows 4 through 8 (token handoff, concurrent scoring, offline sync, revoked-grant review, post-match stats) | Only flows 1–3-adjacent smoke/viewport checks exist as actual Playwright specs; the rest are verified at the unit/component layer against mocked RPCs — see § 8.9 |
 
 ### 6.2 Simplifications inside phases that did ship
 
@@ -378,11 +457,19 @@ algorithm), `strike.ts`, `dismissals.ts`, `inningsEnd.ts`, `result.ts`,
   up/down-style selection, not full drag-and-drop. **The Scoring Rights
   Map's graph view** (Phase 4) is a real but intentionally simple radial SVG
   layout. **Handoff QR** (Phase 4) redeems via URL, not an in-app scanner.
+- **`MergeScreen` resolves conflicts at the innings level**, not `docs/05`
+  § 6.6's full "both sequences side by side, ball by ball" spec — see § 8.8.
+- **No "keep mine" merge-resolution action.** Only "keep both" (re-anchor and
+  retry after the other scorer's balls) and "keep theirs" (discard mine) are
+  offered. Discarding a ball the server has already confirmed for another
+  scorer is a strictly more destructive, cross-user action than anything
+  else in the merge flow, and undo-and-re-enter already exists as the
+  general-purpose correction path — see § 8.8.
 
 ### 6.3 Human-only tasks — status (unchanged since Phase 0 unless noted)
 
 - [x] Deploy to Cloudflare Workers — live at `criclife.geminirachit.workers.dev`
-      (**still the Phase 0 build** — Phases 1–5 haven't been redeployed; see § 4)
+      (**still the Phase 0 build** — Phases 1–6 haven't been redeployed; see § 4)
 - [x] Push to GitHub as a public repo
 - [x] Open the is-a.dev PR — still pending merge
 - [x] Create both Supabase projects
@@ -393,9 +480,9 @@ algorithm), `strike.ts`, `dismissals.ts`, `inningsEnd.ts`, `result.ts`,
 - [x] CI green on all four jobs (Phase 0 baseline)
 - [ ] **New, blocking real usage:** push `supabase/migrations/*.sql` to
       `criclife-prod` (and/or `criclife-staging`) — nothing has run against
-      either real project yet (see § 4). This now includes `record_delivery`
-      and the rest of the scoring RPCs — the endpoints a real match depends
-      on every ball.
+      either real project yet (see § 4). This now includes `record_delivery`,
+      `record_deliveries_batch`, and the rest of the scoring RPCs — the
+      endpoints a real match depends on every ball, offline or not.
 - [ ] (Optional, deferred) Google OAuth client — code is ready, needs a
       Google Cloud project + credentials
 - [ ] (Follow-up) Merge of is-a.dev PR, then add the custom domain to the Worker
@@ -430,6 +517,10 @@ comment at the top of the relevant file too.
 | The accidental-tap guard compared `clientDeliveryId` — a fresh UUID every call — against itself, so it could never match and was silently inert | Phase 5 | Rekeyed on the tap's content (runs/extras/wicket fields), not its generated id |
 | Wrapping the scorer route in the same `<RequireAuth>` as every other authed screen breaks `docs/05` § 3's "the shell always renders": `RequireAuth`'s `<Navigate>` on redirect swaps out `ScoringLayout` itself, not just its content | Phase 5 | `RequireScoringGrant` absorbs the "not signed in" case into its own render (still inside `ScoringLayout`); the scorer route is deliberately not behind `<RequireAuth>` |
 | Anything a static import in `router.tsx` pulls in rides the eager main chunk — `RequireScoringGrant` naively importing `supabase`/the store blew the bundle-size budget by 36 kB | Phase 5 | Both are dynamically imported inside the guard's effect instead |
+| `kickSync`'s fire-and-forget `drainMatch(matchId)` call had no `.catch()` — any rejection (including one only reachable in a test's torn-down mock context) became a genuinely unhandled promise rejection, not just test flakiness | Phase 6 | Wraps the call in `.catch()`, emitting an `error` event instead of letting it escape |
+| Three separate places left a Dexie row stuck at `'syncing'` forever whenever a drain attempt marked it `'syncing'` but then couldn't reach a terminal state for it: `drainInnings` when the batch RPC's `results` array is shorter than the batch (the documented "stops at first hard error" case), `handleBatchLevelError`'s `STALE_SEQ` branch, and `handleItemError`'s per-item conflict branch (`ILLEGAL_DISMISSAL`/`CONSECUTIVE_OVER`/`BOWLER_LIMIT`/`INNINGS_COMPLETE`) | Phase 6 | All three now explicitly reset the affected row(s) back to `'queued'` before returning/emitting, so the merge-resolution helpers (which query unresolved rows) can actually find and act on them |
+| `queuedForInnings` (status `queued`/`error`) was used everywhere "is there unresolved work for this innings" was actually the question — but it excludes `'syncing'`, so a ball enqueued while a drain of an earlier ball was already in flight would race, and the merge-resolution actions couldn't find a ball mid-drain | Phase 6 | Added `unresolvedForInnings` (adds `'syncing'`) as the distinct "is anything not yet settled" query; `enqueueDelivery`'s streak-anchor detection and both merge-resolution helpers now use it, while `drainInnings` itself correctly keeps using `queuedForInnings` ("what to send next") |
+| Bundle-size budget: wiring Dexie into the scorer store pulled `db-*.js` (97 kB) into the audience-route `size-limit` measurement, since a new lazy chunk isn't excluded until someone adds it to the config | Phase 6 | Added `!dist/assets/db-*.js` to the exclusion list, same pattern as the existing lazy-chunk exclusions |
 
 ---
 
@@ -453,6 +544,9 @@ Reasoning is in `docs/13-OPEN-QUESTIONS.md` § A. Short version:
 | `record_delivery` re-validates a critical subset server-side, not the engine's full ruleset | Avoids maintaining two copies of a 37-case dismissal table in two languages; the TS engine is already 100%-covered. |
 | The active scorer tab lives in Zustand, not the route | `docs/05` § 7 requires tapping away and back to restore the pad instantly; a route change would remount it.          |
 | The scorer route skips `<RequireAuth>` in favour of `RequireScoringGrant` handling "signed out" itself | The alternative unmounts `ScoringLayout` on redirect, breaking the no-scroll guarantee for anyone without a session — see § 6.4. |
+| `record_deliveries_batch` checks staleness once per batch (against the first item only), not once per item | `seq` is one global Postgres sequence, and nothing else can write mid-transaction — a per-item check would be redundant work for the same answer. |
+| The sync worker is framework-free (pub/sub events, no direct Zustand import) | Keeps it independently testable and reusable; the store subscribes to it rather than the worker depending on the store. |
+| Merge-resolution "keep both"/"keep theirs" only, never "keep mine" | Discarding another scorer's server-confirmed ball is categorically more destructive than anything else in the app; undo-and-re-enter is the existing fallback — see § 8.8. |
 
 Still open, none blocking: who can create teams (B2), tournaments in v1 (B4),
 a team ladder as well as player ranks (B6), web push in v1 (B8), importing
@@ -474,27 +568,53 @@ Genuine uncertainty, not false modesty:
    let alone a real phone. WebKit's `dvh` and safe-area handling has
    historically had its own quirks; this is a real, unverified risk, not
    just a formality.
-4. **Concurrent multi-scorer conflict handling** is specced but genuinely
-   hard, and Phase 5 didn't touch it — `commitDelivery`'s only response to a
-   conflict today is "resync and silently prefer the server," not the merge
-   screen `docs/05` § 6 describes. That's explicitly Phase 6 scope, but
-   flagging it here so it isn't mistaken for done.
+4. **Concurrent multi-scorer conflict handling is now built, but only
+   exercised at the unit/component layer against a mocked RPC** — see § 8.9.
+   `commitDelivery`'s previous "resync and silently prefer the server"
+   behavior is gone; there's a real merge screen now. What's still unverified
+   is the actual multi-device, real-network-latency version of the scenario.
 5. **`exactOptionalPropertyTypes`** has needed a few explicit
    `...(x ? {y} : {})` spreads through Phase 5 (RPC payloads, `WicketInput`)
    rather than being pure friction — still seems worth keeping, but the
    pattern is worth knowing before you hit it fresh.
-6. **None of Phases 1–5 have run against a real Supabase project** — every
-   green checkmark in § 5.8 is against a local scratch Postgres. Phase 5 in
-   particular ships the endpoints a live match calls every six seconds; "it
-   passed pgTAP locally" and "it works against real hosted Postgres with
-   real network latency and the real `auth` schema, under concurrent
-   writers" are not the same claim. Push to `criclife-staging` and re-run
-   before trusting this in front of real users.
+6. **None of Phases 1–6 have run against a real Supabase project** — every
+   green checkmark in § 5.9 is against a local scratch Postgres. The scoring
+   and sync RPCs are the endpoints a live match calls every six seconds,
+   offline or not; "it passed pgTAP locally" and "it works against real
+   hosted Postgres with real network latency and the real `auth` schema,
+   under concurrent writers" are not the same claim. Push to
+   `criclife-staging` and re-run before trusting this in front of real users.
 7. **The accidental-tap guard and the 250–600ms "Recorded twice?" chip are
    unit-tested with fake timers, not felt on a real touchscreen.** The
    thresholds (250ms / 600ms) are the ones docs specify, but whether they
    feel right on an actual phone under actual thumb pressure hasn't been
    checked outside this sandbox.
+8. **The merge screen and "keep mine" are real, deliberate simplifications,
+   not TODOs in disguise — but they're worth someone re-checking against how
+   an actual disputed-scoring argument plays out at a ground.** `docs/05`
+   § 6.6 specs a full ball-by-ball diff (server sequence next to this
+   device's queue); what shipped instead resolves at "this device's whole
+   unsynced run for the innings" — enough to unblock the pad, not enough to
+   show a scorer exactly which of their balls conflicts with which of the
+   other scorer's. And there is no way at all to discard the other scorer's
+   already-committed ball, even when the scorer holding the device is
+   confident theirs is right — that always requires falling back to
+   undo-and-re-enter after the fact. Both were deliberate calls under the
+   phase's time box, not oversights, but "deliberate" isn't the same as
+   "definitely correct" — flagging for a second opinion once this sees a
+   real disputed over.
+9. **E2E flows 5, 6, and 7 (`docs/09` § 9) — the actual Phase 6 "Done when"
+   bar — were not run as Playwright specs.** They need two browser contexts
+   (or two devices), real offline/online network transitions, and a live
+   Supabase backend with real RLS and real latency; none of that exists in
+   this sandbox (see § 5.1), and no such specs exist yet in `tests/e2e/`
+   even as a scaffold. What stands in for them today is
+   `tests/lib/syncWorker.test.ts`, which drives the same code paths
+   (STALE_SEQ, NO_GRANT, batch duplicate/partial-failure handling) against a
+   mocked `record_deliveries_batch` — a real test of the client-side state
+   machine, but not a claim that flows 5/6/7 have ever been seen to pass
+   end-to-end. Don't report Phase 6 as fully done against docs' own bar
+   without someone running these for real first.
 
 ---
 
@@ -515,27 +635,32 @@ criclife/
 │  │  ├─ auth/            ← Phase 2 — login, callback, onboarding
 │  │  ├─ teams/           ← Phase 3
 │  │  ├─ players/         ← Phase 3
-│  │  ├─ matches/         ← Phase 4
+│  │  ├─ matches/         ← Phase 4; ReviewTrayPage.tsx is Phase 6
 │  │  ├─ scoring/         ← Phase 5 — store.ts, ScorerRoute.tsx, components/
+│  │  │                      (MergeScreen.tsx is Phase 6)
 │  │  ├─ home, settings, audience, ranks, admin, system
 │  ├─ components/ui/      ← Button Card Skeleton CountUp Aurora LivePill
 │  │                         ThemeToggle Crest Avatar
+│  ├─ components/system/  ← UpdatePrompt.tsx (Phase 6)
 │  ├─ lib/                ← env supabase db(Dexie) theme haptics format cn sw
-│  │                         wakeLock (Phase 5)
+│  │                         wakeLock (Phase 5), syncWorker (Phase 6)
 │  ├─ stores/             ← zustand uiStore
 │  ├─ styles/             ← tokens.css globals.css animations.css
 │  └─ types/database.ts   ← generated (see § 5.1 for how, since no Docker)
 ├─ supabase/
-│  ├─ migrations/         ← Phases 2–5, 11 files, chronologically ordered
+│  ├─ migrations/         ← Phases 2–6, 12 files, chronologically ordered
 │  ├─ seed.sql            ← local-dev only, never runs against cloud
 │  └─ tests/
 │     ├─ run-local.sh     ← the local Postgres+pgTAP harness — see § 5.1
 │     ├─ 00_local_auth_stub.sql  ← LOCAL ONLY, never push to real Supabase
-│     └─ pgtap/           ← 11 files, 163 assertions
+│     └─ pgtap/           ← 12 files, 155 assertions
 ├─ tests/
 │  ├─ engine/             ← Phase 1 — 100%-covered pure engine tests
-│  ├─ features/           ← auth, matches, players, scoring (Phase 5) component tests
-│  ├─ lib/, e2e/          ← unit + Playwright (no-scroll gate, viewport gate, smoke)
+│  ├─ features/           ← auth, matches, players, scoring component tests
+│  │                         (MergeScreen.test.tsx, ReviewTrayPage.test.tsx — Phase 6)
+│  ├─ lib/                ← unit tests, incl. syncWorker.test.ts (Phase 6)
+│  ├─ e2e/                ← Playwright (no-scroll gate, viewport gate, smoke) —
+│  │                         no specs yet for roadmap flows 4–8, see § 8.9
 ├─ public/                ← icons, manifest assets, fonts README
 ├─ scripts/               ← generate-icons.py
 └─ .github/workflows/     ← ci.yml, keepalive.yml

@@ -108,6 +108,12 @@ export function MatchHubPage() {
           </Button>
         </Link>
       )}
+
+      <Link to={`/matches/${match.id}/review`} className="mt-3 block">
+        <Button variant="ghost" fullWidth>
+          Review tray
+        </Button>
+      </Link>
     </div>
   );
 }

@@ -17,6 +17,7 @@ import { BowlerPicker } from './components/BowlerPicker';
 import { BatterPicker } from './components/BatterPicker';
 import { InningsBreakScreen } from './components/InningsBreakScreen';
 import { MatchOverScreen } from './components/MatchOverScreen';
+import { MergeScreen } from './components/MergeScreen';
 import { ScorerTabs } from './components/ScorerTabs';
 import { ScorecardTab } from './components/ScorecardTab';
 import { MapTab } from './components/MapTab';
@@ -51,6 +52,8 @@ export default function ScorerRoute() {
   const duplicateWarning = useScorerStore((s) => s.duplicateWarning);
   const dismissDuplicateWarning = useScorerStore((s) => s.dismissDuplicateWarning);
   const undo = useScorerStore((s) => s.undo);
+  const conflict = useScorerStore((s) => s.conflict);
+  const softLock = useScorerStore((s) => s.softLock);
 
   useEffect(() => {
     if (matchId) void init(matchId);
@@ -61,6 +64,14 @@ export default function ScorerRoute() {
   }
   if (mode === 'ERROR') {
     return <CenteredMessage>{error ?? 'Something went wrong.'}</CenteredMessage>;
+  }
+  if (conflict) {
+    return (
+      <div className="flex h-full flex-col">
+        <StatusStrip />
+        <MergeScreen />
+      </div>
+    );
   }
   if (mode === 'INNINGS_BREAK') {
     return (
@@ -93,7 +104,7 @@ export default function ScorerRoute() {
           <div
             className={cn(
               'relative flex min-h-0 flex-1 flex-col',
-              revoked && 'pointer-events-none opacity-40'
+              (revoked || softLock) && 'pointer-events-none opacity-40'
             )}
           >
             {mode === 'AWAITING_OPENERS' && <OpenersPicker />}
@@ -122,6 +133,11 @@ export default function ScorerRoute() {
       {revoked && (
         <div className="absolute inset-x-3 bottom-20 z-30 rounded-[var(--r-md)] bg-[var(--danger)] px-3 py-2 text-center text-[13px] font-semibold text-white">
           Your scoring rights were revoked.
+        </div>
+      )}
+      {softLock && !revoked && scorerTab === 'score' && (
+        <div className="absolute inset-x-3 bottom-20 z-30 rounded-[var(--r-md)] bg-[var(--surface-glass-strong)] px-3 py-2 text-center text-[13px] font-semibold text-[var(--text-primary)] backdrop-blur-xl">
+          {softLock.displayName} is {softLock.action}…
         </div>
       )}
       {duplicateWarning && !revoked && scorerTab === 'score' && (
