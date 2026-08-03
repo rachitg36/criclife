@@ -43,13 +43,15 @@ describe('humanAuthError', () => {
     // as the entire reason sign-in had failed.
     for (const message of ['{}', '', '   ', '[]', 'null', 'undefined', '[object Object]']) {
       const out = humanAuthError({ message, status: 500 });
-      expect(out).toMatch(/failing on the server/);
+      expect(out).toMatch(/went wrong on the server/);
       expect(out).toContain('error 500');
     }
   });
 
   it('omits the code when there is no status to report', () => {
-    expect(humanAuthError({ message: '{}' })).toMatch(/failing on the server\. This is not/);
+    const out = humanAuthError({ message: '{}' });
+    expect(out).not.toContain('error');
+    expect(out).toMatch(/Something went wrong/);
   });
 
   it('does NOT treat a missing status as a network failure', () => {

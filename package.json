@@ -130,7 +130,11 @@
         "!dist/assets/TvLayout-*.js",
         "!dist/assets/VirtualFeed-*.js",
         "!dist/assets/StatsRoute-*.js",
-        "!dist/assets/CompareRoute-*.js"
+        "!dist/assets/CompareRoute-*.js",
+        "!dist/assets/SettingsIndex-*.js",
+        "!dist/assets/ScoringSettings-*.js",
+        "!dist/assets/AboutSettings-*.js",
+        "!dist/assets/DataSettings-*.js"
       ],
       "limit": "180 kB"
     }

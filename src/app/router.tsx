@@ -193,7 +193,13 @@ export const router = createBrowserRouter([
               { path: '/matches/:matchId/review', element: <ReviewTrayPage /> },
 
               /* Settings (Phase 9, appearance ships in Phase 0) */
-              { path: '/settings', ...stub('Settings', 9) },
+              {
+                path: '/settings',
+                lazy: async () => {
+                  const m = await import('@/features/settings/SettingsIndex');
+                  return { Component: m.SettingsIndex };
+                },
+              },
               { path: '/settings/profile', ...stub('Your profile', 3) },
               {
                 path: '/settings/appearance',
@@ -202,7 +208,13 @@ export const router = createBrowserRouter([
                   return { Component: m.AppearanceSettings };
                 },
               },
-              { path: '/settings/scoring', ...stub('Scoring preferences', 5) },
+              {
+                path: '/settings/scoring',
+                lazy: async () => {
+                  const m = await import('@/features/settings/ScoringSettings');
+                  return { Component: m.ScoringSettings };
+                },
+              },
               { path: '/settings/notifications', ...stub('Notifications', 9) },
               {
                 path: '/settings/data',
@@ -211,7 +223,13 @@ export const router = createBrowserRouter([
                   return { Component: m.DataSettings };
                 },
               },
-              { path: '/settings/about', ...stub('About CricLife', 9) },
+              {
+                path: '/settings/about',
+                lazy: async () => {
+                  const m = await import('@/features/settings/AboutSettings');
+                  return { Component: m.AboutSettings };
+                },
+              },
             ],
           },
 

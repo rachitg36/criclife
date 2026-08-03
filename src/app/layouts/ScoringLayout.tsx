@@ -50,6 +50,8 @@ export function ScoringLayout() {
   return (
     <div
       ref={shellRef}
+      id="main"
+      tabIndex={-1}
       data-testid="scoring-shell"
       className="no-scroll-shell flex flex-col bg-[var(--bg-base)]"
     >

@@ -26,6 +26,8 @@ export function AppLayout() {
   return (
     <div className="flex min-h-[100dvh] flex-col bg-[var(--bg-base)]">
       <main
+        id="main"
+        tabIndex={-1}
         className="mx-auto w-full flex-1"
         style={{
           maxWidth: 'var(--content-max)',

@@ -3,9 +3,10 @@
 Mobile-first PWA for scoring cricket matches, with live audience view, player
 stats and rankings. React 19 + Vite + Supabase. Runs entirely on free tiers.
 
-**Current state: Phases 0–7 complete** — engine, data layer, teams/players,
-match setup, the scorer pad, offline sync, and the public audience view. Next
-is Phase 8 (stats & rankings). The Phase 7 build is deployed, but **no
+**Current state: Phases 0–8 complete, Phase 9 partly done** — engine, data layer, teams/players,
+match setup, the scorer pad, offline sync, the public audience view, and stats
+and rankings. Phase 9 (admin, polish, launch) is roughly half done — every
+roadmap bullet is marked `[x]`, `[~]` or `[ ]`. The Phase 7 build is deployed, but **no
 migration has ever run against a real Supabase project**, so every screen that
 reads data fails in production. Read `HANDOFF.md` for the full picture —
 including how to bring a fresh container back up (not just `npm install`) and
@@ -47,7 +48,10 @@ npm run deploy         # vite build && wrangler deploy — manual, no CD yet
 8. **Stay on free tiers.** Before adding a dependency or service, check
    `docs/14-FREE-TIER-PLAN.md`. Cloudflare Workers (Static Assets), not Vercel.
 9. **The audience route's initial JS is budgeted at 180 kB** and currently sits
-   at 174.69 kB. `/live/:publicSlug` must not statically import
+   at **177 kB — tight**. Any route reaching for a new react-router or React
+   feature grows the _shared_ vendor chunk and is charged here; that has
+   already blown the budget twice. Run `npm run size` before assuming a new
+   screen is free. See HANDOFF § 5.13. `/live/:publicSlug` must not statically import
    `@supabase/supabase-js` — it reads its snapshot over plain `fetch`
    (`src/lib/publicApi.ts`) and imports the client dynamically for Realtime
    only. `npm run size` is the gate. See HANDOFF.md § 2.
@@ -58,7 +62,7 @@ Phases are in `docs/12-ROADMAP.md`, each with acceptance criteria.
 **Phase 1 (the rules engine) comes before any feature UI.** It has no visible
 output and it is tempting to skip. Don't. A wrong engine poisons every screen.
 
-Current: Phases 0–7 done → next: Phase 8 (stats & rankings).
+Current: Phases 0–8 done → next: finish Phase 9.
 
 ## Layout
 
@@ -66,10 +70,10 @@ Current: Phases 0–7 done → next: Phase 8 (stats & rankings).
 docs/          15 planning docs — README.md is the index
 src/engine/    PURE rules engine — 100% covered, the source of every score
 src/app/       router, providers, layouts, guards
-src/features/  home · settings · scoring · audience · ranks · admin · system
+src/features/  home · settings · scoring · audience · ranks · stats · admin · system
 src/components/ui/   Button Card Skeleton CountUp Aurora LivePill ThemeToggle
 src/components/viz/  hand-rolled SVG charts (worm, manhattan, run rate, …)
-src/lib/       env supabase db(Dexie) theme haptics format cn sw
+src/lib/       env supabase db(Dexie) theme haptics format cn sw errors monitoring
 src/stores/    zustand — uiStore
 src/styles/    tokens.css globals.css animations.css
 tests/         unit (vitest) + e2e (playwright)

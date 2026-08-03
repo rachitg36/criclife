@@ -1,8 +1,8 @@
 # CricLife — Handoff
 
 **Date:** 2026-08-03
-**State:** **Phases 0–7 complete and pushed** to `claude/continue-session-uhh3e8`.
-Phase 8 (stats & rankings) has **not** started.
+**State:** **Phases 0–8 complete, Phase 9 partly done**, pushed to
+`claude/continue-session-uhh3e8`.
 
 Read this file, then `CLAUDE.md`. Skip straight to **§ 2** for what to do next.
 
@@ -25,7 +25,7 @@ Decisions already locked in are logged in `docs/13-OPEN-QUESTIONS.md` § A and �
 
 ## 2. Continue here — exact next step
 
-### ⏸ PAUSED MID-DEBUG, 2026-08-03 — read this before anything else
+### ⏸ STILL BLOCKED: nobody can sign in — read this before anything else
 
 Phase 7 is finished, committed and deployed. What follows is a _live blocker_
 that stopped a session in progress, not a build task. Nobody can sign in to
@@ -103,15 +103,23 @@ messages — the pre-existing `LoginPage` test caught it immediately.
 
 ---
 
-### Next: Phase 8 — stats & rankings
+### Next: finish Phase 9
 
-> Start Phase 8: `player_match_stats` / `player_career_stats` rollups, the
-> `finalize_match` and `recompute_rankings` edge functions, the exponential-decay
-> rating from `docs/07-STATS-AND-RANKINGS.md`, `/ranks`, `/ranks/compare`,
-> `/stats`, `/teams/:teamId/stats` and `/teams/:teamId/matches`.
+Phase 8 is done. Phase 9 is roughly half done — see `docs/12-ROADMAP.md`,
+where every bullet is now marked `[x]`, `[~]` (partial, with what is missing)
+or `[ ]`. What is left, in the order I would take it:
 
-Or: `/phase` (the skill re-reads the roadmap and confirms Phase 7's
-acceptance criteria still pass before building).
+1. **Web push notifications.** Needs VAPID keys and a push service. The
+   `notifications` table is written to; nothing reads it.
+2. **The a11y pass proper.** A skip link, `<main>` landmarks, tablist roles and
+   screen-reader text for icon-only controls are in. An axe run, a
+   screen-reader pass and a keyboard-scoring audit are not, and need a browser
+   harness this sandbox does not have.
+3. **Visual regression suite**, **onboarding tour**, **the rest of `/admin`**
+   (player merge, teams, grants, rules profiles).
+4. **The club beta**, which is the actual "Done when".
+
+Or: `/phase`.
 
 Before writing code: **re-verify the foundation is still green.** A fresh
 container has neither `node_modules`, nor `.env.local`, nor a running Postgres,
@@ -639,6 +647,74 @@ auth.uid())` via RPC, subscribes to `scoring_grants` over Realtime for
   waiting on it. All five are excluded from the `size-limit` glob for exactly
   that reason; `@supabase/supabase-js` was already excluded and remains so
   because the route no longer needs it to render.
+
+### 5.11 Phase 8 — stats & rankings
+
+- **Migration** `20260803190000_stats_and_rankings.sql`: `compute_match_stats`
+  (derives `player_match_stats` from the ball log, upserted so a corrected
+  delivery is fixed by re-running rather than by patching a total),
+  `compute_match_ratings` (docs/07 § 2.1's three components plus the
+  opposition factor, as a second pass because the factor needs every row for
+  the match to exist first), `rebuild_career_stats` (exponentially decayed
+  rollup, 20-match half-life, form factor), `recompute_rankings` (five boards
+  against thresholds read from `app_settings`), and a trigger that finalises
+  the lot when a match completes.
+- **Deviation, flagged:** the roadmap calls `finalize_match` and
+  `recompute_rankings` _edge functions_. They are Postgres functions. Atomicity
+  with match completion is the first reason, testability the second, zero edge
+  invocations the third — all three in the migration's header.
+- **`src/features/ranks/filters.ts`** is the pure core, with 21 tests, because
+  the renumbering rule is the phase's acceptance criterion. Global positions
+  are computed over the whole population _before_ filtering; filtering
+  renumbers from 1 and each row keeps its global rank as a ghost number.
+  Ratings never change when you filter, and there is a test that says so.
+- **`/ranks`** reads over `@/lib/publicApi`, not `supabase-js` — same
+  constraint as the audience route, same reason.
+- **Not built, deliberately:** format and period filters (they need per-format
+  and per-window career rollups that `player_career_stats` has no columns
+  for), the player-profile career tables, and the sticky "you" pill (it needs
+  the viewer's own player id, and `/ranks` is deliberately session-free).
+
+### 5.12 Phase 9 — partial
+
+- **`src/lib/errors.ts`** — nine error kinds, each with a sentence a cricketer
+  can act on, plus the scoring RPC codes from docs/10 § 3.1 which survive
+  classification rather than being flattened. `src/features/auth/authErrors.ts`
+  is now a one-line adapter onto it; two places deciding separately what an
+  error means is exactly how the login screen drifted in the first place.
+- **`src/lib/monitoring.ts`** — the reporting seam. **`@sentry/react` is not a
+  dependency**: no DSN exists to verify against, and the SDK does not fit the
+  audience route's remaining budget. `setErrorSink` is the one call that
+  attaches it later. Dropped connections are deliberately not reported —
+  reporting every lost signal at a cricket ground buries the real bugs.
+- **`/admin`** — overview counts, matches with re-derive-stats, audit log.
+  Match unlock is not offered on purpose (a BEFORE UPDATE trigger enforces the
+  lock as well as RLS, so the button would fail silently).
+- **`/settings`** index, `/settings/scoring`, `/settings/about`,
+  `/settings/data`. About publishes how the rating is calculated, which is
+  docs/07's own stated mitigation for "ranking formula feels unfair".
+  Data export runs through the ordinary client so RLS decides what is in the
+  file; deletion raises a request and explains why it is not an erase.
+- **a11y:** skip link, `<main id="main" tabIndex={-1}>` in all three layouts,
+  `role="tablist"` on every tab strip, `sr-only` text on icon-only controls
+  and on rank movement. No axe run, no screen-reader pass.
+
+### 5.13 A standing bundle hazard
+
+The audience route's budget is now the tightest constraint in the codebase,
+and it is charged for things that have nothing to do with it. Building Phase 8
+and 9 pushed it over twice:
+
+- adding `/stats` and `/ranks/compare` (fixed by excluding those route chunks —
+  they are separate routes, so this is honest, not a fudge);
+- the admin console using nested `<Routes>` and `NavLink`, which pulled ~2 kB
+  more of **react-router into the shared eager vendor chunk**. That one is the
+  hazard worth remembering: _any_ route reaching for a new react-router or
+  React feature is charged to `/live/:publicSlug`. The admin panels are local
+  state now.
+
+It sits at **177 kB of 180 kB**. Run `npm run size` before assuming a new
+screen is free.
 
 ### 5.9 Current verification numbers (all re-confirmed at end of Phase 6)
 

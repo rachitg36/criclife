@@ -207,39 +207,73 @@ and Lighthouse mobile perf on `/live/:publicSlug` is ≥ 90.
 ## Phase 8 — Stats & ranks
 *Goal: the reason people come back between matches.*
 
-- [ ] `finalize_match` edge function
-- [ ] `player_match_stats` computation incl. `rating_points`
-- [ ] `player_career_stats` plain table + rewrite routine
-- [ ] `recompute_rankings` edge function + nightly cron
-- [ ] `ranking_snapshots` and movement indicators
-- [ ] **`/ranks`** — 5 boards, podium, dense rows, sticky "you" pill
-- [ ] **Team multi-select filter**, with the unfiltered global board as default
-- [ ] Format / period / role / min-matches filters, URL-encoded
-- [ ] Emerging section with qualification progress
-- [ ] `/stats` league leaderboards
-- [ ] Player profile career tables, form strip, milestones
-- [ ] `/ranks/compare` head-to-head radar
+- [x] `finalize_match` — **a Postgres function, not an edge function.** It must
+      be atomic with the match completing, and it is testable in pgTAP.
+      Deviation from this doc and from [14](./14-FREE-TIER-PLAN.md) § 6,
+      reasoned in the migration's own header.
+- [x] `player_match_stats` computation incl. `rating_points`
+- [x] `player_career_stats` plain table + rewrite routine
+- [x] `recompute_rankings` — Postgres function, same reasoning. **Nightly cron
+      not wired**: it needs `pg_cron` enabled on a real project, which is a
+      dashboard action nobody has taken. It runs on every match completion,
+      which is the case that matters.
+- [x] `ranking_snapshots` and movement indicators
+- [x] **`/ranks`** — 5 boards, podium, dense rows, Emerging section
+- [x] **Team multi-select filter**, with the unfiltered global board as default
+- [x] Role / min-matches filters, URL-encoded — *format and period filters are
+      **not** built; both need a per-format or per-window career rollup that
+      `player_career_stats` has no columns for. See HANDOFF § 6.1.*
+- [x] Emerging section with qualification progress
+- [x] `/stats` league leaderboards
+- [ ] Player profile career tables, form strip, milestones — *not built; the
+      Phase 3 profile page is unchanged.*
+- [x] `/ranks/compare` head-to-head radar
+- [ ] Sticky "you" rank pill — *needs the signed-in viewer's own player id, and
+      `/ranks` is deliberately a session-free public route (it reads over plain
+      fetch to stay inside the bundle budget). Adding it means making the page
+      auth-aware, which is a real trade, not an oversight.*
 
 **Done when:** E2E flow 8 passes — completing a match updates career stats and
 the rankings, and filtering by two teams renumbers correctly while preserving
 global ranks as ghost numbers.
+
+> **Status 2026-08-03:** the filtering half of that bar is **tested and
+> passing** — `tests/features/ranks/filters.test.ts` asserts renumbering,
+> ghost global ranks, and that ratings do not change when filtered. The
+> "completing a match updates career stats" half is exercised in pgTAP
+> (`14_stats_and_rankings_phase8.sql`) against a real scored match, but **not
+> as an end-to-end Playwright flow** — that needs a live backend and a
+> session, same gap as flows 5–7. Building this phase also found two scoring
+> bugs live since Phase 5; see HANDOFF § 6.4.
 
 ---
 
 ## Phase 9 — Admin, polish & launch
 *Goal: operable by a human, pleasant to use.*
 
-- [ ] `/admin/*` — users, players (merge), teams, matches (unlock),
-      grants, rules profiles, app settings, data tools, audit log
-- [ ] Notifications: web push for grants, milestones, results, rank changes
-- [ ] Empty states with custom illustrations
-- [ ] Skeleton loaders everywhere
-- [ ] Full a11y pass: axe zero serious violations, keyboard scoring, screen
-      reader pass on the scorer view and the rights map
-- [ ] Visual regression suite: scorer + audience, both themes, 4 viewports
-- [ ] Performance budgets enforced in CI
-- [ ] Sentry, analytics, error taxonomy
-- [ ] Data export, account deletion
+- [~] `/admin/*` — overview counts, match list with re-derive-stats, audit log.
+      **Player merge, team admin, grants, rules profiles and data purge are not
+      built.** Match *unlock* is deliberately not offered: the lock is enforced
+      by a BEFORE UPDATE trigger as well as by RLS, so the button would fail
+      silently unless the trigger were taught about it too.
+- [ ] Notifications: web push — *needs VAPID keys and a push service; neither
+      exists. The `notifications` table is written to, nothing reads it yet.*
+- [ ] Empty states with custom illustrations — *every empty state is written
+      and says something specific; none has an illustration.*
+- [x] Skeleton loaders everywhere
+- [~] a11y: skip link, `<main>` landmarks with focus targets, `role="tablist"`
+      on every tab strip, `sr-only` text on icon-only controls and on rank
+      movement. **No axe run, no screen-reader pass, no keyboard-scoring
+      audit** — those need a browser harness this sandbox cannot run.
+- [ ] Visual regression suite — *not built.*
+- [x] Performance budgets enforced in CI — `size-limit` gates every PR.
+- [~] Error taxonomy — `src/lib/errors.ts` classifies everything thrown into
+      nine kinds with a sentence each, and `src/lib/monitoring.ts` is the
+      reporting seam. **Sentry itself is deliberately not a dependency**: no
+      DSN exists to verify against, and its SDK does not fit the audience
+      route's remaining budget. Attaching it later is one `setErrorSink` call.
+- [x] Data export, account deletion — *deletion raises a request rather than
+      erasing; the screen explains why.*
 - [ ] Onboarding tour for first-time scorers
 - [ ] Beta with one real club for a full weekend of matches
 

@@ -238,3 +238,27 @@
   animation-iteration-count: 1 !important;
   transition-duration: 150ms !important;
 }
+
+/* ── Skip link (Phase 9 a11y) ─────────────────────────────
+   Off-screen until focused. Uses the accent so it is obvious
+   it is a real control, not a rendering glitch.              */
+.skip-link {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  transform: translateY(-120%);
+  padding: 10px 16px;
+  border-radius: 0 0 var(--r-md) 0;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid var(--text-primary);
+  outline-offset: -4px;
+}

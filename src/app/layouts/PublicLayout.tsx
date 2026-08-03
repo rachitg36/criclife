@@ -4,9 +4,14 @@ import { Outlet } from 'react-router';
 export function PublicLayout() {
   return (
     <div className="min-h-[100dvh] bg-[var(--bg-base)]">
-      <div className="mx-auto w-full" style={{ maxWidth: 'var(--content-max)' }}>
+      <main
+        id="main"
+        tabIndex={-1}
+        className="mx-auto w-full"
+        style={{ maxWidth: 'var(--content-max)' }}
+      >
         <Outlet />
-      </div>
+      </main>
     </div>
   );
 }
