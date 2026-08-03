@@ -25,44 +25,46 @@ Decisions already locked in are logged in `docs/13-OPEN-QUESTIONS.md` § A and �
 
 ## 2. Continue here — exact next step
 
-### ⏸ STILL BLOCKED: nobody can sign in — read this before anything else
+### ✅ Sign-in works — 2026-08-03. What that unlocks, and what it does not
 
-Phase 7 is finished, committed and deployed. What follows is a _live blocker_
-that stopped a session in progress, not a build task. Nobody can sign in to
-either environment until it is cleared, so Phase 8 is not actually startable.
+**Somebody has signed in.** Magic link → callback → onboarding → into the app,
+against `criclife-staging`, from the owner's laptop. That is the first time
+in the project's life that a real JWT has existed, which means the first time
+RLS has been evaluated for real rather than in pgTAP.
 
-**Where things got to this session**
+**Where things stand**
 
-|                                         |                                                         |
-| --------------------------------------- | ------------------------------------------------------- |
-| `criclife-staging` schema               | applied and verified, but **13 of 15 migrations** — § 4 |
-| `criclife-prod` schema                  | applied 2026-08-03 from the 15-file version — § 4       |
-| Deployed Worker                         | Phase 7 build, version `fd6a1bd0`                       |
-| Add-to-Home-Screen                      | verified on a real phone                                |
-| Local dev on the owner's Windows laptop | running, on this branch, `.env.local` → staging         |
+|                                         |                                                          |
+| --------------------------------------- | -------------------------------------------------------- |
+| Sign-in                                 | **working** on staging, end to end                       |
+| `criclife-staging` schema               | applied and verified, but **13 of 15 migrations** — § 4  |
+| `criclife-prod` schema                  | applied 2026-08-03 from the 15-file version — § 4        |
+| Deployed Worker                         | Phase 7 build, version `fd6a1bd0` — Phases 8/9 not on it |
+| Add-to-Home-Screen                      | verified on a real phone                                 |
+| Local dev on the owner's Windows laptop | running, on this branch, `.env.local` → staging          |
 
-**The blocker: sign-in returns HTTP 500.**
+**What it took, for the record** — three separate faults, each of which the
+app reported as the same wrong thing:
 
-`POST /auth/v1/otp` against staging returns **500** in ~1.9s, and **nothing
-appears in Resend**. Read together those two facts say GoTrue accepted the
-request and then failed trying to hand the mail to SMTP — the message never
-reached Resend at all.
+1. **`POST /auth/v1/otp` returned 500** and nothing reached Resend. Custom
+   SMTP on staging. Turned _off_; Supabase's built-in sender took over and the
+   mail arrived. Resend still needs fixing before anyone outside the Supabase
+   org can sign in — see § 6.3.
+2. **The first link pointed at prod**, whose `redirect_to` was still
+   `http://localhost:3000`. Wrong project _and_ wrong redirect.
+3. **The callback screen lied about all of it.** It showed "links expire after
+   a while" for every failure, because it read neither the `error_code` in the
+   callback URL nor the exchange error supabase-js throws internally. Both are
+   read now — `src/features/auth/callbackError.ts`. Worth remembering as a
+   pattern: the app hid the real cause three times in one session, and each
+   time the fix was to stop guessing and surface what the layer below already
+   knew.
 
-- **Ruled out: the redirect allowlist.** A `redirect_to` that is not on the
-  allowlist is rejected with a **400** and a named error, never a 500. (The
-  allowlist may _still_ need setting — Site URL `http://localhost:5173`,
-  Redirect URLs `http://localhost:5173/**` — but it is not what is failing now.)
-- **Prime suspect: SMTP on staging.** § 6.3 records Resend as wired on both
-  projects in Phase 0, but that is a recorded intention nobody has re-verified,
-  and staging has been idle since. Check **Project Settings → Authentication →
-  SMTP Settings**.
-- **Fastest way past it:** turn custom SMTP _off_ on staging and let Supabase's
-  built-in sender take over. It is rate-limited to a few an hour and only
-  delivers to addresses on the Supabase org — which covers the owner's own
-  address — and that is enough to get a real session and finally exercise the
-  schema. Fix Resend afterwards, when it is not blocking.
-- **To confirm rather than guess:** the failing request's Response body, or
-  **Supabase → Logs → Auth**, which prints GoTrue's SMTP error verbatim.
+**Now unblocked, and the next thing worth doing:** an actual match. Nobody has
+called a scoring RPC against real hosted Postgres. See § 8.6 and § 8.11 — that
+pair of unproven claims is what a single real match would knock down. **Apply the two
+missing migrations to staging first** (§ 4), or the scoring you do there will
+be wrong in exactly the two ways § 8.14 describes.
 
 **Open question nobody has answered yet — worth resolving before more building.**
 
@@ -287,7 +289,7 @@ successful — but from the **15**-migration file, i.e. after Phase 8 added
 
 **So staging is two migrations behind prod, and staging is what `.env.local`
 points at.** That is the wrong way round, and it matters more than it sounds:
-`20260803191000` is the fix for the two live scoring bugs (§ 8.13) — a
+`20260803191000` is the fix for the two live scoring bugs (§ 8.14) — a
 staging `record_delivery` still flags every ball a wicket and still drops a
 run off every wide. Anyone testing a match against staging will see nonsense
 and reasonably blame the client.
@@ -1044,6 +1046,33 @@ Genuine uncertainty, not false modesty:
     implemented as specified and the queue-drain logic is tested, but nobody has
     watched a six celebrate on a phone. Whether the confetti reads as joyful or
     as jank on a mid-range Android is genuinely unknown.
+
+14. **Two bugs sat in `record_delivery` from Phase 5 to Phase 8 and nothing
+    caught them.** Not uncertainty — history, and the most useful thing in this
+    section. Both were found only because Phase 8 needed to _read_ the rows
+    Phase 5 had been writing, and both are fixed by
+    `20260803191000_fix_json_null_wicket.sql`.
+
+    - `v_wicket jsonb := p->'wicket'`. The client sends `{"wicket": null}` on
+      every non-wicket ball, and `->` returns `'null'::jsonb`, which is **not**
+      SQL `NULL`. So `v_wicket is null` was false on every delivery: every ball
+      stored `is_wicket = true` (a side all out in ten balls) and no four or
+      six was ever flagged, because those flags were computed as
+      `runs_batter = 4 and v_wicket is null`. Fixed with
+      `nullif(p->'wicket', 'null'::jsonb)`.
+    - The server stored `extraRuns` verbatim, but the engine stores
+      `autoExtra + input.extraRuns`. Every wide and no-ball was a run short in
+      the database, and the audience view — which subtracts the wide penalty
+      again on replay — rendered them as zero. Fixed by computing
+      `v_auto_extra` from the match config server-side.
+
+    **Why nothing caught them:** pgTAP asserted the RPC returned a row, not
+    what was in it, and the client never re-read what it wrote — the scorer
+    projects from its own local log through the engine, so the pad looked
+    perfect while the database filled with nonsense. The lesson generalises:
+    a write path that is never read back is not tested, however green the
+    suite is. Any future RPC that stores a projection of engine state needs a
+    test that reads the row and compares it to the engine's own answer.
 
 ---
 

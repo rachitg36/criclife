@@ -116,9 +116,10 @@ All of Phase 0's human-only setup is **done** (deploy, GitHub repo, Supabase
 projects, phone auth off, Resend SMTP, Actions secrets, keepalive). What's
 left — the first one now blocks real use:
 
-- **Sign-in is broken on staging** — `POST /auth/v1/otp` returns 500 and
-  nothing reaches Resend. Almost certainly SMTP. This blocks everything;
-  HANDOFF.md § 2 opens with the diagnosis and the fastest way past it.
+- ~~Sign-in is broken on staging~~ — **fixed 2026-08-03**, someone is in the
+  app. Custom SMTP was the 500; it is now off, so mail only reaches addresses
+  on the Supabase org. **Resend still needs fixing** before anyone else can
+  sign in. HANDOFF.md § 2 has the full account.
 - **Bring `criclife-staging` up to 15 migrations.** Both projects now have a
   schema (2026-08-03), but staging got the 13-file Phase 7 version and prod
   got all 15 — so staging, which local dev points at, is still running the
