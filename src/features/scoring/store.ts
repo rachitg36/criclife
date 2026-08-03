@@ -125,6 +125,9 @@ type ScorerState = {
       that only makes sense if a co-scorer scored differently while this
       device was offline. Non-null blocks the pad — docs/05 § 6.6. */
   conflict: { inningsId: string; pending: PendingDelivery[] } | null;
+  /** `start_innings` is in flight. Exists so the button can say so — a
+      request with no visible state is indistinguishable from a dead button. */
+  starting: boolean;
   /** This device's own signed-in identity — needed to broadcast (and to
       ignore its own echo of) soft locks. docs/03 § 3.6. */
   myProfileId: string | null;
@@ -229,6 +232,7 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
   online: typeof navigator === 'undefined' || navigator.onLine,
   hasSyncError: false,
   conflict: null,
+  starting: false,
   myProfileId: null,
   myDisplayName: null,
   softLock: null,
@@ -481,15 +485,43 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
 
   startNextInnings: async () => {
     const { matchId } = get();
-    if (!matchId) return;
-    const { error } = await supabase.rpc('start_innings', { p_match_id: matchId });
-    if (error) {
-      // TOSS_REQUIRED / XI_REQUIRED / FORBIDDEN all arrive here, and each says
-      // exactly what is missing — worth translating rather than showing raw.
-      set({ error: userMessage(classifyError(error)) });
+    if (!matchId) {
+      // Was a bare `return`. Every silent path out of this function reads as
+      // "the button does nothing", which is the one outcome that tells nobody
+      // anything — reported exactly that way on 2026-08-04.
+      set({ error: 'No match is loaded. Reload the page.' });
       return;
     }
-    await get().init(matchId);
+
+    set({ starting: true, error: null });
+    try {
+      const { error } = await supabase.rpc('start_innings', { p_match_id: matchId });
+      if (error) {
+        // TOSS_REQUIRED / XI_REQUIRED / FORBIDDEN all arrive here, and each
+        // says exactly what is missing — worth translating rather than raw.
+        set({ error: userMessage(classifyError(error)) });
+        return;
+      }
+
+      await get().init(matchId);
+
+      // The RPC returned an innings and `init` still cannot see one. Nothing
+      // known produces this — which is exactly why it must not be silent.
+      if (get().mode === 'NOT_STARTED') {
+        set({
+          error:
+            'The server started the innings but it did not come back. Reload; if it persists, ' +
+            'the match may need setting up again.',
+        });
+      }
+    } catch (e) {
+      // `init` awaits four queries and a replay. A throw here used to reject
+      // the promise the button fires and forgets, so it reached the console
+      // and nowhere else.
+      set({ error: userMessage(classifyError(e)) });
+    } finally {
+      set({ starting: false });
+    }
   },
 
   markRevoked: (revoked) => set({ revoked, mode: revoked ? 'READ_ONLY' : get().mode }),

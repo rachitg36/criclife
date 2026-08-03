@@ -20,6 +20,7 @@ export function InningsNotStartedScreen() {
   const matchId = useScorerStore((s) => s.matchId);
   const startNextInnings = useScorerStore((s) => s.startNextInnings);
   const error = useScorerStore((s) => s.error);
+  const starting = useScorerStore((s) => s.starting);
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
@@ -39,10 +40,11 @@ export function InningsNotStartedScreen() {
 
       <button
         type="button"
-        className="press mt-1 min-h-14 w-full max-w-xs rounded-[var(--r-md)] bg-[var(--accent)] text-[16px] font-bold text-[var(--accent-fg)]"
+        disabled={starting}
+        className="press mt-1 min-h-14 w-full max-w-xs rounded-[var(--r-md)] bg-[var(--accent)] text-[16px] font-bold text-[var(--accent-fg)] disabled:opacity-60"
         onClick={() => void startNextInnings()}
       >
-        Start the innings
+        {starting ? 'Starting…' : 'Start the innings'}
       </button>
       {matchId && (
         <Link
