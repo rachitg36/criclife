@@ -25,6 +25,84 @@ Decisions already locked in are logged in `docs/13-OPEN-QUESTIONS.md` § A and �
 
 ## 2. Continue here — exact next step
 
+### ⏸ PAUSED MID-DEBUG, 2026-08-03 — read this before anything else
+
+Phase 7 is finished, committed and deployed. What follows is a _live blocker_
+that stopped a session in progress, not a build task. Nobody can sign in to
+either environment until it is cleared, so Phase 8 is not actually startable.
+
+**Where things got to this session**
+
+|                                         |                                                              |
+| --------------------------------------- | ------------------------------------------------------------ |
+| `criclife-staging` schema               | applied and verified — § 4                                   |
+| `criclife-prod` schema                  | **still empty**, and prod is what the deployed app points at |
+| Deployed Worker                         | Phase 7 build, version `fd6a1bd0`                            |
+| Add-to-Home-Screen                      | verified on a real phone                                     |
+| Local dev on the owner's Windows laptop | running, on this branch, `.env.local` → staging              |
+
+**The blocker: sign-in returns HTTP 500.**
+
+`POST /auth/v1/otp` against staging returns **500** in ~1.9s, and **nothing
+appears in Resend**. Read together those two facts say GoTrue accepted the
+request and then failed trying to hand the mail to SMTP — the message never
+reached Resend at all.
+
+- **Ruled out: the redirect allowlist.** A `redirect_to` that is not on the
+  allowlist is rejected with a **400** and a named error, never a 500. (The
+  allowlist may _still_ need setting — Site URL `http://localhost:5173`,
+  Redirect URLs `http://localhost:5173/**` — but it is not what is failing now.)
+- **Prime suspect: SMTP on staging.** § 6.3 records Resend as wired on both
+  projects in Phase 0, but that is a recorded intention nobody has re-verified,
+  and staging has been idle since. Check **Project Settings → Authentication →
+  SMTP Settings**.
+- **Fastest way past it:** turn custom SMTP _off_ on staging and let Supabase's
+  built-in sender take over. It is rate-limited to a few an hour and only
+  delivers to addresses on the Supabase org — which covers the owner's own
+  address — and that is enough to get a real session and finally exercise the
+  schema. Fix Resend afterwards, when it is not blocking.
+- **To confirm rather than guess:** the failing request's Response body, or
+  **Supabase → Logs → Auth**, which prints GoTrue's SMTP error verbatim.
+
+**Open question nobody has answered yet — worth resolving before more building.**
+
+The owner's Windows checkout (`D:\Claud\Cricket Normal`) turned out to contain
+a **parallel, independent build of this same project**, which was parked on a
+local branch `local-work-backup` (commit `43a84fe`) to unblock the branch
+switch. It is local to that machine and has never been pushed. It contains:
+
+- a complete, _different_ set of Phase 2 migrations on their own timestamp
+  series (`20260802000100_…` … `20260802000700_rls.sql`) — this branch's are
+  `20260802120000_…` onward, 13 files covering Phases 2–7;
+- a different pgTAP layout (`supabase/tests/database/01_rls_personas.test.sql`);
+- a different auth approach (`src/lib/env.schema.ts`, `src/lib/session.ts`);
+- edits to `src/app/router.tsx` and `tests/e2e/smoke.spec.ts` — the same two
+  files Phase 7 changed.
+
+Two schemas for one project, and **the one already applied to staging is this
+branch's**. The practical risk is low (the other work is Phase-2-scoped and
+this branch supersedes it) but it should be an explicit decision, not a thing
+that quietly rots: `git diff main local-work-backup --stat` on that machine,
+then either delete the branch or say what needs salvaging.
+
+**Two real bugs this session, both found only by running the thing**
+
+Neither was reachable from any test, and both were in code that had been
+"green" for a phase:
+
+1. The login screen rendered a literal red `{}` as the entire explanation for
+   a failed sign-in — some GoTrue failures carry a body with no usable text,
+   and `error.message` went straight to the screen.
+2. Before that, it showed the browser's raw `Failed to fetch` on a network
+   error, which tells a scorer at a ground with two bars of signal nothing.
+
+Both fixed in `src/features/auth/authErrors.ts`, regression-guarded. Worth
+noting _how_ the first fix went wrong on the first attempt: it also treated a
+missing HTTP status as a network failure, which swallowed genuine server
+messages — the pre-existing `LoginPage` test caught it immediately.
+
+---
+
 ### Next: Phase 8 — stats & rankings
 
 > Start Phase 8: `player_match_stats` / `player_career_stats` rollups, the
