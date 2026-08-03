@@ -121,21 +121,6 @@ export const router = createBrowserRouter([
         ],
       },
 
-      /* ── Scorer view — its own no-scroll shell (Phase 5) ─ */
-      {
-        element: <ScoringLayout />,
-        children: [
-          {
-            path: '/matches/:matchId/score',
-            element: (
-              <RequireScoringGrant>
-                <ScorerRoute />
-              </RequireScoringGrant>
-            ),
-          },
-        ],
-      },
-
       /* ── Everything that needs a session — AuthProvider is scoped
              here, not globally, so the audience bundle stays auth-free. ── */
       {
@@ -153,6 +138,30 @@ export const router = createBrowserRouter([
                 <OnboardingPage />
               </RequireAuth>
             ),
+          },
+
+          /* ── Scorer view — its own no-scroll shell, no AppLayout chrome
+                 (Phase 5). Deliberately NOT wrapped in <RequireAuth> the way
+                 the rest of this branch is: RequireAuth's redirect renders a
+                 <Navigate>, which swaps the entire matched route — including
+                 this ScoringLayout — for /login's, so the no-scroll shell
+                 unmounts outright instead of showing a state inside it.
+                 RequireScoringGrant folds "not signed in" into its own
+                 checking/denied states (rendered *inside* ScoringLayout) so
+                 the shell stays mounted and the zero-scroll guarantee holds
+                 no matter how the auth/grant check comes out. ── */
+          {
+            element: <ScoringLayout />,
+            children: [
+              {
+                path: '/matches/:matchId/score',
+                element: (
+                  <RequireScoringGrant>
+                    <ScorerRoute />
+                  </RequireScoringGrant>
+                ),
+              },
+            ],
           },
 
           /* ── Authenticated app shell ───────────────────── */
