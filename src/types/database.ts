@@ -1170,6 +1170,16 @@ export type Database = {
         };
         Returns: Database['public']['Tables']['players']['Row'];
       };
+      /* Phase 8. Hand-added: `supabase gen types` still cannot run in this
+         sandbox (no Docker — HANDOFF.md § 5.1), so new RPC signatures are
+         written here by hand until someone regenerates against a real
+         project. `refinalize_match` is the only Phase 8 function the client
+         calls; the rest run from the trigger and are revoked from
+         anon/authenticated on purpose. */
+      refinalize_match: {
+        Args: { p_match_id: string };
+        Returns: Json;
+      };
       complete_match: {
         Args: {
           p_match_id: string | null;

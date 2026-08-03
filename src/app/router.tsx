@@ -21,6 +21,8 @@ import { ErrorPage } from '@/features/system/ErrorPage';
 const ScorerRoute = lazy(() => import('@/features/scoring/ScorerRoute'));
 const AudienceRoute = lazy(() => import('@/features/audience/AudienceRoute'));
 const RanksRoute = lazy(() => import('@/features/ranks/RanksRoute'));
+const CompareRoute = lazy(() => import('@/features/ranks/CompareRoute'));
+const StatsRoute = lazy(() => import('@/features/stats/StatsRoute'));
 const AdminRoute = lazy(() => import('@/features/admin/AdminRoute'));
 const LoginPage = lazy(() =>
   import('@/features/auth/LoginPage').then((m) => ({ default: m.LoginPage }))
@@ -91,14 +93,8 @@ export const router = createBrowserRouter([
         children: [
           { path: '/live/:publicSlug', element: <AudienceRoute /> },
           { path: '/ranks', element: <RanksRoute /> },
-          {
-            path: '/ranks/compare',
-            ...stub('Compare players', 8, '07-STATS-AND-RANKINGS.md', 'Head-to-head radar.'),
-          },
-          {
-            path: '/stats',
-            ...stub('League stats', 8, '07-STATS-AND-RANKINGS.md', 'Leaderboards.'),
-          },
+          { path: '/ranks/compare', element: <CompareRoute /> },
+          { path: '/stats', element: <StatsRoute /> },
           { path: '/matches/:matchId/scorecard', ...stub('Scorecard', 5) },
           { path: '/matches/:matchId/feed', ...stub('Ball-by-ball', 5) },
         ],
@@ -208,7 +204,13 @@ export const router = createBrowserRouter([
               },
               { path: '/settings/scoring', ...stub('Scoring preferences', 5) },
               { path: '/settings/notifications', ...stub('Notifications', 9) },
-              { path: '/settings/data', ...stub('Data & storage', 9) },
+              {
+                path: '/settings/data',
+                lazy: async () => {
+                  const m = await import('@/features/settings/DataSettings');
+                  return { Component: m.DataSettings };
+                },
+              },
               { path: '/settings/about', ...stub('About CricLife', 9) },
             ],
           },

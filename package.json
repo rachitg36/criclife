@@ -128,7 +128,9 @@
         "!dist/assets/ScorecardTab-*.js",
         "!dist/assets/SquadsTab-*.js",
         "!dist/assets/TvLayout-*.js",
-        "!dist/assets/VirtualFeed-*.js"
+        "!dist/assets/VirtualFeed-*.js",
+        "!dist/assets/StatsRoute-*.js",
+        "!dist/assets/CompareRoute-*.js"
       ],
       "limit": "180 kB"
     }
