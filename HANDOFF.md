@@ -246,10 +246,30 @@ VITE_PUBLIC_URL=https://criclife.geminirachit.workers.dev
 
 **This only works if staging's redirect allowlist knows the deployed URL.**
 Supabase → `criclife-staging` → Authentication → URL Configuration must list
-`https://criclife.geminirachit.workers.dev/**` alongside the localhost entry,
-or sign-in on the live site fails exactly the way it did on the first magic
-link. Site URL can stay `http://localhost:5173`; the allowlist is what
-matters.
+`https://criclife.geminirachit.workers.dev/**` alongside the localhost entry.
+
+**How this fails is worth knowing, because it does not look like a failure.**
+An earlier version of this file said a `redirect_to` that is not on the
+allowlist "is rejected with a 400 and a named error". That is wrong, and it
+sent one debugging session down the wrong path. GoTrue **silently substitutes
+the project's Site URL** instead. So the mail sends, the link works, the token
+is valid — and the browser lands on whatever Site URL says, with the `?code=`
+still attached but the `/auth/callback` path gone.
+
+A brand-new Supabase project ships with Site URL `http://localhost:3000`, a
+port nothing in this repo has ever used. Landing on `localhost:3000/?code=…`
+with `ERR_CONNECTION_REFUSED` is therefore the signature of _"the redirect was
+not allowlisted on the project this build points at"_ — not of a broken link,
+a dead dev server, or a wrong port. It happened on prod on 2026-08-03, whose
+URL Configuration had never been touched.
+
+Set both fields on both projects, so the fallback is harmless if it ever
+happens again:
+
+| Field         | Value                                                                         |
+| ------------- | ----------------------------------------------------------------------------- |
+| Site URL      | `https://criclife.geminirachit.workers.dev`                                   |
+| Redirect URLs | `https://criclife.geminirachit.workers.dev/**` and `http://localhost:5173/**` |
 
 To move to prod later, swap the two Supabase lines back to
 `https://tljbwnbjwgdpmdhvttai.supabase.co` /
