@@ -69,6 +69,17 @@ const DOMAIN_CODES: Record<string, { kind: ErrorKind; message: string }> = {
   CONSECUTIVE_OVER: { kind: 'validation', message: 'A bowler cannot bowl two overs in a row.' },
   NO_PERMISSION: { kind: 'permission', message: "You don't have permission to do that." },
   MATCH_NOT_FOUND: { kind: 'not_found', message: 'That match no longer exists.' },
+  // The three `start_innings` refuses on. Each names something specific that
+  // is missing, which is the whole value of showing them.
+  TOSS_REQUIRED: { kind: 'validation', message: 'Set the toss before starting the innings.' },
+  XI_REQUIRED: {
+    kind: 'validation',
+    message: 'Both teams need a playing XI before the innings can start.',
+  },
+  FORBIDDEN: {
+    kind: 'permission',
+    message: 'Only a manager of one of these teams can do that.',
+  },
 };
 
 const BY_KIND: Record<ErrorKind, { message: string; retryable: boolean }> = {

@@ -16,6 +16,7 @@ import { OpenersPicker } from './components/OpenersPicker';
 import { BowlerPicker } from './components/BowlerPicker';
 import { BatterPicker } from './components/BatterPicker';
 import { InningsBreakScreen } from './components/InningsBreakScreen';
+import { InningsNotStartedScreen } from './components/InningsNotStartedScreen';
 import { MatchOverScreen } from './components/MatchOverScreen';
 import { MergeScreen } from './components/MergeScreen';
 import { ScorerTabs } from './components/ScorerTabs';
@@ -70,6 +71,14 @@ export default function ScorerRoute() {
       <div className="flex h-full flex-col">
         <StatusStrip />
         <MergeScreen />
+      </div>
+    );
+  }
+  if (mode === 'NOT_STARTED') {
+    return (
+      <div className="flex h-full flex-col">
+        <StatusStrip />
+        <InningsNotStartedScreen />
       </div>
     );
   }

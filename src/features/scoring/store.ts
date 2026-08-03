@@ -61,6 +61,8 @@ export type EditableDeliveryChanges = {
 export type PadMode =
   | 'LOADING'
   | 'ERROR'
+  /** No innings row exists yet — `start_innings` has never been called. */
+  | 'NOT_STARTED'
   | 'READY'
   | 'AWAITING_OPENERS'
   | 'AWAITING_BOWLER'
@@ -347,7 +349,12 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     if (match.is_locked || matchState.status === 'completed') {
       mode = 'MATCH_OVER';
     } else if (!innings) {
-      mode = 'AWAITING_OPENERS';
+      // Not AWAITING_OPENERS. There is no innings to pick openers *for*, and
+      // `OpenersPicker` returns null without one — which rendered the pad as a
+      // black rectangle with WICKET and UNDO floating at the bottom, the first
+      // thing anyone saw on the real thing. `start_innings` has to be called
+      // first, and only `NOT_STARTED` says so.
+      mode = 'NOT_STARTED';
     } else if (innings.strikerId === null || innings.nonStrikerId === null) {
       mode = 'AWAITING_OPENERS';
     } else if (innings.bowlerId === null) {
@@ -477,7 +484,9 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     if (!matchId) return;
     const { error } = await supabase.rpc('start_innings', { p_match_id: matchId });
     if (error) {
-      set({ error: error.message });
+      // TOSS_REQUIRED / XI_REQUIRED / FORBIDDEN all arrive here, and each says
+      // exactly what is missing — worth translating rather than showing raw.
+      set({ error: userMessage(classifyError(error)) });
       return;
     }
     await get().init(matchId);
