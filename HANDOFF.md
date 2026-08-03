@@ -177,6 +177,33 @@ and in `.env.local`. **Never** put a Supabase personal access token, service
 role key, or Resend API key in this file or in chat — those go directly into
 the relevant dashboard, never through an assistant.
 
+**Confirmed on a real device, 2026-08-03:** the deployed Phase 7 build
+redirects to `/login` and the magic link fails — exactly what an empty
+database produces (no `profiles` table, so the signup trigger has nothing to
+write to). Not a bug in the app; the migration gap below is the whole cause.
+
+**Two routes to fix it.** Neither can be driven from this sandbox: outbound
+HTTP to `supabase.co` is blocked, no Supabase credentials are in the
+environment, and CLAUDE.md forbids a DB password or access token travelling
+through chat.
+
+1. **Preferred — `supabase db push`** with the CLI and your access token. This
+   is the only route that populates Supabase's own migration-history table, so
+   future `db push` runs behave.
+2. **Fallback — paste the whole schema into the Dashboard's SQL Editor.**
+   Regenerate the single-file version any time with:
+
+   ```bash
+   for f in supabase/migrations/*.sql; do echo; echo "-- $(basename "$f")"; cat "$f"; done > /tmp/criclife-schema.sql
+   ```
+
+   Verified in Phase 7 to apply to an empty database in one shot with zero
+   errors: 22 tables, 41 functions, 45 policies, 4 published tables. **Never
+   include `supabase/tests/00_local_auth_stub.sql`** (it fakes the auth schema
+   real Supabase already has) **or `seed.sql`** (local dev fixtures). Caveat:
+   this leaves the migration-history table empty, so a later `db push` will try
+   to replay everything and fail on the first `create table`.
+
 **Important gap:** the `supabase/migrations/*.sql` files have never been run
 against either real Supabase project — every verification so far (pgTAP, the
 seed script, RLS checks) has been against a scratch local Postgres database
