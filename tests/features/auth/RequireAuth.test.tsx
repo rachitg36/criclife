@@ -5,7 +5,10 @@ import { RequireAuth } from '@/app/guards/RequireAuth';
 import { AuthContext } from '@/features/auth/authContext';
 import type { Session } from '@supabase/supabase-js';
 
-function renderWithAuth(value: { session: Session | null; loading: boolean }, initialPath = '/protected') {
+function renderWithAuth(
+  value: { session: Session | null; loading: boolean },
+  initialPath = '/protected'
+) {
   return render(
     <AuthContext.Provider value={value}>
       <MemoryRouter initialEntries={[initialPath]}>

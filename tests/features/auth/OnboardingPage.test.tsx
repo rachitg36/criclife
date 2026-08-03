@@ -77,7 +77,11 @@ describe('OnboardingPage', () => {
     await waitFor(() =>
       expect(insertMock).toHaveBeenCalledWith(
         'players',
-        expect.objectContaining({ profile_id: 'user-1', primary_role: 'batter', batting_hand: 'right' })
+        expect.objectContaining({
+          profile_id: 'user-1',
+          primary_role: 'batter',
+          batting_hand: 'right',
+        })
       )
     );
     expect(await screen.findByText('Join or create a team')).toBeInTheDocument();
@@ -89,7 +93,9 @@ describe('OnboardingPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /that's me/i }));
 
-    await waitFor(() => expect(rpcMock).toHaveBeenCalledWith('claim_player', { p_claim_code: 'CLAIM-001' }));
+    await waitFor(() =>
+      expect(rpcMock).toHaveBeenCalledWith('claim_player', { p_claim_code: 'CLAIM-001' })
+    );
     expect(await screen.findByText(/claimed/i)).toBeInTheDocument();
   });
 });
