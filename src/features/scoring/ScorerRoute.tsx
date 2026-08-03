@@ -17,6 +17,7 @@ import { BowlerPicker } from './components/BowlerPicker';
 import { BatterPicker } from './components/BatterPicker';
 import { InningsBreakScreen } from './components/InningsBreakScreen';
 import { InningsNotStartedScreen } from './components/InningsNotStartedScreen';
+import { PadUnavailable } from './components/PadUnavailable';
 import { MatchOverScreen } from './components/MatchOverScreen';
 import { MergeScreen } from './components/MergeScreen';
 import { ScorerTabs } from './components/ScorerTabs';
@@ -55,6 +56,15 @@ export default function ScorerRoute() {
   const undo = useScorerStore((s) => s.undo);
   const conflict = useScorerStore((s) => s.conflict);
   const softLock = useScorerStore((s) => s.softLock);
+  const matchState = useScorerStore((s) => s.matchState);
+  const config = useScorerStore((s) => s.config);
+
+  // Every component below returns null without these, so without this gate the
+  // Score tab's failure mode is a black rectangle with WICKET and UNDO in it.
+  // See `PadUnavailable`.
+  const padReady = Boolean(
+    matchState && config && matchState.innings[matchState.currentInningsIndex]
+  );
 
   useEffect(() => {
     if (matchId) void init(matchId);
@@ -103,7 +113,9 @@ export default function ScorerRoute() {
     <div className="relative flex h-full flex-col">
       <StatusStrip />
 
-      {scorerTab === 'score' && (
+      {scorerTab === 'score' && !padReady && <PadUnavailable />}
+
+      {scorerTab === 'score' && padReady && (
         <>
           <ScoreBlock />
           <BattersRow />
