@@ -229,12 +229,32 @@ inherits `.env.local` (Vite ranks `.env.local` _above_ `.env.production`).
 That would bake `VITE_PUBLIC_URL=http://localhost:5173` into the bundle and
 every share link Phase 7 generates would point at localhost:
 
+**Decision, 2026-08-03: the deployed build points at _staging_, not prod.**
+Staging is where the only real team, match and deliveries live, and pointing
+the live site at an empty prod project would mean proving the app twice. So
+"production" currently means "the deployed build", not "the prod project" —
+a deliberate, temporary blur that has to be undone before anyone outside the
+owner signs in. Prod's own URL Configuration is still unset, which is a second
+reason not to point at it yet.
+
 ```
-VITE_SUPABASE_URL=https://tljbwnbjwgdpmdhvttai.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_oyHY2XoW3H2sk3ckL8JyQA_FLYJD6OM
+VITE_SUPABASE_URL=https://mkzgwwqkwcjcggxuavlr.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_AOlNgi5MClWG1zHMbtofaA_v-Zb0XsE
 VITE_APP_ENV=production
 VITE_PUBLIC_URL=https://criclife.geminirachit.workers.dev
 ```
+
+**This only works if staging's redirect allowlist knows the deployed URL.**
+Supabase → `criclife-staging` → Authentication → URL Configuration must list
+`https://criclife.geminirachit.workers.dev/**` alongside the localhost entry,
+or sign-in on the live site fails exactly the way it did on the first magic
+link. Site URL can stay `http://localhost:5173`; the allowlist is what
+matters.
+
+To move to prod later, swap the two Supabase lines back to
+`https://tljbwnbjwgdpmdhvttai.supabase.co` /
+`sb_publishable_oyHY2XoW3H2sk3ckL8JyQA_FLYJD6OM`, and set prod's Site URL and
+Redirect URLs to the deployed domain first.
 
 After deploying, confirm the right version is live with
 `npx wrangler deployments list`. Fetching the deployed URL over HTTP does not
