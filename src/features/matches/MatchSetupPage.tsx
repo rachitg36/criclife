@@ -11,9 +11,14 @@ import type { MatchConfig } from '@/engine/types';
 
 /**
  * docs/11-SCREENS-AND-ROUTES.md § 5 — `/matches/:matchId/setup`. Toss, then
- * squad selection (captain + keeper) for both teams. Picking openers and the
- * opening bowler stays with Phase 5's scorer pad — the `innings` table has
- * no column to hold that pre-first-ball (see the migration's own note).
+ * squad selection (captain + keeper) for both teams.
+ *
+ * Openers and the opening bowler are deliberately NOT here. docs/11 § 5 used
+ * to say they were, contradicting docs/05 § 2/5 where `AWAITING_OPENERS` and
+ * `AWAITING_BOWLER` are pad modes; settled in favour of the pad on 2026-08-03
+ * and docs/11 now says so. Two reasons: openers named at the toss are usually
+ * wrong by the first ball, and there is no `innings` row before
+ * `start_innings` to hold the answer anyway.
  */
 export function MatchSetupPage() {
   const { matchId } = useParams<{ matchId: string }>();

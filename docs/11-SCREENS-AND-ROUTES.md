@@ -77,13 +77,29 @@ Empty state: an illustrated "Let's get you started" with two CTAs.
 | `/matches` | authed | Segmented: **Live · Upcoming · Completed**. Filter by team. |
 | `/matches/new` | manager | **4-step wizard**, one step per screen, no scrolling: ① Teams ② Format & settings (rules profile picker, then **overs per innings**, balls/over, players/side, max overs per bowler, powerplays, free hit, super over) ③ Venue & time ④ Scoring rights (pick who can score — pre-filled with you) |
 | `/matches/:matchId` | public read | **Hub.** Routes by context: pre-toss → setup CTA; live + you hold a grant → big "Resume scoring" button; live otherwise → audience view; completed → scorecard |
-| `/matches/:matchId/setup` | manager | Toss (coin animation, winner, bat/bowl) → squad selection for both teams (drag to reorder batting order, tap to set captain and keeper) → openers and opening bowler |
+| `/matches/:matchId/setup` | manager | Toss (coin animation, winner, bat/bowl) → squad selection for both teams (drag to reorder batting order, tap to set captain and keeper) → **Start match**. Openers and the opening bowler are **not** set here — see the note below |
 | `/matches/:matchId/score` | **grant holder** | **THE SCORER VIEW.** See [05](./05-SCORER-VIEW.md). Sub-tabs: Score · Scorecard · Map · Feed · Settings |
 | `/matches/:matchId/rights` | manager or holder | **SCORING RIGHTS MAP.** See [03](./03-ROLES-PERMISSIONS.md) §3.4. Graph of who holds scoring rights; issue, pass, revoke, scope, expiry, QR handoff |
 | `/matches/:matchId/scorecard` | public read | Full cards, both innings |
 | `/matches/:matchId/feed` | public read | Ball-by-ball; scorer can edit commentary inline |
 | `/matches/:matchId/settings` | manager | Live-editable config subset, audit trail of config changes |
 | `/matches/:matchId/review` | grant holder | **Review Tray** — offline balls the server rejected, with per-ball resolve actions |
+
+> **Openers and the opening bowler belong to the scorer, not to setup.**
+> This table used to end the setup flow with "→ openers and opening bowler",
+> which contradicted [05](./05-SCORER-VIEW.md) § 2/5 — where `AWAITING_OPENERS`
+> and `AWAITING_BOWLER` are pad modes — and the code followed 05. Settled in
+> favour of the pad on 2026-08-03, for two reasons.
+>
+> The practical one: openers named at the toss are routinely wrong by the time
+> anyone bowls. Somebody is still padding up, somebody arrived late, the
+> captain changed their mind after seeing the pitch. The pad is the last
+> responsible moment, and it is where the person who knows is standing.
+>
+> The structural one: there is no `innings` row before `start_innings`, so
+> there is nowhere to put the answer. Holding it would mean new columns on
+> `matches` or `match_squads` and a migration, to store something that is
+> usually stale by the time it is read.
 
 ---
 
