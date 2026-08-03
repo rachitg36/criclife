@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
 import { env } from '@/lib/env';
 import { useAuth } from './authContext';
+import { humanAuthError } from './authErrors';
 
 /**
  * docs/11-SCREENS-AND-ROUTES.md § 1 — single email field, no password, plus
@@ -36,7 +37,7 @@ export function LoginPage() {
     });
     if (error) {
       setStatus('error');
-      setErrorMessage(error.message);
+      setErrorMessage(humanAuthError(error));
       return;
     }
     setStatus('sent');
@@ -48,7 +49,7 @@ export function LoginPage() {
       provider: 'google',
       options: { redirectTo },
     });
-    if (error) setErrorMessage(error.message);
+    if (error) setErrorMessage(humanAuthError(error));
   }
 
   return (
