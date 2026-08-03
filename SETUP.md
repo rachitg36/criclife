@@ -103,6 +103,65 @@ installed PWAs break.
 The `anon` key is safe in the browser. Row Level Security protects the data,
 not key secrecy.
 
+### 3a. Push the schema — **the app does nothing until you do this**
+
+Confirmed on a real phone on 2026-08-03: with an empty database the deployed
+app redirects to `/login` and the magic link fails. That is not a bug — the
+`profiles` table and its signup trigger don't exist yet, so there is nothing
+for the callback to write to. Every other screen fails the same way.
+
+Do **staging first**. This is the first time any of it touches hosted Postgres.
+
+**Route 1 — the CLI (preferred).** Only this route records the migrations in
+Supabase's own history table, so future pushes behave:
+
+```bash
+npx supabase login                        # opens a browser
+npx supabase link --project-ref mkzgwwqkwcjcggxuavlr   # staging
+npx supabase db push
+# then, once staging looks right:
+npx supabase link --project-ref tljbwnbjwgdpmdhvttai   # prod
+npx supabase db push
+```
+
+**Route 2 — the Dashboard, if the CLI is a hassle.** Concatenate the
+migrations and paste the result into **SQL Editor → Run**:
+
+```bash
+for f in supabase/migrations/*.sql; do echo; echo "-- $(basename "$f")"; cat "$f"; done > /tmp/criclife-schema.sql
+```
+
+Verified to apply to an empty database in one shot: 22 tables, 41 functions,
+45 policies, 4 tables published for Realtime, zero errors. Two files must
+**never** be included, and the loop above correctly excludes both:
+
+- `supabase/tests/00_local_auth_stub.sql` — fakes the `auth` schema for a bare
+  local Postgres. Real Supabase already has the real one; running the stub
+  there would collide with it.
+- `supabase/seed.sql` — local dev fixtures (4 teams, 44 shadow players, a
+  Super Admin bound to a fake auth user). You do not want these in prod.
+
+Route 2's catch: it leaves Supabase's migration-history table empty, so a
+later `supabase db push` will try to replay everything and fail on the first
+`create table`. Pick one route per project and stay on it.
+
+**Then regenerate the DB types** the normal way, replacing the introspection
+workaround described in HANDOFF.md § 5.1:
+
+```bash
+npx supabase gen types typescript --linked > src/types/database.ts
+npm run typecheck
+```
+
+> **Why you and not the assistant.** A Claude Code session cannot do this
+> step: outbound HTTPS to `supabase.co` is blocked by the sandbox network
+> policy, and the database password and access token must never travel
+> through a chat (see CLAUDE.md). If you want a future session to be able to
+> run it, two things have to change — widen the environment's network policy
+> to reach `supabase.co`, and add `SUPABASE_ACCESS_TOKEN` as an environment
+> variable in the environment's settings rather than pasting it in a message.
+> See <https://code.claude.com/docs/en/claude-code-on-the-web>.
+
 ---
 
 ## 4. Resend for magic-link email
