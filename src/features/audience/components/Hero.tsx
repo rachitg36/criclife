@@ -30,6 +30,12 @@ export function Hero({ view }: { view: AudienceView }) {
   }
 
   const result = matchState.result;
+  // `result` alone is not "the match is over". A match completed or abandoned
+  // while the chase was still short has no engine result — the delivery log
+  // never implied one — and the hero went on offering "Need 1 off 4 balls"
+  // under a FINAL OVER badge on a finished game. `view.isComplete` is the
+  // server's word for it and has been available all along.
+  const ended = result !== null || view.isComplete;
   const chasing = innings.target !== null;
 
   return (
@@ -37,17 +43,17 @@ export function Hero({ view }: { view: AudienceView }) {
       className={cn(
         'relative overflow-hidden px-4 pb-5 pt-6',
         // docs/06 § 4 — the final over gets its own high-contrast state.
-        view.isLastOver && !result && 'final-over'
+        view.isLastOver && !ended && 'final-over'
       )}
     >
       <Aurora />
 
       <div className="relative flex flex-col items-center">
-        {result ? (
+        {ended ? (
           <>
             <p className="label-overline text-[var(--accent)]">Result</p>
             <p className="mt-1 text-center text-[var(--text-display-md)] font-semibold leading-tight">
-              {result.text}
+              {result?.text ?? 'Match complete'}
             </p>
           </>
         ) : (
@@ -91,7 +97,7 @@ export function Hero({ view }: { view: AudienceView }) {
           </p>
         )}
 
-        {!result && chasing && view.need !== null && view.need > 0 && (
+        {!ended && chasing && view.need !== null && view.need > 0 && (
           <>
             <div className="mt-3 h-px w-32 bg-[var(--border-default)]" />
             <p className="mt-3 text-[var(--text-heading-md)] font-medium tabular-nums">
@@ -100,7 +106,7 @@ export function Hero({ view }: { view: AudienceView }) {
           </>
         )}
 
-        {!result && (
+        {!ended && (
           <p className="mt-2 text-[var(--text-body-sm)] tabular-nums text-[var(--text-tertiary)]">
             CRR {stat(view.crr)}
             {chasing && view.rrr !== null && Number.isFinite(view.rrr)

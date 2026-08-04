@@ -169,7 +169,14 @@ export function useAudienceView(): AudienceView {
       winProbability: computeWinProbability(shown, config),
       isLastOver: inLastOver(shown, config),
       isHatTrickBall: isHatTrickBall(inningsDeliveries, innings?.bowlerId ?? null),
-      isComplete: shown.result !== null || match.status === 'completed' || match.isLocked,
+      // `abandoned` counts too. A match called off mid-chase has no engine
+      // result — the delivery log never implied one — so anything keying off
+      // `result` alone goes on showing "Need 1 off 4 balls" forever.
+      isComplete:
+        shown.result !== null ||
+        match.status === 'completed' ||
+        match.status === 'abandoned' ||
+        match.isLocked,
       nameOf,
       playerById,
       teamById,
