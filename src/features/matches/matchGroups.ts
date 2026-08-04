@@ -55,3 +55,25 @@ export function resumeAction(status: MatchStatus): { label: string; path: string
   if (status === 'completed' || status === 'abandoned') return { label: 'Result', path: '' };
   return { label: 'Set up', path: 'setup' };
 }
+
+/**
+ * Only the matches this person could actually resume.
+ *
+ * `matches_read_public` makes every match world-readable — correct, a live
+ * score is public — so a bar built on "all live matches" counts strangers'
+ * games. It read "9 matches in progress" on a phone whose owner had two teams,
+ * and would read far worse the moment anybody else used the app.
+ *
+ * "Mine" is a side I am a member of. That is narrower than the server's
+ * `can_score` (which also honours a scoring grant issued to somebody outside
+ * both teams), and deliberately so: this drives a convenience bar, not a
+ * permission. The server refuses anything it should.
+ */
+export function mineOnly<T extends { team_a_id: string; team_b_id: string }>(
+  matches: readonly T[],
+  myTeamIds: readonly string[]
+): T[] {
+  if (myTeamIds.length === 0) return [];
+  const mine = new Set(myTeamIds);
+  return matches.filter((m) => mine.has(m.team_a_id) || mine.has(m.team_b_id));
+}

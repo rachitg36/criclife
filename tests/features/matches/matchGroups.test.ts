@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { groupMatches, resumeAction } from '@/features/matches/matchGroups';
+import { groupMatches, mineOnly, resumeAction } from '@/features/matches/matchGroups';
 import type { MatchStatus } from '@/engine/types';
 
 /**
@@ -76,5 +76,31 @@ describe('resumeAction', () => {
     // does not have. The hub knows it and links through.
     expect(resumeAction('completed')).toEqual({ label: 'Result', path: '' });
     expect(resumeAction('abandoned').path).toBe('');
+  });
+});
+
+describe('mineOnly', () => {
+  // The live bar read "9 matches in progress" on a phone whose owner had two
+  // teams. Every match is world-readable — correct for a live score — so an
+  // unfiltered count includes games this person has nothing to do with.
+  const match = (a: string, b: string) => ({ team_a_id: a, team_b_id: b });
+
+  it('keeps a match where either side is mine', () => {
+    expect(mineOnly([match('t1', 'x')], ['t1'])).toHaveLength(1);
+    expect(mineOnly([match('x', 't1')], ['t1'])).toHaveLength(1);
+  });
+
+  it('drops a match between two teams I have nothing to do with', () => {
+    expect(mineOnly([match('x', 'y')], ['t1', 't2'])).toEqual([]);
+  });
+
+  it('shows nothing at all to someone with no teams', () => {
+    // Not "everything": a signed-in stranger must not be told to resume
+    // somebody else's game.
+    expect(mineOnly([match('x', 'y')], [])).toEqual([]);
+  });
+
+  it('keeps a match between two of my own teams exactly once', () => {
+    expect(mineOnly([match('t1', 't2')], ['t1', 't2'])).toHaveLength(1);
   });
 });

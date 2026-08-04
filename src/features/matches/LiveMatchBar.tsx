@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router';
 import { Radio } from 'lucide-react';
+import { useMyTeams } from '@/features/teams/hooks';
 import { useMatches } from './hooks';
-import { groupMatches } from './matchGroups';
+import { groupMatches, mineOnly } from './matchGroups';
 
 /**
  * A live match must never be lost.
@@ -19,8 +20,19 @@ import { groupMatches } from './matchGroups';
 export function LiveMatchBar() {
   const location = useLocation();
   const { data } = useMatches();
+  const { data: myTeams } = useMyTeams();
+  // Only matches this person could resume. Everything is world-readable, so
+  // an unfiltered count includes other people's games entirely.
   const { live } = groupMatches(
-    (data ?? []) as unknown as { status: never; scheduled_at: string | null }[]
+    mineOnly(
+      (data ?? []) as unknown as {
+        status: never;
+        scheduled_at: string | null;
+        team_a_id: string;
+        team_b_id: string;
+      }[],
+      (myTeams ?? []).map((t) => t.id)
+    )
   );
 
   const hidden = location.pathname.startsWith('/matches');
