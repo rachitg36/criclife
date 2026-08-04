@@ -65,10 +65,16 @@ select throws_ok(
   'a team already playing cannot start a second match, and is named'
 );
 
--- The same match continuing is not a second match.
+-- The same match continuing is not a second match. Innings 1 has to *end*
+-- first — this used to start innings 2 on top of a live innings 1, which is
+-- not a sequence the app can produce and which migration 23 now refuses.
+select end_innings(
+  (select id from innings where match_id = (:'m1')::uuid and innings_no = 1),
+  'all_out'
+);
 select lives_ok(
   format($$ select start_innings('%s'::uuid) $$, :'m1'),
-  'innings 2 of the live match itself still starts'
+  'innings 2 of the live match itself still starts, once innings 1 has ended'
 );
 
 -- Abandoning the first frees both sides.

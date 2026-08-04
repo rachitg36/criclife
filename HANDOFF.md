@@ -231,7 +231,7 @@ npm install
 cp .env.example .env.local   # then fill it in — values are in § 4
 sudo service postgresql start
 sudo apt-get install -y postgresql-16-pgtap    # gone after every container restart
-bash supabase/tests/run-local.sh --seed --pgtap   # expect 241/241 "ok", 0 "not ok"
+bash supabase/tests/run-local.sh --seed --pgtap   # expect 237/237 "ok", 0 "not ok"
 npm run typecheck && npm run lint && npm run test  # expect 331/331
 npm run build && npm run size                      # expect 174.69 kB / 180 kB
 ```
@@ -309,7 +309,7 @@ Local Postgres + pgTAP (see § 5.1 for why this exists instead of `supabase star
 
 ```bash
 sudo service postgresql start
-bash supabase/tests/run-local.sh --seed --pgtap   # expect 241/241 "ok", 0 "not ok"
+bash supabase/tests/run-local.sh --seed --pgtap   # expect 237/237 "ok", 0 "not ok"
 ```
 
 (`npm run test:e2e` needs Playwright browsers, and this sandbox only has a
@@ -884,7 +884,7 @@ screen is free.
 
 | Check                                                        | Result                                                                                                                                                                                                                                                                |
 | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| pgTAP                                                        | **241/241** ("not ok": 0) across 17 files in `supabase/tests/pgtap/`                                                                                                                                                                                                  |
+| pgTAP                                                        | **237/237** ("not ok": 0) across 17 files in `supabase/tests/pgtap/`                                                                                                                                                                                                  |
 | Unit/component tests (`npm run test`)                        | **484/484** across 47 files                                                                                                                                                                                                                                           |
 | `npm run typecheck` / `npm run lint`                         | clean                                                                                                                                                                                                                                                                 |
 | `npm run build` + `npm run size`                             | audience route **177.87 kB** brotli, budget 180 kB — see § 5.13 for how little room that is                                                                                                                                                                           |
