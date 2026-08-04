@@ -139,7 +139,9 @@
         "!dist/assets/SettingsIndex-*.js",
         "!dist/assets/ScoringSettings-*.js",
         "!dist/assets/AboutSettings-*.js",
-        "!dist/assets/DataSettings-*.js"
+        "!dist/assets/DataSettings-*.js",
+        "!dist/assets/HomePage-*.js",
+        "!dist/assets/vendor-qrcode-*.js"
       ],
       "limit": "180 kB"
     }

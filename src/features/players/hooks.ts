@@ -23,6 +23,23 @@ export function usePlayer(playerId: string | undefined) {
 }
 
 /** Team chips shown on the player profile hero. docs/11 § 4. */
+/** Career totals, derived by `rebuild_career_stats` when a match finalises. */
+export function usePlayerCareer(playerId: string | undefined) {
+  return useQuery({
+    queryKey: ['playerCareer', playerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('player_career_stats')
+        .select('*')
+        .eq('player_id', playerId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!playerId,
+  });
+}
+
 export function usePlayerTeams(playerId: string | undefined) {
   return useQuery({
     queryKey: ['playerTeams', playerId],

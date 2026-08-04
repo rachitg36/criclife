@@ -9,7 +9,6 @@ import { RequireAuth } from './guards/RequireAuth';
 import { RequireSuperAdmin } from './guards/RequireSuperAdmin';
 import { RequireScoringGrant } from './guards/RequireScoringGrant';
 import { Placeholder } from '@/components/ui/Placeholder';
-import { HomePage } from '@/features/home/HomePage';
 import { NotFoundPage } from '@/features/system/NotFoundPage';
 import { ErrorPage } from '@/features/system/ErrorPage';
 
@@ -18,6 +17,14 @@ import { ErrorPage } from '@/features/system/ErrorPage';
    scorer bundle must not contain the charts. Auth pages are split
    the same way — the audience route must not pull in supabase-js
    via AuthProvider (see AuthedOutlet, providers/index.tsx).        */
+// Home used to be a static import — it was a placeholder with no data. Now it
+// reads `useMatches`, and a static import of anything that touches
+// `lib/supabase` lands supabase-js in the eager chunk that `/live/:publicSlug`
+// also downloads. That is CLAUDE.md rule 9's 180 kB budget, and it has been
+// blown this way three times. Lazy, like every other page.
+const HomePage = lazy(() =>
+  import('@/features/home/HomePage').then((m) => ({ default: m.HomePage }))
+);
 const ScorerRoute = lazy(() => import('@/features/scoring/ScorerRoute'));
 const AudienceRoute = lazy(() => import('@/features/audience/AudienceRoute'));
 const RanksRoute = lazy(() => import('@/features/ranks/RanksRoute'));

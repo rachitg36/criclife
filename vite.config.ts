@@ -99,6 +99,13 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom', 'react-router'],
           'vendor-motion': ['motion'],
           'vendor-data': ['@tanstack/react-query'],
+          // Named on purpose. `qrcode` used to live inside
+          // ScoringRightsMapPage; the moment a second page (ShareMatch on the
+          // match hub) imported it, Rollup hoisted it to a shared chunk called
+          // `browser-*.js` — 25 kB of unidentifiable weight that the audience
+          // budget then charged for, because the exclusion list can only skip
+          // names it recognises. It is still lazy: nothing eager imports it.
+          'vendor-qrcode': ['qrcode'],
         },
       },
     },

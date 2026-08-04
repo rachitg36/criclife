@@ -269,8 +269,13 @@ and Lighthouse mobile perf on `/live/:publicSlug` is ≥ 90.
       `player_career_stats` has no columns for. See HANDOFF § 6.1.*
 - [x] Emerging section with qualification progress
 - [x] `/stats` league leaderboards
-- [ ] Player profile career tables, form strip, milestones — *not built; the
-      Phase 3 profile page is unchanged.*
+- [~] Player profile career tables, form strip, milestones — *career tables
+      built 2026-08-04 (`src/features/players/CareerStats.tsx`): batting,
+      bowling, fielding and ratings, read straight from
+      `player_career_stats`. The **form strip and milestones are not built** —
+      both need a per-match history that `player_career_stats` rolls up and
+      throws away; the rows exist in `player_match_stats` but nothing queries
+      them yet.*
 - [x] `/ranks/compare` head-to-head radar
 - [ ] Sticky "you" rank pill — *needs the signed-in viewer's own player id, and
       `/ranks` is deliberately a session-free public route (it reads over plain
@@ -305,6 +310,19 @@ global ranks as ghost numbers.
 - [ ] Empty states with custom illustrations — *every empty state is written
       and says something specific; none has an illustration.*
 - [x] Skeleton loaders everywhere
+- [x] **Home is a real screen** — 2026-08-04. It had stayed the Phase 0
+      placeholder through eight phases: an aurora, a hard-coded 0–0 and four
+      cards stamped with phase numbers, telling somebody who had just scored a
+      match on that phone "No matches yet". It now leads with a match in
+      progress (one tap back to the pad), then the next fixture, then recent
+      results, all scoped to teams you are actually in. Home is now `lazy()`
+      like every other page — it reads `useMatches`, and a static import of
+      anything touching `lib/supabase` lands supabase-js in the eager chunk the
+      audience route also downloads.
+- [x] **Share the spectator link from the match hub**, as a share sheet and as
+      a QR code — the link existed from Phase 7 and there was no way to get at
+      it short of reading `public_slug` out of the database. The QR is the
+      point at the ground: print it, tape it up, no typing.
 - [~] a11y: skip link, `<main>` landmarks with focus targets, `role="tablist"`
       on every tab strip, `sr-only` text on icon-only controls and on rank
       movement. **No axe run, no screen-reader pass, no keyboard-scoring

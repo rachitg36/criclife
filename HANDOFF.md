@@ -877,7 +877,27 @@ and 9 pushed it over twice:
   React feature is charged to `/live/:publicSlug`. The admin panels are local
   state now.
 
-It sits at **177 kB of 180 kB**. Run `npm run size` before assuming a new
+A third shape turned up on 2026-08-04, building Home, the match-hub QR and the
+player career tables. Those three added **+0.8 kB** between them — and
+`npm run size` reported **189 kB, 9 kB over**. Neither number was wrong:
+
+- `qrcode` had lived inside `ScoringRightsMapPage` (excluded from the glob).
+  The moment a **second** page imported it, Rollup hoisted it into a shared
+  chunk named `browser-*.js` — 25 kB whose filename says nothing about what it
+  is, so nobody would ever think to exclude it. It is now a named manual chunk,
+  `vendor-qrcode`, for that reason alone. **Watch for this whenever a
+  dependency gains its second importer.**
+- Home became `lazy()` (it now reads `useMatches`; a static import of anything
+  touching `lib/supabase` lands supabase-js in the eager chunk), so a new
+  `HomePage-*.js` appeared and was charged, while `index-*.js` shrank by the
+  same content.
+
+The lesson is about the measurement, not the code: `size-limit` here is
+"every chunk except a hand-maintained deny-list", so **a rename or a new split
+point reads as growth**. When it jumps by more than the diff plausibly weighs,
+diff the chunk listing against a `git stash`ed build before deleting anything.
+
+It sits at **178.83 kB of 180 kB**. Run `npm run size` before assuming a new
 screen is free.
 
 ### 5.9 Current verification numbers (all re-confirmed at end of Phase 6)

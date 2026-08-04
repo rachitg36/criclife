@@ -9,6 +9,7 @@ import {
   BOWLING_STYLE_LABEL,
   PLAYER_ROLE_LABEL,
 } from '@/features/players/roleLabels';
+import { CareerStats } from './CareerStats';
 import { usePlayer, usePlayerTeams } from './hooks';
 
 /** docs/11-SCREENS-AND-ROUTES.md § 4 — `/players/:playerId`, public read. */
@@ -72,17 +73,10 @@ export function PlayerProfilePage() {
 
       {player.bio && <p className="mb-6 text-[var(--text-secondary)]">{player.bio}</p>}
 
-      <div className="panel mb-4 p-4">
-        <div className="label-overline mb-2">Overall rank</div>
-        <div className="text-[var(--text-display-md)] font-bold tabular-nums">–</div>
-      </div>
-
-      <div className="panel p-4">
-        <div className="label-overline mb-2">Career stats</div>
-        <p className="text-[var(--text-secondary)]">
-          Stats appear once matches are scored — coming in a later phase.
-        </p>
-      </div>
+      {/* Phase 8 has been filling `player_career_stats` on every completed
+          match since the first one; nothing ever read it. This did say
+          "coming in a later phase" — the later phase had already happened. */}
+      <CareerStats playerId={player.id} />
     </div>
   );
 }

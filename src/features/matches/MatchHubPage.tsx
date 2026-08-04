@@ -10,6 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { classifyError, userMessage } from '@/lib/errors';
 import { formatMatchDateTime } from '@/lib/format';
+import { ShareMatch } from './ShareMatch';
 import { useMatch } from './hooks';
 
 /**
@@ -149,6 +150,10 @@ export function MatchHubPage() {
           </Button>
         </Link>
       )}
+
+      {/* Anyone can share a public match — a spectator forwarding the link to
+          a friend is the point, not a privilege. */}
+      {match.public_slug && <ShareMatch publicSlug={match.public_slug} />}
 
       {isManager && (
         <Link to={`/matches/${match.id}/rights`} className="mt-3 block">
