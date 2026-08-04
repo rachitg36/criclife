@@ -106,3 +106,28 @@ export function hueFromString(input: string): number {
 export function pluralise(count: number, singular: string, plural = `${singular}s`): string {
   return `${count} ${count === 1 ? singular : plural}`;
 }
+
+/** Month abbreviations. Fixed rather than locale-derived so a match card
+    reads the same on every device — `toLocaleString()` gave "04/08/2026,
+    02:03:00", which is both ambiguous (is that April?) and far more precision
+    than anybody wants on a match card. */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/**
+ * "4 Aug", or "4 Aug 2026" when the year is worth saying.
+ *
+ * `withYear` is for lists that reach back through past seasons, where two
+ * matches on the same day of different years are otherwise identical. On a
+ * single match's own screen the year is noise.
+ */
+export function formatMatchDay(date: Date, withYear = false): string {
+  const day = `${date.getDate()} ${MONTHS[date.getMonth()]}`;
+  return withYear ? `${day} ${date.getFullYear()}` : day;
+}
+
+/** "4 Aug, 09:49" — the day plus a 24-hour clock, no seconds. */
+export function formatMatchDateTime(date: Date, withYear = false): string {
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  return `${formatMatchDay(date, withYear)}, ${hh}:${mm}`;
+}

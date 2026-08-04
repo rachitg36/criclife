@@ -42,9 +42,16 @@ export function groupMatches<T extends { status: MatchStatus; scheduled_at: stri
   };
 }
 
-/** Where the primary button on a match row should go, and what it should say. */
+/**
+ * Where the primary button on a match row should go, and what it should say.
+ *
+ * A finished match goes to the match hub rather than a scorecard route:
+ * `/matches/:matchId/scorecard` is still a Phase 0 stub, and the real
+ * scorecard is the audience view, which needs a `public_slug` this function
+ * does not have. The hub knows the slug and links straight through.
+ */
 export function resumeAction(status: MatchStatus): { label: string; path: string } {
   if (LIVE.includes(status)) return { label: 'Resume scoring', path: 'score' };
-  if (status === 'completed') return { label: 'Scorecard', path: 'scorecard' };
+  if (status === 'completed' || status === 'abandoned') return { label: 'Result', path: '' };
   return { label: 'Set up', path: 'setup' };
 }

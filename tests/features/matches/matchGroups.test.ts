@@ -70,7 +70,11 @@ describe('resumeAction', () => {
     expect(resumeAction('toss').path).toBe('setup');
   });
 
-  it('offers the scorecard for a completed match', () => {
-    expect(resumeAction('completed')).toEqual({ label: 'Scorecard', path: 'scorecard' });
+  it('sends a finished match to its hub, not to the scorecard stub', () => {
+    // /matches/:matchId/scorecard is still a Phase 0 placeholder, and the real
+    // scorecard is the audience view — which needs a public_slug this function
+    // does not have. The hub knows it and links through.
+    expect(resumeAction('completed')).toEqual({ label: 'Result', path: '' });
+    expect(resumeAction('abandoned').path).toBe('');
   });
 });

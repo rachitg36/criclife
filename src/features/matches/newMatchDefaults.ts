@@ -1,3 +1,5 @@
+import { formatMatchDay } from '@/lib/format';
+
 /**
  * Defaults for the "New match" wizard's venue/time step.
  *
@@ -11,8 +13,6 @@
  * same rule `src/engine` lives by, for the same reason: a function that reads
  * the clock cannot be tested at a chosen moment.
  */
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -42,5 +42,6 @@ export function defaultMatchTitle(
   now: Date
 ): string | null {
   if (!teamAName || !teamBName) return null;
-  return `${teamAName} v ${teamBName} · ${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+  // With the year: a match title outlives the season it was played in.
+  return `${teamAName} v ${teamBName} · ${formatMatchDay(now, true)}`;
 }

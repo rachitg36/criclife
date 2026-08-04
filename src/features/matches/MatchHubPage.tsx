@@ -8,6 +8,7 @@ import { useTeamPermissions } from '@/features/teams/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { classifyError, userMessage } from '@/lib/errors';
+import { formatMatchDateTime } from '@/lib/format';
 import { useMatch } from './hooks';
 
 /**
@@ -85,7 +86,7 @@ export function MatchHubPage() {
       {match.title && <p className="mb-2 text-center font-semibold">{match.title}</p>}
       <p className="mb-6 text-center text-[var(--text-secondary)]">
         {match.venue ?? 'Venue TBD'}
-        {match.scheduled_at ? ` · ${new Date(match.scheduled_at).toLocaleString()}` : ''}
+        {match.scheduled_at ? ` · ${formatMatchDateTime(new Date(match.scheduled_at))}` : ''}
       </p>
 
       {match.status === 'scheduled' && isManager && (
@@ -123,9 +124,15 @@ export function MatchHubPage() {
         </div>
       )}
 
-      {match.status === 'completed' && (
-        <Link to={`/matches/${match.id}/scorecard`}>
-          <Button variant="primary" fullWidth>
+      {/* The audience view *is* the scorecard: it has a Scorecard tab, the
+          charts, and the replay scrubber for a finished match (docs/06 § 7).
+          `/matches/:matchId/scorecard` is still a Phase 0 stub, and pointing
+          at it showed a placeholder to somebody who had just finished a real
+          match. A second implementation of a scorecard is not worth building
+          while a complete one already ships. */}
+      {(match.status === 'completed' || match.status === 'abandoned') && match.public_slug && (
+        <Link to={`/live/${match.public_slug}`}>
+          <Button variant="primary" fullWidth hapticKind="select">
             View scorecard
           </Button>
         </Link>
