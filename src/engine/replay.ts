@@ -204,7 +204,20 @@ export function replay(
   let state = createInitialMatchState(matchId, config);
 
   for (const delivery of deliveries) {
-    const result = applyLoggedDelivery(state, delivery, seeds);
+    // `applyLoggedDelivery` can *throw* as well as return `{ ok: false }` —
+    // a malformed row reaches parts of the engine whose types promised it
+    // could not. Only the second was handled, so the first surfaced as a raw
+    // `Cannot read properties of undefined` from wherever it happened, with
+    // no ball, no over and no innings attached. Both paths now say where.
+    let result;
+    try {
+      result = applyLoggedDelivery(state, delivery, seeds);
+    } catch (cause) {
+      throw new Error(
+        `REPLAY: applyDelivery threw at innings ${delivery.inningsNo} over ${delivery.overNo}.${delivery.ballInOver} (${delivery.clientDeliveryId}): ${cause instanceof Error ? cause.message : String(cause)}`,
+        { cause }
+      );
+    }
     if (!result.ok) {
       throw new Error(
         `REPLAY: applyDelivery failed at innings ${delivery.inningsNo} over ${delivery.overNo}.${delivery.ballInOver}: ${result.error}`

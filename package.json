@@ -148,7 +148,8 @@
         "!dist/assets/TeamMatchesPage-*.js",
         "!dist/assets/TeamStatsPage-*.js",
         "!dist/assets/vendor-qrcode-*.js",
-        "!dist/assets/qr-code-*.js"
+        "!dist/assets/qr-code-*.js",
+        "!dist/assets/store-*.js"
       ],
       "limit": "180 kB"
     }

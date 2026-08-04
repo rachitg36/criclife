@@ -89,6 +89,13 @@ export function isWicketAllowed(
   wasFreeHit: boolean
 ): boolean {
   const row = LEGALITY_TABLE[type];
+  // `Record<WicketType, …>` says this cannot miss. It missed: a stored row
+  // with `is_wicket` and a null `wicket_type` reached here as `undefined`,
+  // and the resulting `Cannot read properties of undefined (reading
+  // 'normal')` blanked the audience view *and* the scorer pad with nothing to
+  // go on. The types describe the intent, not the database. Naming the value
+  // costs one line and turns a white screen into a sentence.
+  if (!row) throw new Error(`UNKNOWN_WICKET_TYPE: ${String(type)}`);
   if (wasFreeHit) return row.freeHit;
   if (extraType === 'wide') return row.wide;
   if (extraType === 'no_ball') return row.noBall;

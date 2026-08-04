@@ -897,12 +897,21 @@ The lesson is about the measurement, not the code: `size-limit` here is
 point reads as growth**. When it jumps by more than the diff plausibly weighs,
 diff the chunk listing against a `git stash`ed build before deleting anything.
 
-It sits at **179.37 kB of 180 kB** — about 600 bytes of room. The next screen
-that adds a route to `router.tsx` will very likely go over on the router entry
-alone, and the honest fix at that point is probably to stop measuring
-"everything minus a deny-list" and measure the audience route's real module
-graph instead. The deny-list has grown to thirty-odd entries and every new page
-needs a line in it, which is a maintenance tax masquerading as a budget.
+It sits at **174.94 kB of 180 kB** — but do not read that as five kilobytes of
+new room. It went from 179.37 to 174.94 in one commit by _excluding
+`store-*.js`_, the scorer store, which the audience route has never loaded and
+which had simply never been added to the list. That is the whole problem with
+this measurement in one line: the number moves five kilobytes on a change to a
+config file, and moved 171 bytes the other way on the code that actually
+shipped. The deny-list is now thirty-odd entries, every new page needs one, and
+a chunk nobody remembers to exclude reads as growth while a chunk wrongly
+excluded reads as savings.
+
+The honest replacement is to measure the audience route's real module graph
+(walk the entry's imports from the Rollup output, rather than globbing `dist`)
+so exclusions stop being a matter of memory. That is a half-day of tooling, not
+a screen, which is why it has not happened — but it should before the next
+person is misled by this number.
 
 ### 5.9 Current verification numbers (all re-confirmed at end of Phase 6)
 

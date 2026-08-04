@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/monitoring';
 import type { Delivery } from '@/engine/types';
 import type { Database } from '@/types/database';
 
@@ -16,6 +17,32 @@ export type DeliveryRow = Database['public']['Tables']['deliveries']['Row'];
  * `innings_id`, and only the caller knows which innings number that is.
  */
 export function toEngineDelivery(row: DeliveryRow): Delivery {
+  // A row that says `is_wicket` but carries no `wicket_type` is not a real
+  // state — every dismissal has a type. It is exactly what the Phase 8
+  // JSON-null bug produced (`p->'wicket'` on `{"wicket": null}` is
+  // `'null'::jsonb`, which is not SQL NULL, so *every* ball stored as a
+  // wicket), and migration 20260803191000 both fixed the function and
+  // repaired the rows — under the reading that such a row means "not
+  // actually a wicket".
+  //
+  // The client made the opposite assumption and asserted the type was
+  // there: `replay`'s `wicketType!` fed `undefined` into the legality table
+  // and threw `Cannot read properties of undefined (reading 'normal')` —
+  // which blanked the audience view and the scorer pad alike, with no clue
+  // as to why. So this applies the migration's own reading rather than
+  // trusting a `!`, and reports it, because a database still producing this
+  // is a bug that has to surface somewhere.
+  const contradictory = row.is_wicket && row.wicket_type === null;
+  if (contradictory) {
+    reportError(new Error('DELIVERY_WICKET_WITHOUT_TYPE'), {
+      deliveryId: row.id,
+      inningsId: row.innings_id,
+      over: row.over_no,
+      ball: row.ball_in_over,
+      dismissedPlayerId: row.dismissed_player_id,
+    });
+  }
+
   return {
     inningsNo: 0,
     overNo: row.over_no,
@@ -28,7 +55,7 @@ export function toEngineDelivery(row: DeliveryRow): Delivery {
     runsExtras: row.runs_extras,
     extraType: row.extra_type,
     runsTotal: row.runs_total ?? row.runs_batter + row.runs_extras,
-    isWicket: row.is_wicket,
+    isWicket: contradictory ? false : row.is_wicket,
     wicketType: row.wicket_type,
     dismissedPlayerId: row.dismissed_player_id,
     fielderId: row.fielder_id,

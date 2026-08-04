@@ -11,6 +11,7 @@ import { useUiStore } from '@/stores/uiStore';
 import { toEngineDelivery } from '@/lib/deliveryRow';
 import { classifyError, userMessage } from '@/lib/errors';
 import { padModeForInnings } from './padMode';
+import { loadRestorableCrease, rememberCrease } from './creaseMemo';
 import {
   attachSyncWorker,
   discardQueuedForInnings,
@@ -393,6 +394,33 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
       return;
     }
 
+    // Put back the openers and the opening bowler if they were chosen on this
+    // device and no ball has been bowled since. Between `start_innings` and
+    // the first delivery there is nothing in the database that records the
+    // crease, so navigating away and back re-asked all three questions.
+    // `restorableCrease` is what keeps this safe — in particular it refuses
+    // once any delivery exists, where a null striker means a wicket has just
+    // fallen rather than "not chosen yet".
+    {
+      const innings = currentInnings(matchState);
+      if (innings && !match.is_locked && matchState.status !== 'completed') {
+        const bowlingSquad = innings.bowlingTeamId === match.team_a_id ? squadA : squadB;
+        const restore = loadRestorableCrease(matchId, innings.inningsNo, {
+          hasDeliveries: deliveries.some((d) => d.inningsNo === innings.inningsNo),
+          strikerId: innings.strikerId,
+          nonStrikerId: innings.nonStrikerId,
+          bowlerId: innings.bowlerId,
+          yetToBat: innings.yetToBat,
+          bowlingSquad: bowlingSquad.map((p) => p.id),
+        });
+        if (restore.strikerId && restore.nonStrikerId) {
+          matchState = setNewBatter(matchState, restore.strikerId);
+          matchState = setNewBatter(matchState, restore.nonStrikerId);
+        }
+        if (restore.bowlerId) matchState = setBowler(matchState, restore.bowlerId);
+      }
+    }
+
     const innings = currentInnings(matchState);
     let mode: PadMode = 'READY';
     if (match.is_locked || matchState.status === 'completed') {
@@ -480,6 +508,7 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
       matchState: next,
       mode: innings?.bowlerId === null ? 'AWAITING_BOWLER' : 'READY',
     });
+    persistCrease(get());
   },
 
   pickBowler: (bowlerId) => {
@@ -487,6 +516,7 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     if (!matchState) return;
     const next = setBowler(matchState, bowlerId);
     set({ matchState: next, mode: 'READY' });
+    persistCrease(get());
   },
 
   pickBatter: (playerId) => {
@@ -494,6 +524,7 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     if (!matchState) return;
     const next = setNewBatter(matchState, playerId);
     set({ matchState: next, mode: 'READY' });
+    persistCrease(get());
   },
 
   undo: async () => {
@@ -627,6 +658,27 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     if (!error) haptic('select');
   },
 }));
+
+/**
+ * Write the current crease to the local memo.
+ *
+ * Only ever a no-op or an overwrite of this innings' own entry, so it is safe
+ * to call after every picker. Once the first ball is bowled the memo stops
+ * being read (`restorableCrease` refuses once deliveries exist) — it is not
+ * deleted, because the next innings has a different key and the entry is a
+ * few dozen bytes.
+ */
+function persistCrease(state: ScorerState): void {
+  const { matchId, matchState } = state;
+  if (!matchId || !matchState) return;
+  const innings = currentInnings(matchState);
+  if (!innings) return;
+  rememberCrease(matchId, innings.inningsNo, {
+    strikerId: innings.strikerId,
+    nonStrikerId: innings.nonStrikerId,
+    bowlerId: innings.bowlerId,
+  });
+}
 
 async function commitDelivery(
   set: (partial: Partial<ScorerState>) => void,
