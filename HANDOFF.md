@@ -25,6 +25,49 @@ Decisions already locked in are logged in `docs/13-OPEN-QUESTIONS.md` § A and �
 
 ## 2. Continue here — exact next step
 
+### 🔜 START HERE — 2026-08-05
+
+A long day of device testing on 2026-08-04 ended with everything below
+deployed and green. **Read this section first; it is the shortest path back
+into the work.**
+
+#### Before touching anything
+
+1. **Hard refresh, or accept the update prompt.** The service worker never
+   auto-reloads (rule 6). The build id is now printed on the scorer's Settings
+   tab and in the audience header — check it matches the latest deploy before
+   believing any bug report, including your own. Roughly half of yesterday's
+   reports were a stale bundle.
+2. `npm install && npm run test` — 554 tests, all passing. If they are not,
+   fix that before anything else.
+
+#### Open, in priority order
+
+| #   | What                                                                                                                                                                                                          | Size     |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1   | **Win celebration** (`MatchOverScreen`, audience Hero). Asked for explicitly: fireworks, the winning team's name, the players. "Make it the most exciting screen in this whole thing." Nothing has been done. | ~1 round |
+| 2   | **Player / batsman / bowler of the match.** Needs a selection _rule_ first — probably in the engine, pure and testable — then persisting it in `finalise_match` so it does not drift per client.              | ~1 round |
+| 3   | **Last-wicket drama.** Highlight when the final pair is together, on both views.                                                                                                                              | ~½ round |
+| 4   | **Result headline for a super-over win** should lead with the _match_ innings score and add "won in the super over", not the super-over score.                                                                | ~½ round |
+| 5   | **Wagon wheel showed no data** despite Advanced Mode being on. The prompt was being clipped until 2026-08-04, so those shots were probably never captured — **retest before investigating**.                  | unknown  |
+
+#### Verify first — these were fixed but never seen working
+
+- The **last ball of an innings** reaching the server. This has been "fixed"
+  twice; the second fix was defeated by statement ordering in
+  `commitDelivery`. Score an innings to its end, reload, and check the last
+  ball is on the scorecard _and_ the audience view.
+- **A run out on the last ball of an over** no longer locking the pad.
+- The **super over** deciding a winner instead of looping.
+- **Advanced Mode** prompting on a single and drawing the shot.
+
+#### Known open, not yet diagnosed
+
+- `/live/del-vs-mum-67fd` returned nothing. Never reproduced.
+- Realtime has **still** never carried a message. The audience view no longer
+  depends on it (20s poll, § 5.12b), so this is a latency question, not a
+  correctness one.
+
 ### ✅ A full match has been scored — 2026-08-04
 
 On a phone, on the deployed build, against `criclife-staging`. Both innings,
