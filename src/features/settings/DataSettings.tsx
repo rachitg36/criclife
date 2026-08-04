@@ -96,15 +96,15 @@ export function DataSettings() {
     if (!userId) return;
     setBusy(true);
     setMessage(null);
-    const { error } = await supabase.from('notifications').insert({
-      profile_id: userId,
-      type: 'role_suggestion',
-      payload: { kind: 'account_deletion_requested', requestedAt: new Date().toISOString() },
-    });
+    // Was a direct insert into `notifications`, which has no INSERT policy —
+    // deny-by-default refused it every time. The missing policy is not the
+    // fix: a client that can write notifications can write anything to anyone.
+    const { error } = await supabase.rpc('request_account_deletion', { p_reason: null });
     setBusy(false);
+    setConfirmText('');
     setMessage(
       error
-        ? `Couldn't record the request: ${error.message}`
+        ? userMessage(classifyError(error))
         : 'Deletion requested. An administrator will action it.'
     );
   }

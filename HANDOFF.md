@@ -75,8 +75,10 @@ from this sandbox: the agent proxy returns 403 for the deployed URL, so
    only reason the deployed site's sign-in has ever failed.
 2. ~~Migration 16 has not run on staging~~ — done 2026-08-04, both projects.
 
-**⚠ Migration 18** (`20260804160000_purge_match_data.sql`) is committed and has
-run nowhere but the local scratch database. It adds the pre-production "clear
+**⚠ Migrations 18 and 19** (`20260804160000_purge_match_data.sql`,
+`20260804170000_request_account_deletion.sql`) are committed and have run
+nowhere but the local scratch database. The clean-slate button also needs
+`profiles.is_super_admin` set on whoever is going to press it. It adds the pre-production "clear
 all match data" button. **`purge_match_data` must be dropped before the first
 real club is invited** — deleting every match is a feature only while none of
 them matter, and it disables the append-only trigger to do it.
