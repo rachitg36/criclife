@@ -1,11 +1,27 @@
 import { defineConfig } from 'vite';
+import pkg from './package.json' with { type: 'json' };
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'node:path';
 
 // Docs: see docs/09-ARCHITECTURE.md § 5 for the caching strategy rationale.
+/**
+ * The build's own identity, baked in at build time.
+ *
+ * Half of this project's field reports have turned out to be a phone running a
+ * cached older build — the service worker never auto-reloads on purpose
+ * (CLAUDE.md rule 6), so a stale tab looks exactly like a bug that was fixed
+ * days ago. There was no way to tell from the screen. Now there is, on both
+ * the scorer and the audience view.
+ *
+ * The date, not a git SHA: the person reading it off a phone at a ground needs
+ * to answer "is this today's build", not identify a commit.
+ */
+const BUILD_ID = `${pkg.version}+${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
+
 export default defineConfig({
+  define: { __APP_BUILD__: JSON.stringify(BUILD_ID) },
   plugins: [
     react(),
     tailwindcss(),

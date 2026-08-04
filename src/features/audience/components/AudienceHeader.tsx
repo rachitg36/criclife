@@ -14,11 +14,13 @@ export function AudienceHeader({
   subtitle,
   onShare,
   tvHref,
+  isComplete,
 }: {
   title: string;
   subtitle: string | null;
   onShare: () => void;
   tvHref: string;
+  isComplete: boolean;
 }) {
   const connection = useAudienceStore((s) => s.connection);
   const resume = useAudienceStore((s) => s.resume);
@@ -43,12 +45,23 @@ export function AudienceHeader({
           <h1 className="truncate text-[var(--text-heading-sm)] font-semibold leading-tight">
             {title}
           </h1>
-          {subtitle && (
-            <p className="truncate text-[11px] text-[var(--text-tertiary)]">{subtitle}</p>
-          )}
+          {/* Venue and build, on one line. The build id is here because a
+              spectator reporting "it isn't updating" and a spectator on a
+              week-old cached bundle look identical otherwise — and this app
+              deliberately never auto-reloads (CLAUDE.md rule 6). */}
+          <p className="truncate text-[11px] text-[var(--text-tertiary)]">
+            {subtitle ? `${subtitle} · ` : ''}
+            {__APP_BUILD__}
+          </p>
         </div>
 
-        {connection === 'paused' ? (
+        {/* FINAL beats every connection state: whether the socket is up says
+            nothing about a match that is already over, and "PAUSED — TAP TO
+            RESUME" on a week-old game offers to resume something that cannot
+            resume. */}
+        {isComplete ? (
+          <LivePill state="final" />
+        ) : connection === 'paused' ? (
           <button
             type="button"
             onClick={resume}

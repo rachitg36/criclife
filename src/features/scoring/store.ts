@@ -12,6 +12,7 @@ import { useUiStore } from '@/stores/uiStore';
 import { toEngineDelivery } from '@/lib/deliveryRow';
 import { classifyError, userMessage } from '@/lib/errors';
 import { padModeForInnings } from './padMode';
+import { resultText } from './resultText';
 import { loadRestorableCrease, rememberCrease } from './creaseMemo';
 import {
   attachSyncWorker,
@@ -771,7 +772,7 @@ async function commitDelivery(
         : null,
   });
   fireHaptic(result.delivery, input);
-  applyEvents(set, get, result.events);
+  applyPadEvents(set, result.events);
 
   const matchId = get().matchId;
   const inningsId = get().inningsIdByNo[innings.inningsNo];
@@ -780,6 +781,23 @@ async function commitDelivery(
     return;
   }
 
+  // **The ball goes in the outbox before the events fire.** Order matters, and
+  // getting it wrong quietly undid a fix.
+  //
+  // INNINGS_COMPLETE's handler flushes the outbox and *then* closes the
+  // innings on the server — precisely so the closing ball gets there first.
+  // With the enqueue below the event dispatch, that flush
+  // ran against an outbox this very ball had not been added to yet: it found
+  // nothing, reported success, and `end_innings` beat the ball to the server
+  // after all. The server then refused it — `INNINGS_COMPLETE` — and every
+  // innings still finished one ball short.
+  //
+  // Reported again on 2026-08-04, on a match scored *after* the flush shipped:
+  // "the last ball did not register. I see still 5 balls bowled, but the game
+  // was actually won on the 6th."
+  //
+  // Nothing about the pad's responsiveness changes: this is a Dexie write, not
+  // a request, and the optimistic `set` above has already painted the score.
   const syncedSeq = get().syncedSeq[inningsId] ?? 0;
   await enqueueDelivery(
     matchId,
@@ -794,6 +812,8 @@ async function commitDelivery(
     },
     syncedSeq
   );
+
+  applyInningsEndEvents(set, get, result.events);
   void refreshPendingCount(set, get);
 }
 
@@ -804,18 +824,36 @@ function fireHaptic(delivery: Delivery, input: DeliveryInput) {
   return haptic('runs');
 }
 
-function applyEvents(
+/**
+ * The mode changes — synchronous, and deliberately so.
+ *
+ * "Who is the next batter" has to be on screen the instant a wicket falls; a
+ * scorer should never watch the pad think. These touch nothing but local
+ * state, so they run before the ball is even written to the outbox.
+ */
+function applyPadEvents(set: (partial: Partial<ScorerState>) => void, events: EngineEvent[]) {
+  for (const event of events) {
+    if (event.type === 'OVER_COMPLETE') set({ mode: 'AWAITING_BOWLER' });
+    if (event.type === 'NEW_BATTER_REQUIRED') set({ mode: 'AWAITING_BATTER' });
+  }
+}
+
+/**
+ * The end of an innings — and this one has to wait.
+ *
+ * Closing the innings on the server must happen *after* the ball that closed
+ * it is in the outbox, or the flush inside `handleInningsComplete` finds an
+ * empty queue, reports success, and `end_innings` beats the ball to the
+ * server. That is the bug that cost the last ball of every innings twice over.
+ * Kept separate from the pad events so the split is impossible to collapse by
+ * accident.
+ */
+function applyInningsEndEvents(
   set: (partial: Partial<ScorerState>) => void,
   get: () => ScorerState,
   events: EngineEvent[]
 ) {
   for (const event of events) {
-    if (event.type === 'OVER_COMPLETE') {
-      set({ mode: 'AWAITING_BOWLER' });
-    }
-    if (event.type === 'NEW_BATTER_REQUIRED') {
-      set({ mode: 'AWAITING_BATTER' });
-    }
     if (event.type === 'INNINGS_COMPLETE') {
       void handleInningsComplete(set, get, event.inningsNo, event.reason);
     }
@@ -911,13 +949,22 @@ async function handleInningsComplete(
   }
 
   set({ mode: 'MATCH_OVER', matchResult: result });
+  // `result.text` is the *engine's* sentence, and the engine is pure — it knows
+  // team ids and nothing else, so that string reads
+  // "de992579-4a81-4c13-8471-d0fa6d361553 won the super over by 1 run". That
+  // went into `matches.result_text`, which is now what every screen shows, so
+  // a raw UUID was the headline on the audience view. `resultText` has existed
+  // since Phase 5 for exactly this and was never wired to the one write that
+  // persists the sentence.
+  const nameForTeam = (id: string) =>
+    (id === teamAId ? get().teamAName : get().teamBName) ?? 'The winners';
   await supabase.rpc('complete_match', {
     p_match_id: matchId,
     p_result_type: result.type,
     p_winner_team_id: result.winnerTeamId,
     p_win_margin_runs: result.marginRuns,
     p_win_margin_wickets: result.marginWickets,
-    p_result_text: result.text,
+    p_result_text: resultText(result, nameForTeam),
   });
 }
 

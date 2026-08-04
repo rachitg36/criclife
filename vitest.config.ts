@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
 export default defineConfig({
+  // `vite.config.ts`'s `define` does not reach here — vitest has its own
+  // config — so the build id has to be declared again. A fixed string, since
+  // no test should ever depend on when it ran.
+  define: { __APP_BUILD__: JSON.stringify('test') },
   plugins: [react()],
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },

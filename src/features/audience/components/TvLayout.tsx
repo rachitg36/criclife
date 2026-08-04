@@ -71,7 +71,7 @@ export function TvLayout({ view }: { view: AudienceView }) {
             <span className="text-[1.8vh] text-[var(--text-tertiary)]">· {match.venue}</span>
           )}
           <span className="ml-auto scale-150 origin-right">
-            <LivePill state={connection} />
+            <LivePill state={view.isComplete ? 'final' : connection} />
           </span>
         </div>
 

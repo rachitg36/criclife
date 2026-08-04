@@ -142,6 +142,11 @@ export function SettingsTab() {
           </>
         )}
 
+        {/* Which build this device is running. The service worker never
+            auto-reloads (CLAUDE.md rule 6), so a stale tab is indistinguishable
+            from a bug that was fixed days ago — and repeatedly has been. */}
+        <p className="mt-2 text-[11px] text-[var(--text-tertiary)]">CricLife {__APP_BUILD__}</p>
+
         {matchId && (
           <Link
             to={`/matches/${matchId}/settings`}

@@ -5,6 +5,7 @@ import { env } from '@/lib/env';
 import { useAudienceStore } from './store';
 import { useAudienceView } from './useAudienceView';
 import { AudienceHeader } from './components/AudienceHeader';
+import { MatchNarrative } from './components/MatchNarrative';
 import { AudienceTabs } from './components/AudienceTabs';
 import { BattersPanel } from './components/BattersPanel';
 import { CatchUpCard } from './components/CatchUpCard';
@@ -140,17 +141,23 @@ export default function AudienceRoute() {
         subtitle={match?.venue ?? null}
         onShare={share}
         tvHref={`/live/${publicSlug ?? ''}?tv=1`}
+        isComplete={view.isComplete}
       />
 
       <MomentOverlay view={view} />
       <CatchUpCard />
 
       <Hero view={view} />
-      <WinProbabilityBar
-        probability={view.winProbability}
-        battingTeam={view.battingTeam}
-        bowlingTeam={view.bowlingTeam}
-      />
+      {/* A win *probability* on a finished match is nonsense — the result is
+          right there above it. Requested removed, and rightly. */}
+      {!view.isComplete && (
+        <WinProbabilityBar
+          probability={view.winProbability}
+          battingTeam={view.battingTeam}
+          bowlingTeam={view.bowlingTeam}
+        />
+      )}
+      {view.isComplete && <MatchNarrative view={view} />}
       <ThisOverStrip balls={view.thisOver} />
       <BattersPanel view={view} />
       <ReplayScrubber view={view} />

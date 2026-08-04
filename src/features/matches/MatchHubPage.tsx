@@ -41,6 +41,7 @@ export function MatchHubPage() {
   }
 
   const isManager = permsA.isManager || permsB.isManager;
+  const isFinished = match.status === 'completed' || match.status === 'abandoned';
   const teamA = match.team_a as unknown as {
     name: string;
     short_code: string;
@@ -155,7 +156,12 @@ export function MatchHubPage() {
           a friend is the point, not a privilege. */}
       {match.public_slug && <ShareMatch publicSlug={match.public_slug} />}
 
-      {isManager && (
+      {/* Only while there is still scoring to do. Handing out or revoking
+          scoring rights on a match that finished last week is not a decision
+          anyone needs offered — "the match is done, there is no utility in
+          changing the permissions now". The route still exists; nothing links
+          to it from a closed match. */}
+      {isManager && !isFinished && (
         <Link to={`/matches/${match.id}/rights`} className="mt-3 block">
           <Button variant="glass" fullWidth>
             Scoring Rights Map
