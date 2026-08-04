@@ -109,7 +109,8 @@ and `applyDelivery` runs in under 1ms.
       end to end as of 2026-08-03** — but on Supabase's built-in sender, not
       Resend: custom SMTP was returning 500 and is switched off, so mail only
       reaches addresses on the Supabase org. Google is code-complete and never
-      exercised; no Google Cloud OAuth client exists.
+      exercised; no Google Cloud OAuth client exists yet — SETUP.md § 3b has
+      the steps, which are entirely dashboard work.
 - [x] `/login`, `/auth/callback`, `/onboarding`
 - [~] TanStack Query setup, typed Supabase client — types are the output of an
       introspection script, not `supabase gen types`, which needs Docker. Both

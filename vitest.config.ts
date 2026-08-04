@@ -11,6 +11,13 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
+    // A non-UTC timezone on purpose. The sandbox and CI both run in UTC, which
+    // makes every "does this use local time or UTC?" assertion tautological —
+    // `toDateTimeLocal` is exactly that question, and prefilling the wrong
+    // hour is invisible to anyone testing at Greenwich. +05:30 is where this
+    // is being built and has a half-hour offset, so it also catches code that
+    // assumes whole-hour zones.
+    env: { TZ: 'Asia/Kolkata' },
     include: ['tests/**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
     exclude: ['tests/e2e/**'],
     coverage: {

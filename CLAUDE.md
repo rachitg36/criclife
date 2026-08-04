@@ -142,7 +142,10 @@ left — the first one now blocks real use:
   then add `criclife.is-a.dev` as a custom domain on the Worker — keep the
   `.workers.dev` domain too, or installed PWAs break
 - ~~Verify Add-to-Home-Screen on a real phone~~ — done 2026-08-03
-- Google OAuth client — deferred to Phase 2, when there's a login UI
+- **Google sign-in** — the code is done and the button is on `/login`; it needs
+  a Google Cloud OAuth client and the client ID/secret pasted into Supabase.
+  `SETUP.md` § 3b has the steps, including the one people get wrong: the
+  authorised redirect URI is **Supabase's** `/auth/v1/callback`, not the app's.
 
 ## Style
 

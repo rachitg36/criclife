@@ -97,11 +97,54 @@ installed PWAs break.
    `.env.local`.
 5. **Authentication → Providers**:
    - Enable **Email** (magic link)
-   - Enable **Google** (needs a Google Cloud OAuth client)
+   - Enable **Google** — see § 3b below, it needs a Google Cloud OAuth client
    - **Disable Phone** — SMS costs money. See `docs/14-FREE-TIER-PLAN.md` § 4.3.
 
 The `anon` key is safe in the browser. Row Level Security protects the data,
 not key secrecy.
+
+### 3b. Google sign-in
+
+The app side is done — `LoginPage`'s "Continue with Google" already calls
+`signInWithOAuth({ provider: 'google', redirectTo })`, and the OAuth code comes
+back through the same `/auth/callback` as a magic link. Nothing to build. What
+is missing is an OAuth client, which needs a browser and your Google account.
+
+**Free.** A Google Cloud project and OAuth credentials cost nothing; no billing
+account is required for OAuth alone.
+
+1. **console.cloud.google.com** → create a project (call it CricLife).
+2. **APIs & Services → OAuth consent screen**. User type **External**. Fill in
+   app name, your support email, your developer email. Scopes: the defaults
+   (`email`, `profile`, `openid`) are enough — the app reads nothing else.
+   Leave it in **Testing** and add your own address under _Test users_; you
+   only need _Publish_ once people outside that list sign in, and publishing an
+   app that asks for nothing beyond basic profile does not need verification.
+3. **APIs & Services → Credentials → Create credentials → OAuth client ID**.
+   Application type **Web application**.
+4. **Authorised redirect URI** — exactly one, and it is Supabase's, not the
+   app's:
+
+   ```
+   https://<project-ref>.supabase.co/auth/v1/callback
+   ```
+
+   `mkzgwwqkwcjcggxuavlr` for staging, `tljbwnbjwgdpmdhvttai` for prod. **Add
+   one per project**, or one of the two environments will fail. This trips
+   people up: the app's own `/auth/callback` does **not** go here. Google
+   redirects to Supabase, Supabase redirects to the app.
+
+5. Copy the **Client ID** and **Client secret** into Supabase →
+   **Authentication → Providers → Google**, and enable it. The secret goes in
+   the dashboard and nowhere else — never into this repo, `.env.local`, or a
+   chat.
+6. Check **Authentication → URL Configuration** has the app's own callback on
+   its redirect allowlist (`http://localhost:5173/**`, and the deployed URL).
+   Without it, GoTrue silently substitutes Site URL and the round trip lands
+   somewhere unexpected — see HANDOFF.md § 2.
+
+Then click **Continue with Google** on `/login`. A failure shows the reason on
+the callback screen rather than a generic message, so read what it says.
 
 ### 3a. Push the schema — **the app does nothing until you do this**
 

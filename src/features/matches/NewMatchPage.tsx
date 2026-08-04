@@ -7,6 +7,7 @@ import { RULES_PROFILES, createCustomConfig, resolveMaxOversPerBowler } from '@/
 import type { MatchConfig } from '@/engine/types';
 import { useAllTeams, useMyTeams, type Team } from '@/features/teams/hooks';
 import type { Json } from '@/types/database';
+import { defaultMatchTitle, toDateTimeLocal } from './newMatchDefaults';
 
 type ProfileKey = keyof typeof RULES_PROFILES | 'custom';
 
@@ -34,7 +35,10 @@ export function NewMatchPage() {
   const [config, setConfig] = useState<MatchConfig>(RULES_PROFILES.t20);
 
   const [venue, setVenue] = useState('');
-  const [scheduledAt, setScheduledAt] = useState('');
+  // Now, in the browser's own timezone. A match is nearly always being created
+  // for the moment it is being created in, and both fields starting blank is
+  // how one ended up named "1" with no date on it.
+  const [scheduledAt, setScheduledAt] = useState(() => toDateTimeLocal(new Date()));
   const [title, setTitle] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
@@ -47,6 +51,17 @@ export function NewMatchPage() {
 
   const canProceedTeams = !!teamAId && !!teamBId && teamAId !== teamBId;
 
+  // Shown as the title field's placeholder and used verbatim if it is left
+  // blank, so the fast path through the wizard still produces a named match.
+  // Only `myTeams` is searched, so a side picked out of the all-teams search
+  // yields no suggestion and the field falls back to its old placeholder —
+  // the names for those live inside TeamsStep and are not worth lifting yet.
+  const suggestedTitle = defaultMatchTitle(
+    myTeams?.find((t) => t.id === teamAId)?.short_code,
+    myTeams?.find((t) => t.id === teamBId)?.short_code,
+    new Date()
+  );
+
   async function handleCreate() {
     setSubmitting(true);
     setError(null);
@@ -54,7 +69,7 @@ export function NewMatchPage() {
       p_team_a_id: teamAId,
       p_team_b_id: teamBId,
       p_config: config as unknown as Json,
-      p_title: title.trim() || null,
+      p_title: title.trim() || suggestedTitle,
       p_venue: venue.trim() || null,
       p_scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
     });
@@ -104,6 +119,7 @@ export function NewMatchPage() {
         {step === 2 && (
           <VenueStep
             title={title}
+            suggestedTitle={suggestedTitle}
             venue={venue}
             scheduledAt={scheduledAt}
             onTitle={setTitle}
@@ -352,6 +368,7 @@ function ToggleField({
 
 function VenueStep({
   title,
+  suggestedTitle,
   venue,
   scheduledAt,
   onTitle,
@@ -359,6 +376,7 @@ function VenueStep({
   onScheduledAt,
 }: {
   title: string;
+  suggestedTitle: string | null;
   venue: string;
   scheduledAt: string;
   onTitle: (v: string) => void;
@@ -374,9 +392,14 @@ function VenueStep({
         <input
           value={title}
           onChange={(e) => onTitle(e.target.value)}
-          placeholder="Final"
+          placeholder={suggestedTitle ?? 'Final'}
           className="h-11 w-full rounded-[var(--r-md)] border border-[var(--border-default)] bg-[var(--surface-1)] px-3 text-[15px] outline-none focus:border-[var(--accent)]"
         />
+        {suggestedTitle && !title.trim() && (
+          <span className="mt-1 block text-[var(--text-body-sm)] text-[var(--text-tertiary)]">
+            Leave blank and it will be called “{suggestedTitle}”.
+          </span>
+        )}
       </label>
       <label className="block">
         <span className="mb-1 block text-[var(--text-body-sm)] text-[var(--text-secondary)]">
