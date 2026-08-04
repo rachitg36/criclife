@@ -5,6 +5,7 @@ import { haptic } from '@/lib/haptics';
 import { pendingCount as dexiePendingCount, type PendingDelivery } from '@/lib/db';
 import { toEngineDelivery } from '@/lib/deliveryRow';
 import { classifyError, userMessage } from '@/lib/errors';
+import { padModeForInnings } from './padMode';
 import {
   attachSyncWorker,
   discardQueuedForInnings,
@@ -383,10 +384,8 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
       // thing anyone saw on the real thing. `start_innings` has to be called
       // first, and only `NOT_STARTED` says so.
       mode = 'NOT_STARTED';
-    } else if (innings.strikerId === null || innings.nonStrikerId === null) {
-      mode = 'AWAITING_OPENERS';
-    } else if (innings.bowlerId === null) {
-      mode = 'AWAITING_BOWLER';
+    } else {
+      mode = padModeForInnings(innings);
     }
 
     set({
