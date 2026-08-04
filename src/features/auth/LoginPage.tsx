@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { motion } from 'motion/react';
 import { Mail } from 'lucide-react';
@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { env } from '@/lib/env';
 import { useAuth } from './authContext';
 import { humanAuthError } from './authErrors';
+import { fetchAuthProviders } from './authProviders';
 
 /**
  * docs/11-SCREENS-AND-ROUTES.md § 1 — single email field, no password, plus
@@ -19,6 +20,18 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Starts false. `signInWithOAuth` navigates the browser rather than calling
+  // an API, so a disabled provider lands on GoTrue's raw JSON with no way back
+  // — the button must not exist until the project says it will work.
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+
+  useEffect(() => {
+    const abort = new AbortController();
+    void fetchAuthProviders(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, abort.signal).then(
+      (p) => setGoogleEnabled(p.google)
+    );
+    return () => abort.abort();
+  }, []);
 
   if (!loading && session) {
     const from = (location.state as { from?: Location } | null)?.from;
@@ -111,15 +124,19 @@ export function LoginPage() {
             </p>
           )}
 
-          <div className="my-4 flex items-center gap-3">
-            <div className="h-px flex-1 bg-[var(--border-subtle)]" />
-            <span className="text-[var(--text-body-sm)] text-[var(--text-tertiary)]">or</span>
-            <div className="h-px flex-1 bg-[var(--border-subtle)]" />
-          </div>
+          {googleEnabled && (
+            <>
+              <div className="my-4 flex items-center gap-3">
+                <div className="h-px flex-1 bg-[var(--border-subtle)]" />
+                <span className="text-[var(--text-body-sm)] text-[var(--text-tertiary)]">or</span>
+                <div className="h-px flex-1 bg-[var(--border-subtle)]" />
+              </div>
 
-          <Button variant="secondary" size="lg" fullWidth onClick={handleGoogle}>
-            Continue with Google
-          </Button>
+              <Button variant="secondary" size="lg" fullWidth onClick={handleGoogle}>
+                Continue with Google
+              </Button>
+            </>
+          )}
         </motion.div>
       </div>
     </div>

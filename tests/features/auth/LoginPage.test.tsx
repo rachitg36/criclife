@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Session } from '@supabase/supabase-js';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { AuthContext } from '@/features/auth/authContext';
@@ -17,6 +17,22 @@ vi.mock('@/lib/supabase', () => ({
     },
   },
 }));
+
+/**
+ * The Google button only renders when the project reports the provider as
+ * enabled — `signInWithOAuth` navigates the browser rather than calling an
+ * API, so offering it on a project without Google lands the user on GoTrue's
+ * raw "provider is not enabled" JSON with no way back. See `authProviders`.
+ */
+function stubProviders(google: boolean) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({ ok: true, json: async () => ({ external: { google } }) })
+  );
+}
+
+beforeEach(() => stubProviders(true));
+afterEach(() => vi.unstubAllGlobals());
 
 function renderLoginPage(session: Session | null = null) {
   return render(
@@ -62,12 +78,25 @@ describe('LoginPage', () => {
 
   it('calls signInWithOAuth with the google provider', async () => {
     renderLoginPage();
-    await userEvent.click(screen.getByRole('button', { name: /continue with google/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /continue with google/i }));
     await waitFor(() =>
       expect(signInWithOAuth).toHaveBeenCalledWith({
         provider: 'google',
         options: { redirectTo: expect.stringContaining('/auth/callback') },
       })
+    );
+  });
+
+  it('offers no Google button when the project has not enabled it', async () => {
+    // The dead end this closes: a phone, a real project, and raw JSON.
+    stubProviders(false);
+    renderLoginPage();
+    // The email form is the path that always works, so it must still be there.
+    expect(await screen.findByPlaceholderText('you@example.com')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: /continue with google/i })
+      ).not.toBeInTheDocument()
     );
   });
 
