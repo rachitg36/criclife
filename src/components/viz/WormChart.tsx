@@ -1,5 +1,5 @@
 import { ChartFrame, SeriesLegend } from './ChartFrame';
-import { makeScales, niceTicks, SERIES_COLOURS } from './scales';
+import { makeScales, niceTicks, overTicks, SERIES_COLOURS } from './scales';
 import type { WormSeries } from '@/features/audience/chartData';
 
 /** docs/06 § 2 — cumulative runs vs overs, both innings overlaid, wickets as dots. */
@@ -20,7 +20,7 @@ export function WormChart({
       title="Worm"
       description="Runs scored as the innings goes on. Dots are wickets."
       yTicks={niceTicks(maxRuns)}
-      xTicks={niceTicks(maxOvers)}
+      xTicks={overTicks(maxOvers)}
       sx={sx}
       sy={sy}
       {...(hasData ? {} : { empty: 'No balls bowled yet.' })}

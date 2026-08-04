@@ -108,8 +108,13 @@ function MatchListRow({ match, withYear }: { match: MatchRow; withYear: boolean 
           size={32}
         />
         <div className="min-w-0 flex-1">
+          {/* The *name*, not the short code. Renaming a team to "Cologne"
+              left this row reading "TM1 v TM2", because short_code is a
+              separate field that most people never think to change — and a
+              list row has space for the real name anyway. The crests keep the
+              short code; that is what they are for. */}
           <p className="truncate text-[15px] font-semibold">
-            {match.team_a.short_code} v {match.team_b.short_code}
+            {match.team_a.name} v {match.team_b.name}
           </p>
           <p className="truncate text-[var(--text-body-sm)] text-[var(--text-secondary)]">
             {/* Time as well as the day: several matches a weekend is normal,

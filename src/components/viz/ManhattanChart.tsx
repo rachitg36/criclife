@@ -1,5 +1,5 @@
 import { ChartFrame } from './ChartFrame';
-import { makeScales, niceTicks, plotArea } from './scales';
+import { makeScales, niceTicks, overTicks, plotArea } from './scales';
 import type { ManhattanSeries } from '@/features/audience/chartData';
 
 /** docs/06 § 2 — runs per over as bars, wickets as red markers. */
@@ -14,7 +14,7 @@ export function ManhattanChart({ series, label }: { series: ManhattanSeries; lab
       title={`Manhattan — ${label}`}
       description="Runs conceded in each over. Markers show wickets."
       yTicks={niceTicks(maxRuns)}
-      xTicks={niceTicks(Math.max(1, overs))}
+      xTicks={overTicks(overs)}
       sx={sx}
       sy={sy}
       {...(overs === 0 ? { empty: 'No overs bowled yet.' } : {})}

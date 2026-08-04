@@ -52,4 +52,25 @@ export function niceTicks(max: number, count = 4): number[] {
  * inventing one here. These are existing semantic tokens, picked because they
  * are already guaranteed to read in both themes.
  */
+/**
+ * Ticks for an axis measured in overs.
+ *
+ * `niceTicks` is built for runs, where 0/50/100 is right. On the x-axis it
+ * produced 0, 0.5, 1, 1.5, 2 — and there is no such thing as over 0.5. A
+ * two-over match got a fractional axis for a quantity that only ever takes
+ * whole values.
+ *
+ * Whole numbers only, and never more than `max` of them, so a 50-over innings
+ * still gets a readable handful rather than fifty labels.
+ */
+export function overTicks(maxOvers: number, count = 4): number[] {
+  const max = Math.max(1, Math.ceil(maxOvers));
+  const step = Math.max(1, Math.ceil(max / count));
+  const out: number[] = [];
+  for (let v = 0; v <= max; v += step) out.push(v);
+  // Always land on the last over, so the axis ends where the innings does.
+  if (out[out.length - 1] !== max) out.push(max);
+  return out;
+}
+
 export const SERIES_COLOURS = ['var(--accent)', 'var(--run-six)'] as const;

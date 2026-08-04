@@ -1,5 +1,5 @@
 import { ChartFrame, SeriesLegend } from './ChartFrame';
-import { makeScales, niceTicks } from './scales';
+import { makeScales, niceTicks, overTicks } from './scales';
 import type { RunRateSeries } from '@/features/audience/chartData';
 
 /**
@@ -34,7 +34,7 @@ export function RunRateChart({ series, label }: { series: RunRateSeries; label: 
       title={`Run rate — ${label}`}
       description="Scoring rate against what the chase needs."
       yTicks={niceTicks(Math.ceil(maxRate))}
-      xTicks={niceTicks(overs)}
+      xTicks={overTicks(overs)}
       sx={sx}
       sy={sy}
       {...(series.points.length === 0 ? { empty: 'No completed overs yet.' } : {})}
