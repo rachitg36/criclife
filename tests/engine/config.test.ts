@@ -1,10 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { createCustomConfig, DEFAULT_CONFIG, resolveMaxOversPerBowler } from '../../src/engine/config';
+import {
+  createCustomConfig,
+  DEFAULT_CONFIG,
+  resolveMaxOversPerBowler,
+} from '../../src/engine/config';
 
 describe('resolveMaxOversPerBowler', () => {
   it("resolves 'auto' to ceil(oversPerInnings / 5)", () => {
-    expect(resolveMaxOversPerBowler({ ...DEFAULT_CONFIG, oversPerInnings: 20, maxOversPerBowler: 'auto' })).toBe(4);
-    expect(resolveMaxOversPerBowler({ ...DEFAULT_CONFIG, oversPerInnings: 8, maxOversPerBowler: 'auto' })).toBe(2);
+    expect(
+      resolveMaxOversPerBowler({
+        ...DEFAULT_CONFIG,
+        oversPerInnings: 20,
+        maxOversPerBowler: 'auto',
+      })
+    ).toBe(4);
+    expect(
+      resolveMaxOversPerBowler({ ...DEFAULT_CONFIG, oversPerInnings: 8, maxOversPerBowler: 'auto' })
+    ).toBe(2);
   });
 
   it('passes an explicit number straight through', () => {

@@ -148,6 +148,13 @@ export type InningsState = {
   bowlers: Record<PlayerId, BowlerState>;
   fallOfWickets: FowEntry[];
   yetToBat: PlayerId[];
+  /**
+   * How many players are in this batting side, when the caller supplied a
+   * batting order. `playersPerSide` is what the match is *configured* for;
+   * this is who actually turned up, and sides do turn up short. Null when
+   * nobody said, in which case only the configured number is used.
+   */
+  squadSize: number | null;
 
   status: InningsStatus;
   endReason: InningsEndReason | null;

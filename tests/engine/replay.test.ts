@@ -33,6 +33,7 @@ function oneBallState() {
         bowlers: {},
         fallOfWickets: [],
         yetToBat: [],
+        squadSize: null,
         status: 'in_progress' as const,
         endReason: null,
         currentOver: { bowlerIds: [], runs: 0 },
@@ -325,5 +326,46 @@ describe('replay of a started innings with no deliveries', () => {
     const state = replay('replay-test', DEFAULT_CONFIG, [], []);
     expect(state.innings).toHaveLength(0);
     expect(state.currentInningsIndex).toBe(-1);
+  });
+});
+
+/**
+ * `yetToBat` was initialised to `[]` and nothing ever wrote to it —
+ * `setNewBatter` only filters players *out*. So the "next batter" picker,
+ * which renders `innings.yetToBat`, said "No batters remaining" at the first
+ * wicket of every innings ever scored in this app. Not a short-squad problem:
+ * every match, every time.
+ */
+describe('replay seeds the batting order', () => {
+  const ORDERED = [
+    {
+      inningsNo: 1,
+      battingTeamId: 'teamA',
+      bowlingTeamId: 'teamB',
+      battingOrder: ['a1', 'a2', 'a3'],
+    },
+  ];
+
+  it('fills yetToBat from the seed, in order', () => {
+    const state = replay('replay-test', DEFAULT_CONFIG, [], ORDERED);
+    expect(state.innings[0]?.yetToBat).toEqual(['a1', 'a2', 'a3']);
+  });
+
+  it('records how big the side actually is', () => {
+    const state = replay('replay-test', DEFAULT_CONFIG, [], ORDERED);
+    expect(state.innings[0]?.squadSize).toBe(3);
+  });
+
+  it('leaves both empty when no order is given, rather than guessing', () => {
+    const state = replay('replay-test', DEFAULT_CONFIG, [], SEEDS);
+    expect(state.innings[0]?.yetToBat).toEqual([]);
+    expect(state.innings[0]?.squadSize).toBeNull();
+  });
+
+  it('does not share the array with the seed', () => {
+    // The seed is rebuilt on every store init and replay is called repeatedly;
+    // a shared reference would let one replay's dismissals mutate the next.
+    const state = replay('replay-test', DEFAULT_CONFIG, [], ORDERED);
+    expect(state.innings[0]?.yetToBat).not.toBe(ORDERED[0]!.battingOrder);
   });
 });

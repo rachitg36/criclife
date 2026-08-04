@@ -93,6 +93,7 @@ function simulate(config: MatchConfig, plans: BallPlan[]) {
         // roster from the log as it goes); the simulation below picks the
         // next batter straight from `PLAYER_POOL`, not from this list.
         yetToBat: [],
+        squadSize: null,
         status: 'in_progress',
         endReason: null,
         currentOver: { bowlerIds: [], runs: 0 },

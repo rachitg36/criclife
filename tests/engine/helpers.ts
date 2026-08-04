@@ -41,6 +41,7 @@ export function emptyInnings(overrides: Partial<InningsState> = {}): InningsStat
     bowlers: {},
     fallOfWickets: [],
     yetToBat: [],
+    squadSize: null,
     status: 'in_progress',
     endReason: null,
     currentOver: { bowlerIds: [], runs: 0 },
@@ -63,6 +64,7 @@ export function createTestMatch(
     innings: [
       emptyInnings({
         yetToBat: ['s2', 's3', 's4', 's5', 's6', 's7'],
+        squadSize: null,
         ...inningsOverrides,
       }),
     ],

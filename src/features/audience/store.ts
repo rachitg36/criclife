@@ -176,12 +176,20 @@ function toAudienceDelivery(row: DeliveryRow, inningsNo: number): AudienceDelive
   };
 }
 
-function seedsFrom(innings: AudienceInningsRow[]): InningsSeed[] {
+/**
+ * `players` is already sorted by batting order, so the seed carries both who
+ * is yet to bat and how big the side actually is. Without it the audience
+ * replays an innings that can only end at `playersPerSide - 1` wickets, which
+ * a short side never reaches — the scorer would show all out and the audience
+ * would not.
+ */
+function seedsFrom(innings: AudienceInningsRow[], players: AudiencePlayer[]): InningsSeed[] {
   return innings.map((i) => ({
     inningsNo: i.inningsNo,
     battingTeamId: i.battingTeamId,
     bowlingTeamId: i.bowlingTeamId,
     isSuperOver: i.isSuperOver,
+    battingOrder: players.filter((p) => p.teamId === i.battingTeamId).map((p) => p.id),
   }));
 }
 
@@ -288,7 +296,7 @@ export const useAudienceStore = create<AudienceState>((set, get) => ({
       try {
         matchState =
           innings.length > 0
-            ? replay(matchRow.id, config, deliveries, seedsFrom(innings))
+            ? replay(matchRow.id, config, deliveries, seedsFrom(innings, players))
             : createInitialMatchState(matchRow.id, config);
       } catch (e) {
         set({
@@ -391,7 +399,7 @@ function applyIncoming(set: Setter, get: Getter, row: DeliveryRow): void {
     return;
   }
 
-  const result = applyLoggedDelivery(matchState, delivery, seedsFrom(innings));
+  const result = applyLoggedDelivery(matchState, delivery, seedsFrom(innings, get().players));
   if (!result.ok) {
     // The client's view and the server's have diverged. The log is the truth.
     void refetchAndReconcile(set, get, { countMissed: false });
@@ -442,7 +450,7 @@ async function refetchAndReconcile(
     const before = get().deliveries.length;
     const matchState =
       innings.length > 0
-        ? replay(match.id, match.config, deliveries, seedsFrom(innings))
+        ? replay(match.id, match.config, deliveries, seedsFrom(innings, get().players))
         : createInitialMatchState(match.id, match.config);
 
     const missed = deliveries.length - before;

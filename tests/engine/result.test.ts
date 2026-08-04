@@ -121,7 +121,11 @@ describe('computeMatchResult — docs/04-RULES-ENGINE.md §7.2', () => {
 
 describe('superOverConfig', () => {
   it('is 1 over, 3 a side, no powerplays, never last-man-standing', () => {
-    const base = { ...DEFAULT_CONFIG, lastManStanding: true, powerplays: [{ name: 'PP1', fromOver: 1, toOver: 6, fieldersOutside: 2 }] };
+    const base = {
+      ...DEFAULT_CONFIG,
+      lastManStanding: true,
+      powerplays: [{ name: 'PP1', fromOver: 1, toOver: 6, fieldersOutside: 2 }],
+    };
     const config = superOverConfig(base);
     expect(config.oversPerInnings).toBe(1);
     expect(config.playersPerSide).toBe(3);
@@ -145,14 +149,32 @@ describe('resolveTiedSuperOvers', () => {
       inningsNo: 1,
       battingTeamId: 'A',
       batters: {
-        p1: { playerId: 'p1', position: 1, runs: 20, balls: 10, fours: 3, sixes: 1, status: 'not_out', dismissal: null },
+        p1: {
+          playerId: 'p1',
+          position: 1,
+          runs: 20,
+          balls: 10,
+          fours: 3,
+          sixes: 1,
+          status: 'not_out',
+          dismissal: null,
+        },
       },
     });
     const innings2 = emptyInnings({
       inningsNo: 2,
       battingTeamId: 'B',
       batters: {
-        p2: { playerId: 'p2', position: 1, runs: 20, balls: 10, fours: 1, sixes: 0, status: 'not_out', dismissal: null },
+        p2: {
+          playerId: 'p2',
+          position: 1,
+          runs: 20,
+          balls: 10,
+          fours: 1,
+          sixes: 0,
+          status: 'not_out',
+          dismissal: null,
+        },
       },
     });
     const result = resolveTiedSuperOvers([innings1, innings2], 'A', 'B', true);
@@ -166,14 +188,32 @@ describe('resolveTiedSuperOvers', () => {
       inningsNo: 1,
       battingTeamId: 'A',
       batters: {
-        p1: { playerId: 'p1', position: 1, runs: 10, balls: 10, fours: 1, sixes: 0, status: 'not_out', dismissal: null },
+        p1: {
+          playerId: 'p1',
+          position: 1,
+          runs: 10,
+          balls: 10,
+          fours: 1,
+          sixes: 0,
+          status: 'not_out',
+          dismissal: null,
+        },
       },
     });
     const innings2 = emptyInnings({
       inningsNo: 2,
       battingTeamId: 'B',
       batters: {
-        p2: { playerId: 'p2', position: 1, runs: 10, balls: 10, fours: 1, sixes: 0, status: 'not_out', dismissal: null },
+        p2: {
+          playerId: 'p2',
+          position: 1,
+          runs: 10,
+          balls: 10,
+          fours: 1,
+          sixes: 0,
+          status: 'not_out',
+          dismissal: null,
+        },
       },
     });
     const result = resolveTiedSuperOvers([innings1, innings2], 'A', 'B', true);
@@ -186,14 +226,32 @@ describe('resolveTiedSuperOvers', () => {
       inningsNo: 1,
       battingTeamId: 'A',
       batters: {
-        p1: { playerId: 'p1', position: 1, runs: 10, balls: 10, fours: 1, sixes: 0, status: 'not_out', dismissal: null },
+        p1: {
+          playerId: 'p1',
+          position: 1,
+          runs: 10,
+          balls: 10,
+          fours: 1,
+          sixes: 0,
+          status: 'not_out',
+          dismissal: null,
+        },
       },
     });
     const innings2 = emptyInnings({
       inningsNo: 2,
       battingTeamId: 'B',
       batters: {
-        p2: { playerId: 'p2', position: 1, runs: 10, balls: 10, fours: 3, sixes: 1, status: 'not_out', dismissal: null },
+        p2: {
+          playerId: 'p2',
+          position: 1,
+          runs: 10,
+          balls: 10,
+          fours: 3,
+          sixes: 1,
+          status: 'not_out',
+          dismissal: null,
+        },
       },
     });
     const result = resolveTiedSuperOvers([innings1, innings2], 'A', 'B', true);
@@ -201,13 +259,22 @@ describe('resolveTiedSuperOvers', () => {
     expect(result.winnerTeamId).toBe('B');
   });
 
-  it('a team\'s own boundaries only count from innings where they actually batted', () => {
+  it("a team's own boundaries only count from innings where they actually batted", () => {
     // innings1 batted by A; teamBoundaryCount for B against innings1 must be 0.
     const innings1 = emptyInnings({
       inningsNo: 1,
       battingTeamId: 'A',
       batters: {
-        p1: { playerId: 'p1', position: 1, runs: 10, balls: 10, fours: 2, sixes: 0, status: 'not_out', dismissal: null },
+        p1: {
+          playerId: 'p1',
+          position: 1,
+          runs: 10,
+          balls: 10,
+          fours: 2,
+          sixes: 0,
+          status: 'not_out',
+          dismissal: null,
+        },
       },
     });
     const result = resolveTiedSuperOvers([innings1], 'A', 'B', true);

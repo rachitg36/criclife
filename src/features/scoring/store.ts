@@ -276,11 +276,40 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     }
 
     const config = match.config as unknown as MatchConfig;
+
+    const squadA: SquadPlayer[] = [];
+    const squadB: SquadPlayer[] = [];
+    for (const row of (squadRows ?? []) as unknown as {
+      team_id: string;
+      is_captain: boolean;
+      is_wicket_keeper: boolean;
+      batting_order: number | null;
+      player: Database['public']['Tables']['players']['Row'];
+    }[]) {
+      const entry: SquadPlayer = {
+        ...row.player,
+        isCaptain: row.is_captain,
+        isWicketKeeper: row.is_wicket_keeper,
+        battingOrder: row.batting_order,
+      };
+      if (row.team_id === match.team_a_id) squadA.push(entry);
+      else squadB.push(entry);
+    }
+    squadA.sort((a, b) => (a.battingOrder ?? 99) - (b.battingOrder ?? 99));
+    squadB.sort((a, b) => (a.battingOrder ?? 99) - (b.battingOrder ?? 99));
+
+    // The batting order goes into the seed, so the engine knows both who is
+    // yet to bat and how many players the side actually has. Neither was ever
+    // supplied: `yetToBat` stayed empty for every match, so the "next batter"
+    // picker read "No batters remaining" at the first wicket of every innings
+    // ever scored here — and a side picked shorter than `playersPerSide` could
+    // reach a state with nobody left to bat and an innings that had not ended.
     const seeds: InningsSeed[] = (inningsRows ?? []).map((i) => ({
       inningsNo: i.innings_no,
       battingTeamId: i.batting_team_id,
       bowlingTeamId: i.bowling_team_id,
       isSuperOver: i.is_super_over,
+      battingOrder: (i.batting_team_id === match.team_a_id ? squadA : squadB).map((p) => p.id),
     }));
     const inningsIdByNo: Record<number, string> = {};
     for (const i of inningsRows ?? []) inningsIdByNo[i.innings_no] = i.id;
@@ -326,27 +355,6 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
       set({ mode: 'ERROR', error: e instanceof Error ? e.message : 'Replay failed' });
       return;
     }
-
-    const squadA: SquadPlayer[] = [];
-    const squadB: SquadPlayer[] = [];
-    for (const row of (squadRows ?? []) as unknown as {
-      team_id: string;
-      is_captain: boolean;
-      is_wicket_keeper: boolean;
-      batting_order: number | null;
-      player: Database['public']['Tables']['players']['Row'];
-    }[]) {
-      const entry: SquadPlayer = {
-        ...row.player,
-        isCaptain: row.is_captain,
-        isWicketKeeper: row.is_wicket_keeper,
-        battingOrder: row.batting_order,
-      };
-      if (row.team_id === match.team_a_id) squadA.push(entry);
-      else squadB.push(entry);
-    }
-    squadA.sort((a, b) => (a.battingOrder ?? 99) - (b.battingOrder ?? 99));
-    squadB.sort((a, b) => (a.battingOrder ?? 99) - (b.battingOrder ?? 99));
 
     const innings = currentInnings(matchState);
     let mode: PadMode = 'READY';

@@ -7,7 +7,16 @@ describe('buildBattingCard', () => {
   it('strike rate is null before facing a ball, and a dismissal has no text when not out', () => {
     const innings = emptyInnings({
       batters: {
-        p1: { playerId: 'p1', position: 1, runs: 0, balls: 0, fours: 0, sixes: 0, status: 'not_out', dismissal: null },
+        p1: {
+          playerId: 'p1',
+          position: 1,
+          runs: 0,
+          balls: 0,
+          fours: 0,
+          sixes: 0,
+          status: 'not_out',
+          dismissal: null,
+        },
       },
     });
     const [row] = buildBattingCard(innings);

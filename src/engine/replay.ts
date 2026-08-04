@@ -6,6 +6,7 @@ import type {
   InningsState,
   MatchConfig,
   MatchState,
+  PlayerId,
   TeamId,
 } from './types';
 
@@ -14,6 +15,14 @@ export type InningsSeed = {
   battingTeamId: TeamId;
   bowlingTeamId: TeamId;
   isSuperOver?: boolean;
+  /**
+   * The batting side, in order. Optional because plenty of callers (and every
+   * engine test predating this) only care about the scoring rules — but
+   * without it `yetToBat` stays empty, and an empty `yetToBat` is what made
+   * the "next batter" picker render "No batters remaining" at the first wicket
+   * of every match ever scored in this app.
+   */
+  battingOrder?: PlayerId[];
 };
 
 function emptyInnings(seed: InningsSeed, target: number | null): InningsState {
@@ -37,7 +46,10 @@ function emptyInnings(seed: InningsSeed, target: number | null): InningsState {
     batters: {},
     bowlers: {},
     fallOfWickets: [],
-    yetToBat: [],
+    yetToBat: seed.battingOrder ? [...seed.battingOrder] : [],
+    // How many players this side actually has, when the caller knows. Null
+    // means "not told", and the innings then falls back to config alone.
+    squadSize: seed.battingOrder?.length ?? null,
     status: 'in_progress',
     endReason: null,
     currentOver: { bowlerIds: [], runs: 0 },

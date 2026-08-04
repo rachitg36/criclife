@@ -208,7 +208,7 @@ describe('applyDelivery — §12 unit test table', () => {
     expect(result.error).toBe('BOWLER_OVERS_EXHAUSTED');
   });
 
-  it("ballsPerOver = 5 (The Hundred): the over completes at 5, not 6", () => {
+  it('ballsPerOver = 5 (The Hundred): the over completes at 5, not 6', () => {
     let state = createTestMatch({ ballsPerOver: 5 });
     for (let i = 0; i < 4; i += 1) {
       const r = applyDelivery(state, ball());

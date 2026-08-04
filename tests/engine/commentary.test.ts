@@ -68,9 +68,9 @@ describe('generateCommentary — non-wicket deliveries', () => {
   });
 
   it('a wide', () => {
-    expect(generateCommentary(baseDelivery({ extraType: 'wide', runsExtras: 1, runsTotal: 1 }))).toBe(
-      'bowler1 to striker1, wide'
-    );
+    expect(
+      generateCommentary(baseDelivery({ extraType: 'wide', runsExtras: 1, runsTotal: 1 }))
+    ).toBe('bowler1 to striker1, wide');
   });
 
   it('a no-ball with no runs off the bat', () => {
@@ -88,12 +88,12 @@ describe('generateCommentary — non-wicket deliveries', () => {
   });
 
   it('byes (plural and singular)', () => {
-    expect(generateCommentary(baseDelivery({ extraType: 'bye', runsExtras: 4, runsTotal: 4 }))).toBe(
-      'bowler1 to striker1, 4 byes'
-    );
-    expect(generateCommentary(baseDelivery({ extraType: 'bye', runsExtras: 1, runsTotal: 1 }))).toBe(
-      'bowler1 to striker1, 1 bye'
-    );
+    expect(
+      generateCommentary(baseDelivery({ extraType: 'bye', runsExtras: 4, runsTotal: 4 }))
+    ).toBe('bowler1 to striker1, 4 byes');
+    expect(
+      generateCommentary(baseDelivery({ extraType: 'bye', runsExtras: 1, runsTotal: 1 }))
+    ).toBe('bowler1 to striker1, 1 bye');
   });
 
   it('leg byes (plural and singular)', () => {
@@ -107,39 +107,45 @@ describe('generateCommentary — non-wicket deliveries', () => {
 });
 
 describe('generateCommentary — wicket deliveries, every WicketType', () => {
-  const cases: Array<{ type: WicketType; overrides?: Partial<Delivery>; expect: string | RegExp }> = [
-    { type: 'bowled', expect: 'bowler1 to striker1, BOWLED HIM! striker1 b bowler1' },
-    {
-      type: 'caught',
-      overrides: { fielderId: 'fielder1' },
-      expect: 'bowler1 to striker1, CAUGHT! c fielder1 b bowler1',
-    },
-    { type: 'caught', expect: 'bowler1 to striker1, CAUGHT! c & b bowler1' },
-    { type: 'lbw', expect: 'bowler1 to striker1, LBW!' },
-    { type: 'hit_wicket', expect: 'bowler1 to striker1, HIT WICKET!' },
-    {
-      type: 'run_out',
-      overrides: { fielderId: 'fielder1' },
-      expect: /RUN OUT! striker1 run out \(fielder1\)/,
-    },
-    { type: 'run_out', expect: 'bowler1 to striker1, RUN OUT! striker1 run out' },
-    {
-      type: 'stumped',
-      overrides: { fielderId: 'keeper1' },
-      expect: 'bowler1 to striker1, STUMPED! st keeper1 b bowler1',
-    },
-    { type: 'obstructing_the_field', expect: /OBSTRUCTING THE FIELD! striker1 given out/ },
-    { type: 'handled_the_ball', expect: /OBSTRUCTING THE FIELD! striker1 given out/ },
-    { type: 'hit_ball_twice', expect: /OUT! striker1 hit the ball twice/ },
-    { type: 'timed_out', expect: 'striker1 timed out' },
-    { type: 'retired_out', expect: 'striker1 retires, out' },
-    { type: 'retired_hurt', expect: 'striker1 retires hurt' },
-  ];
+  const cases: Array<{ type: WicketType; overrides?: Partial<Delivery>; expect: string | RegExp }> =
+    [
+      { type: 'bowled', expect: 'bowler1 to striker1, BOWLED HIM! striker1 b bowler1' },
+      {
+        type: 'caught',
+        overrides: { fielderId: 'fielder1' },
+        expect: 'bowler1 to striker1, CAUGHT! c fielder1 b bowler1',
+      },
+      { type: 'caught', expect: 'bowler1 to striker1, CAUGHT! c & b bowler1' },
+      { type: 'lbw', expect: 'bowler1 to striker1, LBW!' },
+      { type: 'hit_wicket', expect: 'bowler1 to striker1, HIT WICKET!' },
+      {
+        type: 'run_out',
+        overrides: { fielderId: 'fielder1' },
+        expect: /RUN OUT! striker1 run out \(fielder1\)/,
+      },
+      { type: 'run_out', expect: 'bowler1 to striker1, RUN OUT! striker1 run out' },
+      {
+        type: 'stumped',
+        overrides: { fielderId: 'keeper1' },
+        expect: 'bowler1 to striker1, STUMPED! st keeper1 b bowler1',
+      },
+      { type: 'obstructing_the_field', expect: /OBSTRUCTING THE FIELD! striker1 given out/ },
+      { type: 'handled_the_ball', expect: /OBSTRUCTING THE FIELD! striker1 given out/ },
+      { type: 'hit_ball_twice', expect: /OUT! striker1 hit the ball twice/ },
+      { type: 'timed_out', expect: 'striker1 timed out' },
+      { type: 'retired_out', expect: 'striker1 retires, out' },
+      { type: 'retired_hurt', expect: 'striker1 retires hurt' },
+    ];
 
   for (const { type, overrides, expect: expected } of cases) {
     it(type + (overrides?.fielderId ? ' (with fielder)' : ''), () => {
       const line = generateCommentary(
-        baseDelivery({ isWicket: true, wicketType: type, dismissedPlayerId: 'striker1', ...overrides })
+        baseDelivery({
+          isWicket: true,
+          wicketType: type,
+          dismissedPlayerId: 'striker1',
+          ...overrides,
+        })
       );
       if (typeof expected === 'string') expect(line).toBe(expected);
       else expect(line).toMatch(expected);

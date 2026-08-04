@@ -1,3 +1,4 @@
+import { effectivePlayersPerSide } from './inningsEnd';
 import type { InningsState, MatchConfig, MatchResult } from './types';
 
 /** docs/04-RULES-ENGINE.md §7.2 */
@@ -6,7 +7,8 @@ export function computeMatchResult(
   innings2: InningsState,
   config: MatchConfig
 ): MatchResult {
-  const maxWickets = config.lastManStanding ? config.playersPerSide : config.playersPerSide - 1;
+  const players = effectivePlayersPerSide(config, innings2);
+  const maxWickets = config.lastManStanding ? players : players - 1;
   const target = innings2.target ?? innings1.runs + 1;
 
   if (innings2.runs >= target) {

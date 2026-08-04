@@ -54,7 +54,11 @@ function checkInnings(innings: InningsState, deliveries: Delivery[], config: Mat
   expect(cardBowlingRuns).toBe(innings.runs - innings.extras.byes - innings.extras.legByes);
   const cardBowlingWickets = card.bowling.reduce((sum, b) => sum + b.wickets, 0);
   const bowlerCreditedWickets = deliveries.filter(
-    (d) => d.inningsNo === innings.inningsNo && d.isWicket && d.wicketType && ['bowled', 'caught', 'lbw', 'stumped', 'hit_wicket'].includes(d.wicketType)
+    (d) =>
+      d.inningsNo === innings.inningsNo &&
+      d.isWicket &&
+      d.wicketType &&
+      ['bowled', 'caught', 'lbw', 'stumped', 'hit_wicket'].includes(d.wicketType)
   ).length;
   expect(cardBowlingWickets).toBe(bowlerCreditedWickets);
 }

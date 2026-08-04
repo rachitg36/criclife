@@ -1,7 +1,7 @@
 import { generateCommentary } from './commentary';
 import { resolveMaxOversPerBowler } from './config';
 import { buildDismissalText, CREDIT_TABLE, isWicketAllowed } from './dismissals';
-import { checkInningsEnd } from './inningsEnd';
+import { checkInningsEnd, effectivePlayersPerSide } from './inningsEnd';
 import { superOverConfig } from './result';
 import { resolveRunOutEnds, shouldSwapOnRuns, type StrikeDeliveryFacts } from './strike';
 import type {
@@ -72,7 +72,8 @@ export function applyDelivery(state: MatchState, input: DeliveryInput): EngineRe
   // True last-man-standing: exactly one recognised batter remains, batting
   // without a partner. Only reachable once `lastManStanding` is configured
   // *and* the second-to-last wicket has actually fallen — not from ball one.
-  const isLastManState = config.lastManStanding && innings.wickets === config.playersPerSide - 1;
+  const isLastManState =
+    config.lastManStanding && innings.wickets === effectivePlayersPerSide(config, innings) - 1;
   if (!innings.strikerId || innings.strikerId === innings.nonStrikerId) {
     return { ok: false, error: 'BATTERS_NOT_SET' };
   }
@@ -289,7 +290,7 @@ export function applyDelivery(state: MatchState, input: DeliveryInput): EngineRe
   // here on, regardless of which end the run-out arithmetic left them at.
   if (
     config.lastManStanding &&
-    innings.wickets === config.playersPerSide - 1 &&
+    innings.wickets === effectivePlayersPerSide(config, innings) - 1 &&
     strikerId === null &&
     nonStrikerId !== null
   ) {
