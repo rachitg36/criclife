@@ -5,6 +5,7 @@ import { env } from '@/lib/env';
 import { useAudienceStore } from './store';
 import { useAudienceView } from './useAudienceView';
 import { AudienceHeader } from './components/AudienceHeader';
+import { AudienceCelebration } from './components/AudienceCelebration';
 import { MatchNarrative } from './components/MatchNarrative';
 import { AudienceTabs } from './components/AudienceTabs';
 import { BattersPanel } from './components/BattersPanel';
@@ -157,6 +158,7 @@ export default function AudienceRoute() {
           bowlingTeam={view.bowlingTeam}
         />
       )}
+      {view.isComplete && <AudienceCelebration view={view} />}
       {view.isComplete && <MatchNarrative view={view} />}
       <ThisOverStrip balls={view.thisOver} />
       <BattersPanel view={view} />

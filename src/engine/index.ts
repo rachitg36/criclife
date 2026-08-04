@@ -34,3 +34,6 @@ export type { BattingCardRow, BowlingCardRow, InningsScorecard } from './scoreca
 export { resolveRunOutEnds, shouldSwapOnRuns } from './strike';
 export type { StrikeDeliveryFacts } from './strike';
 export type * from './types';
+
+export { buildHonours, winningSidePlayers } from './honours';
+export type { Honour, MatchHonours } from './honours';
