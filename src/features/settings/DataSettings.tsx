@@ -45,7 +45,10 @@ export function DataSettings() {
     const { data, error } = await supabase.rpc('purge_match_data', { p_confirm: 'DELETE' });
     setBusy(false);
     setPurgeText('');
-    if (error) return setMessage(userMessage(classifyError(error)));
+    // Raw, not classified. This is a super-admin-only debug tool; the whole
+    // value of a failure here is the server's exact words, and "something went
+    // wrong" has already cost one round trip.
+    if (error) return setMessage(`Purge failed: ${error.message}`);
     const summary = data as { matches?: number; deliveries?: number } | null;
     setMessage(
       `Cleared ${summary?.matches ?? 0} matches and ${summary?.deliveries ?? 0} balls. ` +
