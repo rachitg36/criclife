@@ -26,6 +26,8 @@ export {
   computeMatchResult,
   resolveTiedSuperOvers,
   superOverConfig,
+  configForInnings,
+  decideLastSuperOver,
 } from './result';
 export { buildBattingCard, buildBowlingCard, buildInningsScorecard } from './scorecard';
 export type { BattingCardRow, BowlingCardRow, InningsScorecard } from './scorecard';

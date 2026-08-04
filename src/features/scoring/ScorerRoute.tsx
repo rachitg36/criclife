@@ -52,6 +52,7 @@ export default function ScorerRoute() {
   const revoked = useScorerStore((s) => s.revoked);
   const dismissError = useScorerStore((s) => s.dismissError);
   const scorerTab = useScorerStore((s) => s.scorerTab);
+  const setScorerTab = useScorerStore((s) => s.setScorerTab);
   const duplicateWarning = useScorerStore((s) => s.duplicateWarning);
   const dismissDuplicateWarning = useScorerStore((s) => s.dismissDuplicateWarning);
   const undo = useScorerStore((s) => s.undo);
@@ -68,8 +69,21 @@ export default function ScorerRoute() {
   );
 
   useEffect(() => {
-    if (matchId) void init(matchId);
-  }, [matchId, init]);
+    if (!matchId) return;
+    // Land on the pad, every time the route is entered.
+    //
+    // `scorerTab` lives in the store on purpose — switching to Scorecard and
+    // back must be instant (docs/05 § 7) — but that also meant it survived
+    // *leaving the scorer entirely*. Open Settings to copy the live link, go
+    // back to the match hub, tap "Resume scoring", and you landed in Settings
+    // again, with no obvious way to the pad. Reported 2026-08-04.
+    //
+    // Deliberately here and not in `init`: `init` also runs on undo, on an
+    // edit and at an innings break, and yanking the scorer back to the Score
+    // tab in the middle of reading a scorecard is the opposite fix.
+    setScorerTab('score');
+    void init(matchId);
+  }, [matchId, init, setScorerTab]);
 
   if (mode === 'LOADING') {
     return <CenteredMessage>Loading match…</CenteredMessage>;

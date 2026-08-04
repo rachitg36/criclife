@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import {
   ballsRemaining,
   buildInningsScorecard,
+  configForInnings,
   currentRunRate,
   oversDisplay,
   replay,
@@ -152,8 +153,11 @@ export function useAudienceView(): AudienceView {
       };
     }
 
-    const config = match.config;
     const innings = shown.innings[shown.currentInningsIndex] ?? null;
+    // The *effective* config. A super over is one over with three batters, so
+    // reading `match.config` flat produced "need 2 runs off 12 balls" in a
+    // six-ball super over — the match's two overs times six.
+    const config = configForInnings(match.config, innings);
     const previousInnings =
       shown.currentInningsIndex > 0 ? (shown.innings[shown.currentInningsIndex - 1] ?? null) : null;
 

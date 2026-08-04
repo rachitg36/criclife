@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { lazyChunk } from './lazyChunk';
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { RootLayout } from './layouts/RootLayout';
@@ -22,78 +22,78 @@ import { ErrorPage } from '@/features/system/ErrorPage';
 // `lib/supabase` lands supabase-js in the eager chunk that `/live/:publicSlug`
 // also downloads. That is CLAUDE.md rule 9's 180 kB budget, and it has been
 // blown this way three times. Lazy, like every other page.
-const HomePage = lazy(() =>
+const HomePage = lazyChunk(() =>
   import('@/features/home/HomePage').then((m) => ({ default: m.HomePage }))
 );
-const ScorerRoute = lazy(() => import('@/features/scoring/ScorerRoute'));
-const AudienceRoute = lazy(() => import('@/features/audience/AudienceRoute'));
-const RanksRoute = lazy(() => import('@/features/ranks/RanksRoute'));
-const CompareRoute = lazy(() => import('@/features/ranks/CompareRoute'));
-const StatsRoute = lazy(() => import('@/features/stats/StatsRoute'));
-const AdminRoute = lazy(() => import('@/features/admin/AdminRoute'));
-const LoginPage = lazy(() =>
+const ScorerRoute = lazyChunk(() => import('@/features/scoring/ScorerRoute'));
+const AudienceRoute = lazyChunk(() => import('@/features/audience/AudienceRoute'));
+const RanksRoute = lazyChunk(() => import('@/features/ranks/RanksRoute'));
+const CompareRoute = lazyChunk(() => import('@/features/ranks/CompareRoute'));
+const StatsRoute = lazyChunk(() => import('@/features/stats/StatsRoute'));
+const AdminRoute = lazyChunk(() => import('@/features/admin/AdminRoute'));
+const LoginPage = lazyChunk(() =>
   import('@/features/auth/LoginPage').then((m) => ({ default: m.LoginPage }))
 );
-const AuthCallbackPage = lazy(() =>
+const AuthCallbackPage = lazyChunk(() =>
   import('@/features/auth/AuthCallbackPage').then((m) => ({ default: m.AuthCallbackPage }))
 );
-const OnboardingPage = lazy(() =>
+const OnboardingPage = lazyChunk(() =>
   import('@/features/auth/OnboardingPage').then((m) => ({ default: m.OnboardingPage }))
 );
-const TeamsPage = lazy(() =>
+const TeamsPage = lazyChunk(() =>
   import('@/features/teams/TeamsPage').then((m) => ({ default: m.TeamsPage }))
 );
-const NewTeamPage = lazy(() =>
+const NewTeamPage = lazyChunk(() =>
   import('@/features/teams/NewTeamPage').then((m) => ({ default: m.NewTeamPage }))
 );
-const TeamSquadPage = lazy(() =>
+const TeamSquadPage = lazyChunk(() =>
   import('@/features/teams/TeamSquadPage').then((m) => ({ default: m.TeamSquadPage }))
 );
-const TeamMatchesPage = lazy(() =>
+const TeamMatchesPage = lazyChunk(() =>
   import('@/features/teams/TeamMatchesPage').then((m) => ({ default: m.TeamMatchesPage }))
 );
-const TeamStatsPage = lazy(() =>
+const TeamStatsPage = lazyChunk(() =>
   import('@/features/teams/TeamStatsPage').then((m) => ({ default: m.TeamStatsPage }))
 );
-const AddPlayerPage = lazy(() =>
+const AddPlayerPage = lazyChunk(() =>
   import('@/features/teams/AddPlayerPage').then((m) => ({ default: m.AddPlayerPage }))
 );
-const TeamSettingsPage = lazy(() =>
+const TeamSettingsPage = lazyChunk(() =>
   import('@/features/teams/TeamSettingsPage').then((m) => ({ default: m.TeamSettingsPage }))
 );
-const PlayerProfilePage = lazy(() =>
+const PlayerProfilePage = lazyChunk(() =>
   import('@/features/players/PlayerProfilePage').then((m) => ({ default: m.PlayerProfilePage }))
 );
-const PlayerEditPage = lazy(() =>
+const PlayerEditPage = lazyChunk(() =>
   import('@/features/players/PlayerEditPage').then((m) => ({ default: m.PlayerEditPage }))
 );
-const ClaimPlayerPage = lazy(() =>
+const ClaimPlayerPage = lazyChunk(() =>
   import('@/features/players/ClaimPlayerPage').then((m) => ({ default: m.ClaimPlayerPage }))
 );
-const MatchesPage = lazy(() =>
+const MatchesPage = lazyChunk(() =>
   import('@/features/matches/MatchesPage').then((m) => ({ default: m.MatchesPage }))
 );
-const MatchSettingsPage = lazy(() =>
+const MatchSettingsPage = lazyChunk(() =>
   import('@/features/matches/MatchSettingsPage').then((m) => ({ default: m.MatchSettingsPage }))
 );
-const NewMatchPage = lazy(() =>
+const NewMatchPage = lazyChunk(() =>
   import('@/features/matches/NewMatchPage').then((m) => ({ default: m.NewMatchPage }))
 );
-const MatchHubPage = lazy(() =>
+const MatchHubPage = lazyChunk(() =>
   import('@/features/matches/MatchHubPage').then((m) => ({ default: m.MatchHubPage }))
 );
-const MatchSetupPage = lazy(() =>
+const MatchSetupPage = lazyChunk(() =>
   import('@/features/matches/MatchSetupPage').then((m) => ({ default: m.MatchSetupPage }))
 );
-const ScoringRightsMapPage = lazy(() =>
+const ScoringRightsMapPage = lazyChunk(() =>
   import('@/features/matches/ScoringRightsMapPage').then((m) => ({
     default: m.ScoringRightsMapPage,
   }))
 );
-const RedeemGrantPage = lazy(() =>
+const RedeemGrantPage = lazyChunk(() =>
   import('@/features/matches/RedeemGrantPage').then((m) => ({ default: m.RedeemGrantPage }))
 );
-const ReviewTrayPage = lazy(() =>
+const ReviewTrayPage = lazyChunk(() =>
   import('@/features/matches/ReviewTrayPage').then((m) => ({ default: m.ReviewTrayPage }))
 );
 

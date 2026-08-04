@@ -34,6 +34,28 @@ export default function ChartsTab({ view }: { view: AudienceView }) {
 
   const inningsNo = view.innings?.inningsNo ?? inningsRows[0]?.inningsNo ?? 1;
 
+  // Super overs are not innings, whatever the data model says.
+  //
+  // `innings` is the storage shape — a super over gets its own row so the
+  // delivery log stays uniform — but every chart here groups by `inningsNo`,
+  // so a match settled after three super overs drew **six** worm lines, six
+  // manhattans and six run-rate charts. Reported as "there are so many lines
+  // shown for the worm graph, which is completely wrong. There has to be only
+  // one line for each team."
+  //
+  // The shape of an innings and the shape of a super over are not comparable
+  // anyway: one over against twenty says nothing useful on a run-rate axis. So
+  // the charts show the match, and the super over is reported where it belongs
+  // — on the scorecard, as a super over.
+  const superOverNos = useMemo(
+    () => new Set(inningsRows.filter((i) => i.isSuperOver).map((i) => i.inningsNo)),
+    [inningsRows]
+  );
+  const mainInnings = useMemo(
+    () => visible.filter((d) => !superOverNos.has(d.inningsNo)),
+    [visible, superOverNos]
+  );
+
   const charts = useMemo(() => {
     if (!match) return null;
     const battingTeamOf = (no: number) =>
@@ -46,9 +68,9 @@ export default function ChartsTab({ view }: { view: AudienceView }) {
       inningsRows.find((i) => i.inningsNo === no)?.revisedOvers ?? match.config.oversPerInnings;
 
     return {
-      worm: buildWorm(visible, match.config, battingTeamOf),
-      manhattan: buildManhattan(visible, battingTeamOf),
-      runRate: buildRunRate(visible, match.config, battingTeamOf, targetOf, oversOf),
+      worm: buildWorm(mainInnings, match.config, battingTeamOf),
+      manhattan: buildManhattan(mainInnings, battingTeamOf),
+      runRate: buildRunRate(mainInnings, match.config, battingTeamOf, targetOf, oversOf),
       partnerships: buildPartnershipBars(visible, inningsNo),
       shots: buildWagonWheel(visible, inningsNo, wagonBatter),
       batters: [
@@ -57,7 +79,7 @@ export default function ChartsTab({ view }: { view: AudienceView }) {
         ),
       ],
     };
-  }, [visible, match, inningsRows, inningsNo, wagonBatter]);
+  }, [visible, mainInnings, match, inningsRows, inningsNo, wagonBatter]);
 
   if (!charts || !match) return null;
 
@@ -85,6 +107,13 @@ export default function ChartsTab({ view }: { view: AudienceView }) {
           label={teamLabel(series.battingTeamId)}
         />
       ))}
+
+      {superOverNos.size > 0 && (
+        <p className="px-1 text-[11px] text-[var(--text-tertiary)]">
+          Charts cover the match innings only. Super overs are on the scorecard — one over against
+          twenty says nothing on these axes.
+        </p>
+      )}
 
       <PartnershipChart bars={charts.partnerships} nameOf={view.nameOf} />
 

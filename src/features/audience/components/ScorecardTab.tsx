@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { buildInningsScorecard, oversDisplay } from '@/engine';
+import { buildInningsScorecard, configForInnings, oversDisplay } from '@/engine';
 import type { InningsState } from '@/engine/types';
 import { formatOvers, stat } from '@/lib/format';
 import { cn } from '@/lib/cn';
@@ -25,9 +25,20 @@ export function ScorecardTab({ view }: { view: AudienceView }) {
     );
   }
 
+  // A super over is not an innings, however it is stored.
+  //
+  // Every super-over innings rendered as another full innings card, so a match
+  // settled after three of them showed six cards — "in the scoreboard there
+  // are multiple entries for both the teams, which is completely wrong". The
+  // match innings come first and unqualified; the super overs follow, numbered
+  // as super overs, so a reader can tell 118-4 off twenty overs from 7-1 off
+  // one.
+  const main = matchState.innings.filter((i) => !i.isSuperOver);
+  const supers = matchState.innings.filter((i) => i.isSuperOver);
+
   return (
     <div className="flex flex-col gap-3 px-3 py-3">
-      {matchState.innings.map((innings, index) => (
+      {main.map((innings) => (
         <InningsCard
           key={innings.inningsNo}
           innings={innings}
@@ -35,9 +46,33 @@ export function ScorecardTab({ view }: { view: AudienceView }) {
           teamName={teamById.get(innings.battingTeamId)?.name ?? 'Batting side'}
           bowlingTeamName={teamById.get(innings.bowlingTeamId)?.name ?? 'Bowling side'}
           nameOf={nameOf}
-          defaultOpen={index === matchState.currentInningsIndex}
+          defaultOpen={
+            innings.inningsNo === matchState.innings[matchState.currentInningsIndex]?.inningsNo
+          }
         />
       ))}
+
+      {supers.length > 0 && (
+        <>
+          <h2 className="label-overline px-1 pt-2">
+            {supers.length > 2 ? 'Super overs' : 'Super over'}
+          </h2>
+          {supers.map((innings, i) => (
+            <InningsCard
+              key={innings.inningsNo}
+              innings={innings}
+              view={view}
+              teamName={teamById.get(innings.battingTeamId)?.name ?? 'Batting side'}
+              bowlingTeamName={teamById.get(innings.bowlingTeamId)?.name ?? 'Bowling side'}
+              nameOf={nameOf}
+              // Numbered by *pair*: the two sides of one super over share a
+              // number, which is what makes "Super over 2" mean anything.
+              superOverLabel={`Super over ${Math.floor(i / 2) + 1}`}
+              defaultOpen={false}
+            />
+          ))}
+        </>
+      )}
     </div>
   );
 }
@@ -49,6 +84,7 @@ function InningsCard({
   bowlingTeamName,
   nameOf,
   defaultOpen,
+  superOverLabel,
 }: {
   innings: InningsState;
   view: AudienceView;
@@ -56,9 +92,13 @@ function InningsCard({
   bowlingTeamName: string;
   nameOf: (id: string) => string;
   defaultOpen: boolean;
+  superOverLabel?: string;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const config = view.matchState!.config;
+  // The *effective* config: a super over is one over with three batters, so
+  // building its card against the match config gets the overs display and the
+  // all-out threshold wrong.
+  const config = configForInnings(view.matchState!.config, innings);
   const card = buildInningsScorecard(innings, config);
   const extras =
     card.extras.wides +
@@ -77,7 +117,7 @@ function InningsCard({
       >
         <div className="min-w-0 flex-1">
           <p className="truncate text-[var(--text-heading-sm)] font-semibold">{teamName}</p>
-          {innings.isSuperOver && <p className="label-overline">Super over</p>}
+          {superOverLabel && <p className="label-overline">{superOverLabel}</p>}
         </div>
         <p className="shrink-0 text-[var(--text-heading-md)] font-semibold tabular-nums">
           {card.runs}-{card.wickets}

@@ -85,5 +85,26 @@ export const RULES_PROFILES = {
 
 /** The sixth profile — a user-defined config seeded from the defaults. */
 export function createCustomConfig(overrides: Partial<MatchConfig> = {}): MatchConfig {
-  return { ...DEFAULT_CONFIG, rulesProfileName: 'Custom', ...overrides };
+  return { ...CUSTOM_DEFAULTS, rulesProfileName: 'Custom', ...overrides };
 }
+
+/**
+ * What "Custom" starts from.
+ *
+ * Not `DEFAULT_CONFIG`. That is a twenty-over eleven-a-side game — the right
+ * default for the *app*, and the wrong one for this button, which in practice
+ * is reached by someone setting up a short game in a garden or a hall.
+ * Requested directly on 2026-08-04, and these are the numbers asked for.
+ *
+ * Every one of them is still editable on the same screen; this only decides
+ * which numbers you have to change fewest of.
+ */
+export const CUSTOM_DEFAULTS: MatchConfig = {
+  ...DEFAULT_CONFIG,
+  oversPerInnings: 2,
+  ballsPerOver: 6,
+  playersPerSide: 3,
+  maxOversPerBowler: 3,
+  freeHitAfterNoBall: true,
+  superOverOnTie: true,
+};

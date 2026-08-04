@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button } from '@/components/ui/Button';
 import { Crest } from '@/components/ui/Crest';
@@ -40,13 +40,18 @@ export function NewMatchPage() {
   // how one ended up named "1" with no date on it.
   const [scheduledAt, setScheduledAt] = useState(() => toDateTimeLocal(new Date()));
   const [title, setTitle] = useState('');
+  const [titleTouched, setTitleTouched] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function applyProfile(key: ProfileKey) {
     setProfileKey(key);
-    setConfig(key === 'custom' ? createCustomConfig(config) : RULES_PROFILES[key]);
+    // `createCustomConfig()` with no argument, deliberately: picking Custom
+    // now *resets* to the short-game defaults rather than inheriting whatever
+    // profile happened to be selected. Carrying the old values over made
+    // "Custom" mean "T20, but editable", which is not what it is for.
+    setConfig(key === 'custom' ? createCustomConfig() : RULES_PROFILES[key]);
   }
 
   const canProceedTeams = !!teamAId && !!teamBId && teamAId !== teamBId;
@@ -56,11 +61,22 @@ export function NewMatchPage() {
   // Only `myTeams` is searched, so a side picked out of the all-teams search
   // yields no suggestion and the field falls back to its old placeholder —
   // the names for those live inside TeamsStep and are not worth lifting yet.
+  // Written into the field, not just offered as a placeholder. The suggestion
+  // was already good enough to be used verbatim on submit, so leaving the box
+  // visibly empty only made people type what the app had already decided —
+  // "by default, add the title". Still fully editable, and only ever filled
+  // while the field is untouched (`titleTouched`), so it never overwrites
+  // something typed.
   const suggestedTitle = defaultMatchTitle(
     myTeams?.find((t) => t.id === teamAId)?.short_code,
     myTeams?.find((t) => t.id === teamBId)?.short_code,
     new Date()
   );
+
+  useEffect(() => {
+    if (titleTouched || !suggestedTitle) return;
+    setTitle(suggestedTitle);
+  }, [suggestedTitle, titleTouched]);
 
   async function handleCreate() {
     setSubmitting(true);
@@ -126,7 +142,10 @@ export function NewMatchPage() {
             suggestedTitle={suggestedTitle}
             venue={venue}
             scheduledAt={scheduledAt}
-            onTitle={setTitle}
+            onTitle={(v) => {
+              setTitleTouched(true);
+              setTitle(v);
+            }}
             onVenue={setVenue}
             onScheduledAt={setScheduledAt}
           />
@@ -394,6 +413,9 @@ function VenueStep({
           Title (optional)
         </span>
         <input
+          // Focused on arrival. This is the first thing the step asks for, and
+          // a screen that wants input should not also want a tap to say so.
+          autoFocus
           value={title}
           onChange={(e) => onTitle(e.target.value)}
           placeholder={suggestedTitle ?? 'Final'}

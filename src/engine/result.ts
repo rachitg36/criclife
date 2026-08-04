@@ -87,6 +87,25 @@ export function decideLastSuperOver(allInnings: InningsState[]): MatchResult | n
   };
 }
 
+/**
+ * The config an innings is actually being played under.
+ *
+ * A super over is one over with three batters, not a shortened match, so
+ * `oversPerInnings`, `playersPerSide` and `maxOversPerBowler` all differ from
+ * the match's own config. The scorer store worked this out privately and
+ * everything else read `match.config` flat — which is why both the pad and the
+ * audience view offered "need 2 runs off **12** balls" during a six-ball super
+ * over: `ballsRemaining` multiplied the *match's* two overs by six.
+ *
+ * One answer to the question, next to the function that defines it.
+ */
+export function configForInnings(
+  config: MatchConfig,
+  innings: Pick<InningsState, 'isSuperOver'> | null | undefined
+): MatchConfig {
+  return innings?.isSuperOver ? superOverConfig(config) : config;
+}
+
 function teamBoundaryCount(innings: InningsState, teamId: string): number {
   if (innings.battingTeamId !== teamId) return 0;
   return Object.values(innings.batters).reduce((sum, b) => sum + b.fours + b.sixes, 0);

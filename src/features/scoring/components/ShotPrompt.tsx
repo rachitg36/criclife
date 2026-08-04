@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useScorerStore } from '../store';
 
 /**
@@ -31,14 +31,26 @@ const LIFETIME_MS = 4000;
 const R = 90;
 const C = 100;
 
+/** Same scale the run pad and the wagon wheel use — CLAUDE.md rule 7. */
+function shotColour(runs: number): string {
+  if (runs >= 6) return 'var(--run-six)';
+  if (runs >= 4) return 'var(--run-four)';
+  return 'var(--accent)';
+}
+
 export function ShotPrompt() {
   const prompt = useScorerStore((s) => s.shotPrompt);
   const attachShot = useScorerStore((s) => s.attachShot);
   const dismiss = useScorerStore((s) => s.dismissShotPrompt);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  // Where the tap landed, so the scorer can see what they just recorded.
+  // Without it the overlay closed on a tap and gave no sign of *what* it
+  // captured — "it's very, very not clear what I did".
+  const [placed, setPlaced] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (!prompt) return;
+    setPlaced(null);
     const t = setTimeout(dismiss, LIFETIME_MS);
     return () => clearTimeout(t);
   }, [prompt, dismiss]);
@@ -63,7 +75,13 @@ export function ShotPrompt() {
       x /= len;
       y /= len;
     }
-    void attachShot(Number(x.toFixed(3)), Number(y.toFixed(3)));
+    const fx = Number(x.toFixed(3));
+    const fy = Number(y.toFixed(3));
+    // Draw it, then commit. The overlay stays up for a beat so the mark is
+    // actually seen — the whole complaint was that the tap vanished without
+    // showing anything.
+    setPlaced({ x: fx, y: fy });
+    setTimeout(() => void attachShot(fx, fy), 450);
   }
 
   return (
@@ -136,13 +154,36 @@ export function ShotPrompt() {
         >
           BATTER
         </text>
+        {placed && (
+          <g>
+            {/* The shot: a line from the bat to where it went, and a ball at
+                the end, coloured like the run pad's own 4 and 6. */}
+            <line
+              x1={C}
+              y1={C}
+              x2={C + placed.x * R}
+              y2={C + placed.y * R}
+              stroke={shotColour(prompt.runs)}
+              strokeWidth={2}
+              strokeLinecap="round"
+            />
+            <circle
+              cx={C + placed.x * R}
+              cy={C + placed.y * R}
+              r={5}
+              fill={shotColour(prompt.runs)}
+              stroke="var(--surface-1)"
+              strokeWidth={1.5}
+            />
+          </g>
+        )}
       </svg>
       <button
         type="button"
         onClick={dismiss}
         className="press min-h-11 px-4 text-[13px] font-medium text-[var(--text-tertiary)]"
       >
-        Skip
+        {placed ? 'Saved ✓' : 'Skip'}
       </button>
     </div>
   );
