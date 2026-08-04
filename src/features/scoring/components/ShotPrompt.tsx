@@ -16,6 +16,12 @@ import { useScorerStore } from '../store';
  * with no signal); ignore it and it fades after `LIFETIME_MS` with the score
  * exactly as it was.
  *
+ * Rendered as a bottom sheet beside `WicketSheet`, **not** inside `RunPad`.
+ * It began life as `absolute inset-0` within the pad's own ~168px box, so the
+ * field diagram overflowed it and was clipped away by the no-scroll shell
+ * (CLAUDE.md rule 2) — reported as the prompt "never came on singles". It was
+ * rendering the whole time; there was nowhere for it to render.
+ *
  * Geometry matches `components/viz/WagonWheel.tsx` exactly: -1..1 with the
  * batter at the origin and the bowler's end at negative y. If one of these two
  * ever moves, the other has to move with it — the shots would silently land in
@@ -61,7 +67,7 @@ export function ShotPrompt() {
   }
 
   return (
-    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 rounded-[var(--r-lg)] bg-[var(--surface-glass-strong)] p-3 backdrop-blur-xl">
+    <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[60dvh] flex-col items-center gap-2 rounded-t-[var(--r-lg)] border-t border-[var(--border-default)] bg-[var(--surface-glass-strong)] px-3 pt-3 pb-[calc(var(--sp-3)+var(--safe-b))] backdrop-blur-xl">
       <p className="text-[13px] font-medium text-[var(--text-secondary)]">
         Where did the {prompt.runs} go?
       </p>
@@ -71,7 +77,7 @@ export function ShotPrompt() {
         onClick={onTap}
         role="img"
         aria-label="Tap where the ball went"
-        className="max-h-[52vh] w-full max-w-[240px] touch-manipulation"
+        className="w-full max-w-[220px] flex-1 touch-manipulation"
       >
         <circle cx={C} cy={C} r={R} fill="var(--surface-2)" stroke="var(--border-default)" />
         <circle

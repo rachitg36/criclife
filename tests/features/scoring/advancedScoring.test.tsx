@@ -5,6 +5,20 @@ import { createTestMatch } from '../../engine/helpers';
 import { useScorerStore } from '@/features/scoring/store';
 import { useUiStore } from '@/stores/uiStore';
 import { RunPad } from '@/features/scoring/components/RunPad';
+import { ShotPrompt } from '@/features/scoring/components/ShotPrompt';
+
+// The prompt is a sheet beside the pad, not a child of it — it was moved out
+// of `RunPad` because inside the pad's ~168px box the field diagram was
+// clipped away by the no-scroll shell. Render the pair the way ScorerRoute
+// does, so the test keeps checking the arrangement that actually ships.
+function Pad() {
+  return (
+    <>
+      <RunPad />
+      <ShotPrompt />
+    </>
+  );
+}
 
 /**
  * Advanced Mode — docs/05 § 8.
@@ -69,7 +83,7 @@ describe('Advanced Mode', () => {
   it('stays out of the way entirely when the toggle is off', async () => {
     useUiStore.setState({ advancedScoring: false });
     const user = userEvent.setup();
-    render(<RunPad />);
+    render(<Pad />);
 
     await user.click(screen.getByRole('button', { name: '4' }));
 
@@ -80,7 +94,7 @@ describe('Advanced Mode', () => {
   it('asks where a scoring shot went, with the ball already recorded', async () => {
     useUiStore.setState({ advancedScoring: true });
     const user = userEvent.setup();
-    render(<RunPad />);
+    render(<Pad />);
 
     await user.click(screen.getByRole('button', { name: '4' }));
 
@@ -94,7 +108,7 @@ describe('Advanced Mode', () => {
   it('does not prompt on a dot — most balls are dots and have no shot', async () => {
     useUiStore.setState({ advancedScoring: true });
     const user = userEvent.setup();
-    render(<RunPad />);
+    render(<Pad />);
 
     await user.click(screen.getByRole('button', { name: '0' }));
 
@@ -105,7 +119,7 @@ describe('Advanced Mode', () => {
   it('Skip clears the prompt and leaves the ball exactly as it was', async () => {
     useUiStore.setState({ advancedScoring: true });
     const user = userEvent.setup();
-    render(<RunPad />);
+    render(<Pad />);
 
     await user.click(screen.getByRole('button', { name: '4' }));
     await user.click(screen.getByRole('button', { name: 'Skip' }));

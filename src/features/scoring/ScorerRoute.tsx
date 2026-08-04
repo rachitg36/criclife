@@ -8,6 +8,7 @@ import { BattersRow } from './components/BattersRow';
 import { BowlerRow } from './components/BowlerRow';
 import { OverStrip } from './components/OverStrip';
 import { RunPad } from './components/RunPad';
+import { ShotPrompt } from './components/ShotPrompt';
 import { ModifierRow } from './components/ModifierRow';
 import { ActionRow } from './components/ActionRow';
 import { WicketSheet } from './components/WicketSheet';
@@ -138,6 +139,12 @@ export default function ScorerRoute() {
               </>
             )}
             {mode === 'WICKET_SHEET' && <WicketSheet />}
+            {/* A sibling of the sheets, not a child of RunPad. It lived inside
+                the pad's own ~168px box with `absolute inset-0`, so the field
+                diagram overflowed and was clipped by the no-scroll shell —
+                reported as the wagon wheel prompt "never came on singles".
+                It was rendering; there was nowhere for it to render. */}
+            <ShotPrompt />
             <BallHistorySheet />
           </div>
 
