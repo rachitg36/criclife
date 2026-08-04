@@ -39,6 +39,24 @@ it is the one thing that would prove more than everything else on this list.
 3. Then open `/live/:publicSlug` in a second tab while still scoring. Realtime
    has never carried a message in this project's life (§ 8.11).
 
+**The deployed site is current as of 2026-08-04** — version `447cf456`, built
+with the staging project's credentials passed inline (`VITE_SUPABASE_URL=… npx
+vite build`), which overrides the `.env` files and needs no
+`.env.production.local`. Verified by grepping the bundle for the project ref
+before uploading. Wrangler's own output is the only confirmation available
+from this sandbox: the agent proxy returns 403 for the deployed URL, so
+**nobody has loaded it in a browser**.
+
+**Two things gate it working on a phone:**
+
+1. Staging's redirect allowlist must contain
+   `https://criclife.geminirachit.workers.dev/**`, or sign-in lands on
+   whatever Site URL says — see the URL Configuration table below. This is the
+   only reason the deployed site's sign-in has ever failed.
+2. Migration 16 has not run on staging, so **Abandon match** will report that
+   the function does not exist, and Google sign-ins will not bring a picture.
+   Everything else on the deployed build works without it.
+
 **⚠ A 16th migration is waiting.** `20260804120000_oauth_profile_and_abandon.sql`
 is committed but has run nowhere but the local scratch database. Paste it into
 **both** Supabase projects' SQL Editor before using Google sign-in or the
@@ -89,14 +107,14 @@ RLS has been evaluated for real rather than in pgTAP.
 
 **Where things stand**
 
-|                                         |                                                          |
-| --------------------------------------- | -------------------------------------------------------- |
-| Sign-in                                 | **working** on staging, end to end                       |
-| `criclife-staging` schema               | all 15 migrations, 56 functions — § 4                    |
-| `criclife-prod` schema                  | applied 2026-08-03 from the 15-file version — § 4        |
-| Deployed Worker                         | Phase 7 build, version `fd6a1bd0` — Phases 8/9 not on it |
-| Add-to-Home-Screen                      | verified on a real phone                                 |
-| Local dev on the owner's Windows laptop | running, on this branch, `.env.local` → staging          |
+|                                         |                                                        |
+| --------------------------------------- | ------------------------------------------------------ |
+| Sign-in                                 | **working** on staging, end to end                     |
+| `criclife-staging` schema               | all 15 migrations, 56 functions — § 4                  |
+| `criclife-prod` schema                  | applied 2026-08-03 from the 15-file version — § 4      |
+| Deployed Worker                         | **2026-08-04, version `447cf456`, pointed at staging** |
+| Add-to-Home-Screen                      | verified on a real phone                               |
+| Local dev on the owner's Windows laptop | running, on this branch, `.env.local` → staging        |
 
 **What it took, for the record** — three separate faults, each of which the
 app reported as the same wrong thing:
