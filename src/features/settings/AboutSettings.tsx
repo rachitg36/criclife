@@ -69,6 +69,25 @@ export function AboutSettings() {
           Export or delete your data →
         </Link>
       </section>
+
+      <section className="panel rounded-[var(--r-lg)] p-4">
+        <h2 className="text-[var(--text-heading-sm)] font-semibold">Who built this</h2>
+        <p className="mt-2 text-[var(--text-body-sm)] text-[var(--text-secondary)]">
+          CricLife is made by <strong className="text-[var(--text-primary)]">Rachit Gupta</strong>,
+          for club and gully cricket — the games nobody else bothers to score properly.
+        </p>
+        <p className="mt-2 text-[var(--text-body-sm)] text-[var(--text-secondary)]">
+          Found a wrong score, a broken screen, or something a scorer needs and the app cannot do?
+          Say so — a bug report from someone standing at a ground is worth more than a week of
+          guessing.
+        </p>
+        <a
+          href="mailto:rachitpublic@gmail.com?subject=CricLife"
+          className="press mt-3 inline-flex text-[var(--text-body-sm)] font-semibold text-[var(--accent)] underline"
+        >
+          rachitpublic@gmail.com
+        </a>
+      </section>
     </div>
   );
 }
