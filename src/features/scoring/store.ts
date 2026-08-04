@@ -247,6 +247,12 @@ function currentInnings(state: MatchState) {
   return state.innings[state.currentInningsIndex] ?? null;
 }
 
+/** What the pad should show once a picker has been answered. */
+function modeAfterPick(state: MatchState): PadMode {
+  const innings = currentInnings(state);
+  return innings ? padModeForInnings(innings) : 'READY';
+}
+
 function effectiveConfig(state: MatchState) {
   const innings = currentInnings(state);
   return innings?.isSuperOver ? superOverConfig(state.config) : state.config;
@@ -526,16 +532,26 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     });
   },
 
+  // All three answer *one* of the pad's questions and then ask what is still
+  // missing, rather than declaring the pad ready.
+  //
+  // `pickBatter` and `pickBowler` used to hardcode `mode: 'READY'`, and a run
+  // out on the last ball of an over raises **both** NEW_BATTER_REQUIRED and
+  // OVER_COMPLETE. Answering the batter question therefore set READY with no
+  // bowler at the crease — the run pad rendered, every tap hit
+  // `commitDelivery`'s `innings.bowlerId === null` guard, and the guard
+  // returned silently. A pad that looks fine and does nothing.
+  //
+  // Reported 2026-08-04: "the score pad is not doing anything when I click on
+  // runs, or wickets… on top it says pick a bowler but there is no option to
+  // pick." `padModeForInnings` is the function that already knows the answer;
+  // it simply was not being asked.
   pickOpeners: (strikerId, nonStrikerId) => {
     const { matchState } = get();
     if (!matchState) return;
     let next = setNewBatter(matchState, strikerId);
     next = setNewBatter(next, nonStrikerId);
-    const innings = currentInnings(next);
-    set({
-      matchState: next,
-      mode: innings?.bowlerId === null ? 'AWAITING_BOWLER' : 'READY',
-    });
+    set({ matchState: next, mode: modeAfterPick(next) });
     persistCrease(get());
   },
 
@@ -543,7 +559,7 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     const { matchState } = get();
     if (!matchState) return;
     const next = setBowler(matchState, bowlerId);
-    set({ matchState: next, mode: 'READY' });
+    set({ matchState: next, mode: modeAfterPick(next) });
     persistCrease(get());
   },
 
@@ -551,7 +567,7 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     const { matchState } = get();
     if (!matchState) return;
     const next = setNewBatter(matchState, playerId);
-    set({ matchState: next, mode: 'READY' });
+    set({ matchState: next, mode: modeAfterPick(next) });
     persistCrease(get());
   },
 
@@ -736,6 +752,20 @@ async function commitDelivery(
     innings.nonStrikerId === null ||
     innings.bowlerId === null
   ) {
+    // Never a bare `return`. This guard is correct — a ball with nobody
+    // bowling it is not a ball — but silence made a stuck pad indistinguishable
+    // from a dead app: every tap did nothing, with no reason given. Say what is
+    // missing, and put the pad back into the state that asks for it, so the
+    // screen cannot disagree with the engine again.
+    if (innings) {
+      set({
+        mode: padModeForInnings(innings),
+        error:
+          innings.bowlerId === null
+            ? 'No bowler is set for this over — pick one to carry on.'
+            : 'No batters are at the crease — pick them to carry on.',
+      });
+    }
     return;
   }
   const strikerId = innings.strikerId;

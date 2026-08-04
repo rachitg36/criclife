@@ -45,18 +45,23 @@ describe('fetchAuthProviders', () => {
     vi.unstubAllGlobals();
   });
 
-  it('offers nothing when the request fails, rather than a dead end', async () => {
+  it('shows the button when the probe fails — a failed probe is not a verdict', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    // Offering nothing looked safe and cost a working sign-in method: Google
+    // was enabled on both projects and the button was simply absent, with
+    // nothing on screen to explain it. An unreachable probe means "unknown".
     await expect(fetchAuthProviders('https://p.supabase.co', 'k')).resolves.toEqual({
-      google: false,
+      google: true,
+      probeFailed: true,
     });
     vi.unstubAllGlobals();
   });
 
-  it('offers nothing on a non-OK response', async () => {
+  it('shows the button on a non-OK response, flagged as unverified', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) }));
     await expect(fetchAuthProviders('https://p.supabase.co', 'k')).resolves.toEqual({
-      google: false,
+      google: true,
+      probeFailed: true,
     });
     vi.unstubAllGlobals();
   });

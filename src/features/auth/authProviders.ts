@@ -17,12 +17,30 @@
  */
 
 export type AuthProviders = {
-  /** True only when the project reports the provider as enabled. */
+  /** True when the project reports the provider as enabled — or when the
+      probe could not reach a verdict. See `UNKNOWN`. */
   google: boolean;
+  /** The answer above is a guess, not the project's word. Lets the login page
+      say so rather than presenting it as fact. */
+  probeFailed?: boolean;
 };
 
-/** Assumed when the check fails: offering nothing beats a dead end. */
-const NONE: AuthProviders = { google: false };
+/**
+ * What to assume when the check itself fails.
+ *
+ * This used to be `{ google: false }` — "offering nothing beats a dead end" —
+ * and that reasoning is wrong in one important way: **a failed probe is not
+ * evidence the provider is off.** A blocked request, an offline moment, a
+ * changed response shape and a genuinely disabled provider all produced the
+ * same silently missing button. Google was enabled on both projects and the
+ * button was gone, with nothing on screen to say why.
+ *
+ * So an *inconclusive* probe now shows the button. The downside is a dead end
+ * if the provider really is off; the downside of the old behaviour was a
+ * working sign-in method being invisible with no way to find out. The second
+ * is worse, and only the first is recoverable by tapping back.
+ */
+const UNKNOWN: AuthProviders = { google: true, probeFailed: true };
 
 type SettingsResponse = { external?: Record<string, unknown> };
 
@@ -41,11 +59,11 @@ export async function fetchAuthProviders(
       headers: { apikey: anonKey },
       ...(signal ? { signal } : {}),
     });
-    if (!res.ok) return NONE;
+    if (!res.ok) return UNKNOWN;
     return readProviders(await res.json());
   } catch {
     // Offline, blocked, or a project that does not answer. The email form is
     // unaffected and is the path that works everywhere.
-    return NONE;
+    return UNKNOWN;
   }
 }
