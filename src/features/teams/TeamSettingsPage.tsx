@@ -59,7 +59,10 @@ export function TeamSettingsPage() {
       .eq('id', teamId!);
     setSaving(false);
     if (updateError) return setError(updateError.message);
-    await queryClient.invalidateQueries({ queryKey: ['team', teamId] });
+    // Not just this team's own query: `/teams` renders from `myTeams` and
+    // `allTeams`, which held the old name until a full page reload. Renaming
+    // a team and going back showed the old name, which reads as a failed save.
+    await invalidateTeamViews(queryClient, teamId);
     setSaved(true);
   }
 
@@ -81,7 +84,7 @@ export function TeamSettingsPage() {
     });
     if (rpcError) return setError(rpcError.message);
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['team', teamId] }),
+      invalidateTeamViews(queryClient, teamId),
       queryClient.invalidateQueries({ queryKey: ['squad', teamId] }),
     ]);
   }
@@ -179,4 +182,23 @@ export function TeamSettingsPage() {
       )}
     </div>
   );
+}
+
+/**
+ * Every cached view a team's details appear in. `['team', id]` is only the
+ * detail page; the lists are separate queries and stayed stale after a rename
+ * until the page was reloaded.
+ */
+async function invalidateTeamViews(
+  queryClient: ReturnType<typeof useQueryClient>,
+  teamId: string | undefined
+) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['team', teamId] }),
+    queryClient.invalidateQueries({ queryKey: ['myTeams'] }),
+    queryClient.invalidateQueries({ queryKey: ['allTeams'] }),
+    // Match screens embed the two teams and render their names and colours.
+    queryClient.invalidateQueries({ queryKey: ['match'] }),
+    queryClient.invalidateQueries({ queryKey: ['matches'] }),
+  ]);
 }
