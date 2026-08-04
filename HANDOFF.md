@@ -25,6 +25,26 @@ Decisions already locked in are logged in `docs/13-OPEN-QUESTIONS.md` § A and �
 
 ## 2. Continue here — exact next step
 
+### ✅ A full match has been scored — 2026-08-04
+
+On a phone, on the deployed build, against `criclife-staging`. Both innings,
+a result computed, `complete_match` called. That is `record_delivery`, the
+offline queue, the engine, the RPCs and the sync worker all proven end to end
+for the first time — § 8.6's "none of Phases 1–6 have run against a real
+Supabase project" is finally out of date.
+
+**Two faults it exposed, both now fixed:** the winner was announced as a raw
+team UUID (the engine is pure and knows only ids, so its own `result.text`
+cannot name anybody — `features/scoring/resultText.ts` rebuilds the sentence),
+and the live-match bar silently picked the first of several live matches, so
+finishing one match and tapping the bar opened an _older_ one that was still
+open. It now goes to the list when more than one is live.
+
+**Still unproven:** Realtime. `/live/:publicSlug` has never been opened
+alongside a live scorer, so § 8.11 stands.
+
+---
+
 ### ▶ Start here tomorrow — 2026-08-04
 
 The pad works. Nobody has scored a ball yet. **That is the next action**, and
@@ -858,7 +878,7 @@ screen is free.
 | Check                                                        | Result                                                                                                                                                                                                                                                                |
 | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | pgTAP                                                        | **237/237** ("not ok": 0) across 16 files in `supabase/tests/pgtap/`                                                                                                                                                                                                  |
-| Unit/component tests (`npm run test`)                        | **465/465** across 44 files                                                                                                                                                                                                                                           |
+| Unit/component tests (`npm run test`)                        | **473/473** across 45 files                                                                                                                                                                                                                                           |
 | `npm run typecheck` / `npm run lint`                         | clean                                                                                                                                                                                                                                                                 |
 | `npm run build` + `npm run size`                             | audience route **177.66 kB** brotli, budget 180 kB — see § 5.13 for how little room that is                                                                                                                                                                           |
 | e2e (`npm run test:e2e`, desktop/Chromium project only)      | **9 passed, 4 intentionally skipped** — with the local `channel`/`executablePath` override from § 5.1, not committed. The audience smoke test was rewritten this phase: it asserted the Phase 0 `<Placeholder>` text, which no longer exists.                         |

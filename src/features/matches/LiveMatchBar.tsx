@@ -29,20 +29,25 @@ export function LiveMatchBar() {
   const match = live[0] as unknown as { id: string; title: string | null };
   const more = live.length - 1;
 
+  // With one live match, go straight to its pad. With several, go to the list
+  // and let the human pick: guessing sent somebody who had just finished one
+  // match into an *older* one that was still open, which reads as the app
+  // reopening a match it was told was over.
+  const to = more > 0 ? '/matches' : `/matches/${match.id}/score`;
+
   return (
     <Link
-      to={`/matches/${match.id}/score`}
+      to={to}
       className="press fixed inset-x-3 z-40 flex items-center gap-3 rounded-[var(--r-md)] border border-[var(--border-subtle)] bg-[var(--surface-glass-strong)] px-3 py-2 backdrop-blur-xl"
       style={{ bottom: 'calc(var(--tabbar-h) + var(--safe-b) + 8px)' }}
     >
       <Radio size={16} className="shrink-0 text-[var(--live)]" aria-hidden />
       <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
-        {match.title ?? 'Match in progress'}
-        {more > 0 && (
-          <span className="font-normal text-[var(--text-tertiary)]"> +{more} more live</span>
-        )}
+        {more > 0 ? `${live.length} matches in progress` : (match.title ?? 'Match in progress')}
       </span>
-      <span className="shrink-0 text-[13px] font-semibold text-[var(--accent)]">Resume</span>
+      <span className="shrink-0 text-[13px] font-semibold text-[var(--accent)]">
+        {more > 0 ? 'Choose' : 'Resume'}
+      </span>
     </Link>
   );
 }

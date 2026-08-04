@@ -75,6 +75,9 @@ export type PadMode =
 type ScorerState = {
   matchId: string | null;
   teamAId: string | null;
+  /** Display names, so the result can say who won. See `resultText`. */
+  teamAName: string | null;
+  teamBName: string | null;
   teamBId: string | null;
   config: MatchConfig | null;
   matchState: MatchState | null;
@@ -197,6 +200,12 @@ function checkTapGuard(state: ScorerState, key: string): TapGuardResult {
   return 'ok';
 }
 
+/** The embedded team join, which the generated types cannot express. */
+function teamName(row: unknown): string | null {
+  const t = row as { short_code?: string; name?: string } | null;
+  return t?.short_code ?? t?.name ?? null;
+}
+
 function currentInnings(state: MatchState) {
   return state.innings[state.currentInningsIndex] ?? null;
 }
@@ -209,6 +218,8 @@ function effectiveConfig(state: MatchState) {
 export const useScorerStore = create<ScorerState>((set, get) => ({
   matchId: null,
   teamAId: null,
+  teamAName: null,
+  teamBName: null,
   teamBId: null,
   config: null,
   matchState: null,
@@ -242,7 +253,12 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
 
     const { data: match, error: matchError } = await supabase
       .from('matches')
-      .select('*')
+      // Team names come along so the result sentence can name the winner.
+      // The engine only knows ids, so its own `result.text` renders a raw
+      // UUID — which is what the first completed match showed a human.
+      .select(
+        '*, team_a:teams!matches_team_a_id_fkey(name,short_code), team_b:teams!matches_team_b_id_fkey(name,short_code)'
+      )
       .eq('id', matchId)
       .single();
     if (matchError || !match) {
@@ -375,6 +391,8 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
 
     set({
       teamAId: match.team_a_id,
+      teamAName: teamName(match.team_a),
+      teamBName: teamName(match.team_b),
       teamBId: match.team_b_id,
       config,
       matchState,
