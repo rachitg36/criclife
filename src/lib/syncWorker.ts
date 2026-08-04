@@ -338,6 +338,39 @@ function scheduleRetry(matchId: string): void {
   retryTimers.set(matchId, timer);
 }
 
+/**
+ * Push every outstanding ball for one innings and report whether the outbox
+ * is now empty. Returns false if anything is still unresolved.
+ *
+ * **This exists because of an ordering bug that cost a ball on every innings.**
+ * `handleInningsComplete` fired the moment the *client engine* decided the
+ * innings was over and called `end_innings` immediately — while the ball that
+ * ended it was still in the outbox. Scoring never awaits the network (docs/05
+ * § 6.1, and rightly so), so the RPC that closes the innings routinely won the
+ * race against the upload of the very delivery that closed it. The server then
+ * refused that ball forever:
+ *
+ *     INNINGS_COMPLETE: this innings has already ended
+ *
+ * Reported from a phone on 2026-08-04, with exactly one ball stuck. It is not
+ * an edge case — on any real network the last ball of an innings is still in
+ * flight when the engine reaches its verdict, so the innings ends on the
+ * server one ball short of what the scorer saw.
+ *
+ * The pad still never waits: this is awaited by the innings-end path only,
+ * which is already a screen transition, not a tap.
+ */
+export async function flushInnings(matchId: string, inningsId: string): Promise<boolean> {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return (await unresolvedForInnings(matchId, inningsId)).length === 0;
+  }
+  // One pass is enough in the ordinary case (a single ball, well under the
+  // batch cap). A pass that leaves something behind means a real error, and
+  // hammering it here would just delay telling the scorer.
+  await drainInnings(matchId, inningsId);
+  return (await unresolvedForInnings(matchId, inningsId)).length === 0;
+}
+
 /** Merge resolution: drop this device's queued balls for the innings and
     let the caller resync from server truth (docs/05 § 6.6 "Keep theirs"). */
 export async function discardQueuedForInnings(matchId: string, inningsId: string): Promise<void> {

@@ -23,17 +23,38 @@ export type GroupedMatches<T> = {
   finished: T[];
 };
 
-export function groupMatches<T extends { status: MatchStatus; scheduled_at: string | null }>(
-  matches: readonly T[]
-): GroupedMatches<T> {
-  // Newest first inside each group. A null date sorts last rather than
-  // throwing the whole list to the top, which is what `?? ''` would do.
-  const byDate = [...matches].sort((a, b) => {
-    if (a.scheduled_at === b.scheduled_at) return 0;
-    if (a.scheduled_at === null) return 1;
-    if (b.scheduled_at === null) return -1;
-    return b.scheduled_at.localeCompare(a.scheduled_at);
-  });
+/**
+ * When a match happened, for ordering.
+ *
+ * `scheduled_at` alone was wrong, and wrong in a way that hid the most
+ * interesting match on the screen: a match created without a date sorted to
+ * the *bottom* of Finished, so the game played twenty minutes ago fell below
+ * three older ones and never made Home's top three. Reported on 2026-08-04 as
+ * "the test4 game is not available at the home screen. This was the most
+ * recent game that was played."
+ *
+ * `completed_at` first, because for a finished match that is the truth and
+ * `scheduled_at` is only ever an intention. `created_at` last, so a row with
+ * no dates at all still lands somewhere sensible instead of nowhere.
+ */
+export function matchSortKey(m: {
+  scheduled_at: string | null;
+  completed_at?: string | null;
+  created_at?: string | null;
+}): string {
+  return m.completed_at ?? m.scheduled_at ?? m.created_at ?? '';
+}
+
+export function groupMatches<
+  T extends {
+    status: MatchStatus;
+    scheduled_at: string | null;
+    completed_at?: string | null;
+    created_at?: string | null;
+  },
+>(matches: readonly T[]): GroupedMatches<T> {
+  // Newest first inside each group, on the best date each row actually has.
+  const byDate = [...matches].sort((a, b) => matchSortKey(b).localeCompare(matchSortKey(a)));
 
   return {
     live: byDate.filter((m) => LIVE.includes(m.status)),

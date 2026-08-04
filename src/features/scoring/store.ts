@@ -17,6 +17,7 @@ import {
   attachSyncWorker,
   discardQueuedForInnings,
   enqueueDelivery,
+  flushInnings,
   retryQueuedForInnings,
   subscribeSyncEvents,
   type SyncEvent,
@@ -474,6 +475,16 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     void refreshPendingCount(set, get);
     ensureSoftLockChannelAttached(set, get, matchId);
     void loadMyIdentity(set);
+    // Catch up any innings the engine considers finished that the server still
+    // has open — the case `handleInningsComplete` deliberately leaves behind
+    // when it cannot upload the closing ball. Fire-and-forget: it is a repair,
+    // not part of loading the pad.
+    void reconcileEndedInnings(
+      matchId,
+      matchState,
+      inningsIdByNo,
+      new Map((inningsRows ?? []).map((i) => [i.innings_no, i.status]))
+    );
   },
 
   armModifier: (m) => set((s) => ({ armedModifier: s.armedModifier === m ? null : m })),
@@ -811,6 +822,39 @@ function applyEvents(
   }
 }
 
+/**
+ * Close, on the server, any innings the engine already considers over.
+ *
+ * The pair to `handleInningsComplete`'s deliberate bail-out. When the closing
+ * ball could not be uploaded — offline, or a transient failure — that function
+ * leaves the innings open on purpose, because an innings left open is
+ * recoverable and a stranded ball is not. Something has to finish the job
+ * afterwards, and doing it on `init` covers a reload and a returning app as
+ * well as a recovered network.
+ *
+ * `flushInnings` gates it every time: closing an innings with anything still
+ * in the outbox is the original bug, and it must not come back through the
+ * repair path.
+ */
+async function reconcileEndedInnings(
+  matchId: string,
+  matchState: MatchState,
+  inningsIdByNo: Record<number, string>,
+  statusByNo: Map<number, string>
+): Promise<void> {
+  for (const innings of matchState.innings) {
+    if (innings.status === 'in_progress') continue;
+    if (statusByNo.get(innings.inningsNo) !== 'in_progress') continue;
+    const inningsId = inningsIdByNo[innings.inningsNo];
+    if (!inningsId) continue;
+    if (!(await flushInnings(matchId, inningsId))) continue;
+    await supabase.rpc('end_innings', {
+      p_innings_id: inningsId,
+      p_reason: innings.endReason ?? 'all_out',
+    });
+  }
+}
+
 async function handleInningsComplete(
   set: (partial: Partial<ScorerState>) => void,
   get: () => ScorerState,
@@ -821,6 +865,20 @@ async function handleInningsComplete(
   if (!matchId || !matchState || !teamAId || !teamBId) return;
   const inningsId = inningsIdByNo[inningsNo];
   if (inningsId) {
+    // Upload the balls *first*. The delivery that ended the innings is still
+    // in the outbox at this point — scoring never awaits the network — so
+    // closing the innings here used to beat it to the server, and the ball was
+    // then refused forever with `INNINGS_COMPLETE: this innings has already
+    // ended`. Every innings lost its last ball that way.
+    const flushed = await flushInnings(matchId, inningsId);
+    if (!flushed) {
+      // Offline, or a ball the server will not take. Closing the innings now
+      // would strand it permanently, and an innings left open is recoverable
+      // where a stranded ball is not. The scorer sees the sync pill; the next
+      // successful drain re-runs this.
+      set({ mode: 'INNINGS_BREAK' });
+      return;
+    }
     await supabase.rpc('end_innings', { p_innings_id: inningsId, p_reason: reason });
   }
 

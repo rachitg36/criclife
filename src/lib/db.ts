@@ -110,6 +110,27 @@ export async function lastQueueError(matchId: string): Promise<string | null> {
   return withError[0]!.lastError ?? null;
 }
 
+/**
+ * Drop the balls that have failed and will keep failing.
+ *
+ * Only ever offered for `INNINGS_COMPLETE`, which is the one error no retry
+ * can clear: the innings is closed on the server and nothing reopens it. The
+ * ordering bug that caused it is fixed, but a ball already stranded by it has
+ * no route to the server, and leaving the queue permanently red is worse than
+ * losing the ball — it hides the *next* real failure behind a stale one.
+ *
+ * Deliberately narrow: `status === 'error'` only. Queued balls that have not
+ * failed yet, and balls currently syncing, are somebody else's to resolve.
+ */
+export async function discardStuckDeliveries(matchId: string): Promise<number> {
+  const rows = await db.pendingDeliveries
+    .where('[matchId+status]')
+    .equals([matchId, 'error'])
+    .toArray();
+  await db.pendingDeliveries.bulkDelete(rows.map((r) => r.clientDeliveryId));
+  return rows.length;
+}
+
 /** Balls the server refused (e.g. scoring rights revoked while offline). */
 export async function rejectedDeliveries(matchId: string): Promise<PendingDelivery[]> {
   return db.pendingDeliveries.where('[matchId+status]').equals([matchId, 'rejected']).toArray();

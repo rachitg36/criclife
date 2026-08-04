@@ -135,6 +135,8 @@ type MatchRow = {
   id: string;
   status: Parameters<typeof resumeAction>[0];
   scheduled_at: string | null;
+  completed_at: string | null;
+  created_at: string | null;
   team_a_id: string;
   team_b_id: string;
   title: string | null;

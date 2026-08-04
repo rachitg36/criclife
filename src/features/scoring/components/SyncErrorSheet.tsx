@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { lastQueueError } from '@/lib/db';
+import { discardStuckDeliveries, lastQueueError } from '@/lib/db';
 import { useScorerStore } from '../store';
 
 /**
@@ -47,7 +47,17 @@ export function SyncErrorSheet({ onClose }: { onClose: () => void }) {
     };
   }, [matchId]);
 
+  async function discardStuck() {
+    if (!matchId) return;
+    await discardStuckDeliveries(matchId);
+    dismissSyncError();
+  }
+
   const message = liveMessage ?? storedMessage;
+  // `INNINGS_COMPLETE` is the one error a retry can never clear: the innings
+  // is closed on the server and no RPC reopens it. Retrying forever is the
+  // wrong offer, so say what happened and let the scorer choose.
+  const inningsClosed = (message ?? '').startsWith('INNINGS_COMPLETE');
   const retrySync = useScorerStore((s) => s.retrySync);
   const dismissSyncError = useScorerStore((s) => s.dismissSyncError);
 
@@ -80,14 +90,33 @@ export function SyncErrorSheet({ onClose }: { onClose: () => void }) {
         </pre>
       )}
 
+      {inningsClosed && (
+        <p className="mt-3 text-[13px] text-[var(--text-secondary)]">
+          This innings was closed on the server before this ball got there — a bug fixed on
+          2026-08-04, but it cannot be undone for a ball already stuck. Trying again will not help.
+          Discarding it removes it from this device; the scorecard will be one ball short of what
+          you scored.
+        </p>
+      )}
+
       <div className="mt-3 flex gap-2">
         <button
           type="button"
+          disabled={inningsClosed}
           onClick={() => void retrySync().then(onClose)}
-          className="press flex min-h-11 flex-1 items-center justify-center rounded-[var(--r-md)] bg-[var(--accent)] text-[14px] font-semibold text-[var(--accent-fg)]"
+          className="press flex min-h-11 flex-1 items-center justify-center rounded-[var(--r-md)] bg-[var(--accent)] text-[14px] font-semibold text-[var(--accent-fg)] disabled:opacity-40"
         >
           Try again
         </button>
+        {inningsClosed && (
+          <button
+            type="button"
+            onClick={() => void discardStuck().then(onClose)}
+            className="press flex min-h-11 items-center justify-center rounded-[var(--r-md)] border border-[var(--danger)] px-4 text-[14px] font-semibold text-[var(--danger)]"
+          >
+            Discard
+          </button>
+        )}
         <button
           type="button"
           onClick={() => {
