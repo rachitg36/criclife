@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { pluralise } from '@/lib/format';
 import { Avatar } from '@/components/ui/Avatar';
 import { SkeletonText } from '@/components/ui/Skeleton';
 import { supabase } from '@/lib/supabase';
@@ -112,11 +113,17 @@ export function MatchSetupPage() {
         <h2 className="label-overline mb-2">Toss</h2>
         {tossSet ? (
           <p className="text-[var(--text-secondary)]">
-            {match.toss_winner_team_id === match.team_a_id ? 'Team A' : 'Team B'} won the toss and
+            {match.toss_winner_team_id === match.team_a_id ? teamAName : teamBName} won the toss and
             chose to {match.toss_decision}.
           </p>
         ) : (
-          <TossForm matchId={matchId!} match={match} onDone={refetchMatch} />
+          <TossForm
+            matchId={matchId!}
+            match={match}
+            teamAName={teamAName}
+            teamBName={teamBName}
+            onDone={refetchMatch}
+          />
         )}
       </section>
 
@@ -162,13 +169,20 @@ export function MatchSetupPage() {
   );
 }
 
+// Names, not "Team A"/"Team B". A captain at a ground knows who won the toss
+// by their club's name; the A/B labelling is a database detail that had leaked
+// onto the one screen where two real sides are standing in front of you.
 function TossForm({
   matchId,
   match,
+  teamAName,
+  teamBName,
   onDone,
 }: {
   matchId: string;
   match: { team_a_id: string; team_b_id: string };
+  teamAName: string;
+  teamBName: string;
   onDone: () => void;
 }) {
   const [winner, setWinner] = useState<'a' | 'b' | ''>('');
@@ -194,10 +208,10 @@ function TossForm({
     <div className="panel space-y-3 p-4">
       <div className="flex gap-2">
         <Button variant={winner === 'a' ? 'primary' : 'secondary'} onClick={() => setWinner('a')}>
-          Team A won
+          {teamAName} won
         </Button>
         <Button variant={winner === 'b' ? 'primary' : 'secondary'} onClick={() => setWinner('b')}>
-          Team B won
+          {teamBName} won
         </Button>
       </div>
       <div className="flex gap-2">
@@ -299,18 +313,6 @@ function SquadEditor({
       <p className="text-[var(--text-body-sm)] text-[var(--text-secondary)]">
         {selected.length} / {squadSize} selected
       </p>
-      {/* `squadSize` is the match's own `playersPerSide`, not eleven — a side
-          can be any size from two up. Picking fewer than that is allowed,
-          because sides do turn up short, but it is worth saying out loud: the
-          engine ends an innings at `playersPerSide - 1` wickets, so a side
-          picked short cannot actually be bowled out. */}
-      {selected.length > 0 && selected.length < squadSize && (
-        <p className="text-[var(--text-body-sm)] text-[var(--warning)]">
-          This match is set up for {squadSize} a side. With {selected.length}, the innings will
-          still need {squadSize - 1} wickets to end — change players per side if the whole match is
-          smaller.
-        </p>
-      )}
       <ul className="space-y-2">
         {(squad ?? []).map((row) => {
           const isSelected = selected.includes(row.player_id);
@@ -354,8 +356,31 @@ function SquadEditor({
           {error}
         </p>
       )}
-      <Button variant="secondary" disabled={!canSave || busy} onClick={submit}>
-        {busy ? 'Saving…' : saved ? 'Saved' : 'Save team'}
+      {/* Above the Save button, not above the list. It used to sit under the
+          "1 / 2 selected" line, so every tick and untick inserted or removed a
+          two-line block and shoved the whole list up and down under the
+          reader's thumb. Here it only moves the one button below it. */}
+      {selected.length > 0 && selected.length < squadSize && (
+        <p className="text-[var(--text-body-sm)] text-[var(--warning)]">
+          This match is set up for {squadSize} a side. With {selected.length}, the innings will
+          still need {pluralise(squadSize - 1, 'wicket')} to end — change players per side if the
+          whole match is smaller.
+        </p>
+      )}
+      {/* Accent while there is something to save, so it reads as the next
+          thing to do; a quiet success state once it is done, so it reads as
+          "nothing needed here". It used to be `secondary` in both states —
+          indistinguishable from the page furniture, and giving no signal that
+          a squad had actually been stored. */}
+      <Button
+        variant={saved ? 'secondary' : 'primary'}
+        fullWidth
+        disabled={!canSave || busy}
+        hapticKind="select"
+        onClick={submit}
+        className={saved ? 'border border-[var(--success)] text-[var(--success)]' : undefined}
+      >
+        {busy ? 'Saving…' : saved ? '✓ Squad saved' : 'Save team'}
       </Button>
     </div>
   );
