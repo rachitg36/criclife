@@ -25,6 +25,38 @@ Decisions already locked in are logged in `docs/13-OPEN-QUESTIONS.md` § A and �
 
 ## 2. Continue here — exact next step
 
+### ▶ Start here tomorrow — 2026-08-04
+
+The pad works. Nobody has scored a ball yet. **That is the next action**, and
+it is the one thing that would prove more than everything else on this list.
+
+1. `git pull` — the branch moved a lot tonight.
+2. Open the match on `localhost:5173`, pick openers and a bowler, and score:
+   a single (strike should swap), a four, a six, a **wide with 0 extra runs**
+   (the score must go up by exactly 1 and the over must not advance), and a
+   wicket. That exercises `record_delivery` from a client for the first time
+   and is the only real check on § 8.14's two fixes.
+3. Then open `/live/:publicSlug` in a second tab while still scoring. Realtime
+   has never carried a message in this project's life (§ 8.11).
+
+**Known, not yet done:**
+
+- The deployed Worker is still the Phase 7 build pointing at `criclife-prod`,
+  whose URL Configuration has never been set — which is why signing in to the
+  live site lands on `localhost:3000`. Fix is in § 2's env block: set
+  staging's Site URL and Redirect URLs, then redeploy pointed at staging.
+  Inline env vars override the `.env` files (`VITE_SUPABASE_URL=… npx vite
+build`), verified, so `.env.production.local` is not strictly needed.
+- The owner's match is 3-a-side over 20 overs with `maxOversPerBowler` on
+  auto = 4. Three bowlers × 4 overs = **12 overs maximum**, so over 13 cannot
+  be bowled. That is the engine being right, not a bug, but a full innings
+  needs a shorter match or an explicit bowler limit.
+- Home is still the **Phase 0 placeholder** ("Phase 0 · Foundations", 0–0).
+  docs/11 § 2 specifies a live-now carousel and a "Score this match" CTA.
+  `/matches` now covers getting back to a match, but Home does not.
+
+---
+
 ### ✅ The pad renders against a real project — 2026-08-04
 
 The scorer pad is up on `localhost:5173` against `criclife-staging`, with a
@@ -802,9 +834,9 @@ screen is free.
 | Check                                                        | Result                                                                                                                                                                                                                                                                |
 | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | pgTAP                                                        | **221/221** ("not ok": 0) across 15 files in `supabase/tests/pgtap/`                                                                                                                                                                                                  |
-| Unit/component tests (`npm run test`)                        | **443/443** across 41 files                                                                                                                                                                                                                                           |
+| Unit/component tests (`npm run test`)                        | **452/452** across 42 files                                                                                                                                                                                                                                           |
 | `npm run typecheck` / `npm run lint`                         | clean                                                                                                                                                                                                                                                                 |
-| `npm run build` + `npm run size`                             | audience route **177.35 kB** brotli, budget 180 kB — see § 5.13 for how little room that is                                                                                                                                                                           |
+| `npm run build` + `npm run size`                             | audience route **177.49 kB** brotli, budget 180 kB — see § 5.13 for how little room that is                                                                                                                                                                           |
 | e2e (`npm run test:e2e`, desktop/Chromium project only)      | **9 passed, 4 intentionally skipped** — with the local `channel`/`executablePath` override from § 5.1, not committed. The audience smoke test was rewritten this phase: it asserted the Phase 0 `<Placeholder>` text, which no longer exists.                         |
 | e2e, the four mobile/WebKit viewports                        | **could not run in this sandbox** — no WebKit binary at all (see § 5.1); real CI installs it fresh and is not affected                                                                                                                                                |
 | E2E flows 5/6/7 (`docs/09` § 9 — the Phase 6 acceptance bar) | **not run as actual Playwright specs** — see § 8.9. Verified instead at the unit/integration layer against a mocked RPC (`tests/lib/syncWorker.test.ts`), which is the closest this sandbox can get without a live, multi-context, network-throttled Supabase backend |
@@ -965,6 +997,7 @@ comment at the top of the relevant file too.
 | **Match setup had to be done twice.** "Start match" was gated on the toss alone, sat below the fold under two squad sections, and reported failure as the server's raw `XI_REQUIRED: …`. Nothing on the page said which of the three steps were done, and `useMatchSquad` — which has existed since Phase 4 — was never read, so reopening setup showed empty lists for squads that were saved. Filling in one team and stopping looked exactly like finishing; the hub then offered "Continue setup", which led back to the screen you had just left                                              | Phase 9        | A three-line checklist at the top, `setupProgress()` (pure, 6 tests) gating the button with a one-thing-at-a-time reason, squads seeded from what is already stored, and **Start match now goes to the pad, not back to the hub** — the hub was the other half of the loop                                                                                                                                                               |
 | **A brand-new match could never be scored.** `replay()` created innings only inside its per-delivery path, so with an empty delivery log it returned `innings: []` — which is every match between `start_innings` and the first ball. The pad reads `innings[currentInningsIndex]`, found nothing, and reported the innings as not started while the server had already started it; pressing the button again inserted nothing and changed nothing. The deadlock is total: the pad needs an innings to show the openers picker, and an innings only appeared once a delivery existed               | Phase 9        | `replay()` materialises any seeded innings with no deliveries, **after** the fold — the three match fixtures caught doing it before, since `targetFor` reads the previous innings' runs and gave innings 2 a target of 1. 3 tests; `src/engine` still 100%                                                                                                                                                                               |
 | **`yetToBat` was never populated, and all-out ignored who actually turned up.** `emptyInnings` set `yetToBat: []` and nothing ever wrote to it — `setNewBatter` only filters players _out_ — so the "next batter" picker read "No batters remaining" at the first wicket of **every** innings, not just short ones. Separately, all-out was `config.playersPerSide - 1`, so a side of 2 picked for a 3-a-side match had nobody left to bat and an innings that had not ended                                                                                                                       | Phase 9        | `InningsSeed` carries an optional `battingOrder`; `InningsState` gains `squadSize`. `effectivePlayersPerSide()` is `min(playersPerSide, squadSize)` and is used by `inningsEnd`, `result` and `applyDelivery` so three copies of `playersPerSide - 1` cannot drift. Null squadSize keeps the old behaviour exactly. Both stores now pass the order. `src/engine` still 100%                                                              |
+| **There was no way back to a live match.** `/matches` was a Phase 0 stub, Home is still the Phase 0 placeholder, and the ⊕ tab pointed straight at `/matches/new` — while docs/11's navigation model says that tab's action is "start **or resume** a match". Only "start" was built, so navigating away from a match in progress lost it short of browser history                                                                                                                                                                                                                                 | Phase 9        | `/matches` is a real list — live first, then upcoming, then finished — and the ⊕ tab goes there, with **New match** at the top of it. `groupMatches`/`resumeAction` are pure, 9 tests. Home is still the Phase 0 placeholder and is now the biggest visible gap                                                                                                                                                                          |
 | **Eleven a side was baked into the UI and the docs**, though never into the engine. `/matches/new` refused fewer than 5 players a side; the setup button read "Save XI"; and `docs/09`'s own end-to-end flow said "add 11 players". `playersPerSide` is a per-match setting and gully cricket is played 2 and 3 a side                                                                                                                                                                                                                                                                             | Phase 9        | Minimum is 2 (a striker and a non-striker). "XI" is gone from every user-visible string and every doc — it literally means eleven. `tests/engine/smallSides.test.ts` pins 2, 6 and 11 a side so nothing re-hardcodes it. The engine already read `playersPerSide` everywhere and needed no change                                                                                                                                        |
 
 ---

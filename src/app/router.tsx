@@ -57,6 +57,9 @@ const PlayerEditPage = lazy(() =>
 const ClaimPlayerPage = lazy(() =>
   import('@/features/players/ClaimPlayerPage').then((m) => ({ default: m.ClaimPlayerPage }))
 );
+const MatchesPage = lazy(() =>
+  import('@/features/matches/MatchesPage').then((m) => ({ default: m.MatchesPage }))
+);
 const NewMatchPage = lazy(() =>
   import('@/features/matches/NewMatchPage').then((m) => ({ default: m.NewMatchPage }))
 );
@@ -184,7 +187,7 @@ export const router = createBrowserRouter([
               { path: '/players/claim', element: <ClaimPlayerPage /> },
 
               /* Matches (Phases 4–6) */
-              { path: '/matches', ...stub('Matches', 4) },
+              { path: '/matches', element: <MatchesPage /> },
               { path: '/matches/new', element: <NewMatchPage /> },
               { path: '/matches/:matchId/setup', element: <MatchSetupPage /> },
               { path: '/matches/:matchId/rights', element: <ScoringRightsMapPage /> },

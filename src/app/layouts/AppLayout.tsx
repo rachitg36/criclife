@@ -16,7 +16,10 @@ type Tab = {
 const TABS: readonly Tab[] = [
   { to: '/', label: 'Home', Icon: Home, end: true, primary: false },
   { to: '/teams', label: 'Teams', Icon: Shield, end: false, primary: false },
-  { to: '/matches/new', label: 'Match', Icon: PlusCircle, end: false, primary: true },
+  // docs/11's navigation model: this tab's action is "start **or resume** a
+  // match". It pointed at /matches/new, so only "start" existed — once you
+  // left a live match there was no route back to it.
+  { to: '/matches', label: 'Match', Icon: PlusCircle, end: false, primary: true },
   { to: '/ranks', label: 'Ranks', Icon: TrendingUp, end: false, primary: false },
   { to: '/settings', label: 'More', Icon: Menu, end: false, primary: false },
 ];

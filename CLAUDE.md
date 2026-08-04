@@ -6,11 +6,12 @@ stats and rankings. React 19 + Vite + Supabase. Runs entirely on free tiers.
 **Current state: Phases 0–8 complete, Phase 9 partly done** — engine, data layer, teams/players,
 match setup, the scorer pad, offline sync, the public audience view, and stats
 and rankings. Phase 9 (admin, polish, launch) is roughly half done — every
-roadmap bullet is marked `[x]`, `[~]` or `[ ]`. The Phase 7 build is deployed, but **no
-migration has ever run against a real Supabase project**, so every screen that
-reads data fails in production. Read `HANDOFF.md` for the full picture —
-including how to bring a fresh container back up (not just `npm install`) and
-what `.env.production.local` is for before you redeploy.
+roadmap bullet is marked `[x]`, `[~]` or `[ ]`. Both Supabase projects now carry
+all 15 migrations, someone has signed in, and the scorer pad runs against real
+data — but **the deployed Worker is still the Phase 7 build pointing at prod**,
+whose URL Configuration was never set, so the live site's sign-in is broken.
+Read `HANDOFF.md` for the full picture — including how to bring a fresh
+container back up (not just `npm install`).
 
 ## Commands
 
@@ -63,6 +64,13 @@ Phases are in `docs/12-ROADMAP.md`, each with acceptance criteria.
 output and it is tempting to skip. Don't. A wrong engine poisons every screen.
 
 Current: Phases 0–8 done → next: finish Phase 9.
+
+**2026-08-04:** the app now works end to end against a real Supabase project
+as far as the scorer pad — but **no ball has been scored yet**, and that is
+the next action. HANDOFF.md § 2 opens with the exact steps. Nine faults were
+found and fixed the day the app first met real data, and every one of them was
+a lower layer knowing something the screen did not say; HANDOFF § 6.4's last
+nine rows are worth reading together before adding anything new.
 
 ## Layout
 
@@ -120,12 +128,13 @@ left — the first one now blocks real use:
   app. Custom SMTP was the 500; it is now off, so mail only reaches addresses
   on the Supabase org. **Resend still needs fixing** before anyone else can
   sign in. HANDOFF.md § 2 has the full account.
-- **Bring `criclife-staging` up to 15 migrations.** Both projects now have a
-  schema (2026-08-03), but staging got the 13-file Phase 7 version and prod
-  got all 15 — so staging, which local dev points at, is still running the
-  `record_delivery` that flags every ball a wicket. Paste
-  `20260803190000_stats_and_rankings.sql` and
-  `20260803191000_fix_json_null_wicket.sql` into it. See HANDOFF.md § 4.
+- ~~Bring `criclife-staging` up to 15 migrations~~ — **done 2026-08-04**, both
+  projects verified at 56 functions.
+- **Set the URL Configuration on whichever project the deployed site points
+  at.** Site URL and Redirect URLs are both still the `http://localhost:3000`
+  default on prod, which is why signing in to the live site lands on a dead
+  port. A non-allowlisted redirect does not 400 — GoTrue silently substitutes
+  Site URL. HANDOFF.md § 2.
 - Measure Phase 7's own bar: audience latency under 1.5s p95 on 4G, and
   Lighthouse mobile ≥ 90 on `/live/:publicSlug`. Neither is measurable here.
 

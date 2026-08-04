@@ -122,6 +122,7 @@
         "!dist/assets/supabase-*.js",
         "!dist/assets/RedeemGrantPage-*.js",
         "!dist/assets/MatchHubPage-*.js",
+        "!dist/assets/MatchesPage-*.js",
         "!dist/assets/NewMatchPage-*.js",
         "!dist/assets/MatchSetupPage-*.js",
         "!dist/assets/ScoringRightsMapPage-*.js",
