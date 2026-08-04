@@ -157,17 +157,22 @@ export function MatchHubPage() {
           match is simply closed with a reason. Only offered while there is
           something to abandon. */}
       {isManager && match.status !== 'completed' && match.status !== 'abandoned' && (
-        <div className="mt-8">
+        <div className="mt-6">
           {abandonError && (
             <p role="alert" className="mb-2 text-center text-[var(--danger)]">
               {abandonError}
             </p>
           )}
+          {/* Was small red text at the very bottom, on a screen where
+              everything else is a full-width button — understated on purpose,
+              since abandoning a match is destructive. It was simply missed.
+              A real button now, but outlined in danger rather than filled: it
+              should be findable without competing with "Resume scoring". */}
           <button
             type="button"
             disabled={abandoning}
-            className="press w-full py-2 text-center text-[var(--text-body-sm)] text-[var(--danger)] disabled:opacity-60"
             onClick={() => void abandon()}
+            className="press min-h-12 w-full rounded-[var(--r-md)] border border-[var(--danger)] text-[15px] font-semibold text-[var(--danger)] disabled:opacity-60"
           >
             {abandoning ? 'Abandoning…' : 'Abandon match'}
           </button>

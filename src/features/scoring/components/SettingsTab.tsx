@@ -77,9 +77,9 @@ export function SettingsTab() {
         {matchId && (
           <Link
             to={`/matches/${matchId}`}
-            className="mt-1 text-[13px] text-[var(--danger)] underline"
+            className="press mt-1 flex min-h-12 items-center justify-center rounded-[var(--r-md)] border border-[var(--danger)] text-[14px] font-semibold text-[var(--danger)]"
           >
-            Abandon this match →
+            Abandon this match
           </Link>
         )}
       </div>
