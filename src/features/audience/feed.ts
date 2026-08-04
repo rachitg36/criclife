@@ -23,6 +23,24 @@ export function isFinishedStatus(status: string | undefined): boolean {
   return status === 'completed' || status === 'abandoned';
 }
 
+/**
+ * The sentence to print when a match is over.
+ *
+ * The server's `result_text` wins. It is the only place either sentence
+ * exists: `complete_match` writes the result there, `abandon_match` writes the
+ * *reason* there, and the engine cannot supply either for a match that was
+ * called off — a delivery log never implies "rain". The engine's own text is
+ * the fallback for the gap between the last ball and the RPC returning, and it
+ * carries team ids rather than names, which is a second reason to prefer the
+ * server's.
+ */
+export function resolveResultLine(
+  serverText: string | null | undefined,
+  engineText: string | null | undefined
+): string {
+  return serverText ?? engineText ?? 'Match complete';
+}
+
 export type BallAccent = 'four' | 'six' | 'wicket' | 'extra' | null;
 
 export type FeedItem =

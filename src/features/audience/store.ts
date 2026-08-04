@@ -45,6 +45,9 @@ type SnapshotRow = {
   is_locked: boolean;
   config: unknown;
   scheduled_at: string | null;
+  result_type: string | null;
+  result_text: string | null;
+  winner_team_id: string | null;
   team_a_id: string;
   team_b_id: string;
   team_a: TeamRow;
@@ -216,6 +219,12 @@ function seedsFrom(innings: AudienceInningsRow[], players: AudiencePlayer[]): In
 
 const MATCH_QUERY =
   'select=id,public_slug,title,venue,status,is_locked,config,scheduled_at,team_a_id,team_b_id,' +
+  // `result_text` is where a reason for abandonment lives — `abandon_match`
+  // writes it there — and it is also the server's own sentence for a normal
+  // result. Neither was ever fetched, so the audience hero fell back to a bare
+  // "Match complete" for both: a match called off for rain said nothing about
+  // rain, and a finished match did not say who won.
+  'result_type,result_text,winner_team_id,' +
   'team_a:teams!matches_team_a_id_fkey(id,name,short_code,primary_color,secondary_color,logo_url),' +
   'team_b:teams!matches_team_b_id_fkey(id,name,short_code,primary_color,secondary_color,logo_url),' +
   'innings(id,innings_no,batting_team_id,bowling_team_id,is_super_over,status,target,revised_target,revised_overs)';
@@ -307,6 +316,8 @@ export const useAudienceStore = create<AudienceState>((set, get) => ({
         venue: matchRow.venue,
         status: matchRow.status,
         isLocked: matchRow.is_locked,
+        resultText: matchRow.result_text,
+        winnerTeamId: matchRow.winner_team_id,
         config,
         teamA: toTeam(matchRow.team_a),
         teamB: toTeam(matchRow.team_b),
@@ -498,11 +509,25 @@ async function refetchMatchRow(set: Setter, get: Getter): Promise<void> {
   if (!match) return;
   const gen = generation;
   try {
-    const row = await selectOne<{ status: MatchStatus; is_locked: boolean }>(
-      `matches?id=eq.${match.id}&select=status,is_locked`
-    );
+    const row = await selectOne<{
+      status: MatchStatus;
+      is_locked: boolean;
+      result_text: string | null;
+      winner_team_id: string | null;
+    }>(`matches?id=eq.${match.id}&select=status,is_locked,result_text,winner_team_id`);
     if (gen !== generation || !row) return;
-    set({ match: { ...get().match!, status: row.status, isLocked: row.is_locked } });
+    // The result arrives on this row, not on a delivery — a match that is
+    // completed or abandoned changes nothing in the ball log — so it has to be
+    // carried through here or the hero never learns it.
+    set({
+      match: {
+        ...get().match!,
+        status: row.status,
+        isLocked: row.is_locked,
+        resultText: row.result_text,
+        winnerTeamId: row.winner_team_id,
+      },
+    });
   } catch {
     /* the next reconcile will pick it up */
   }

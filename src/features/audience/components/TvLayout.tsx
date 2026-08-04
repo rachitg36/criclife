@@ -75,9 +75,18 @@ export function TvLayout({ view }: { view: AudienceView }) {
           </span>
         </div>
 
-        {matchState?.result ? (
-          <p className="text-[7vh] font-semibold leading-tight text-[var(--accent)]">
-            {matchState.result.text}
+        {/* `view.isComplete`, not `matchState.result`. An abandoned match has
+            no engine result at all, so the big screen went on showing a live
+            score for a game that had been called off. */}
+        {view.isComplete ? (
+          <p
+            className={
+              view.isAbandoned
+                ? 'text-[7vh] leading-tight font-semibold text-[var(--warning)]'
+                : 'text-[7vh] leading-tight font-semibold text-[var(--accent)]'
+            }
+          >
+            {view.isAbandoned ? `Abandoned — ${view.resultLine}` : view.resultLine}
           </p>
         ) : innings && config ? (
           <div>

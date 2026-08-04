@@ -10,6 +10,7 @@ import {
 } from '@/engine';
 import type { InningsState, MatchState, PlayerId } from '@/engine/types';
 import { shortName } from '@/lib/format';
+import { resolveResultLine } from './feed';
 import { inLastOver, isHatTrickBall } from './moments';
 import {
   computeWinProbability,
@@ -45,6 +46,15 @@ export type AudienceView = {
   isLastOver: boolean;
   isHatTrickBall: boolean;
   isComplete: boolean;
+  /** Called off rather than played out. Deliberately separate from
+      `isComplete`, which both states share — a spectator needs to know the
+      difference between "your side lost" and "nobody won". */
+  isAbandoned: boolean;
+  /** What to print when the match is over. The server's `result_text` first:
+      `complete_match` writes the result there and `abandon_match` writes the
+      *reason*, and neither exists anywhere else — the engine has no result at
+      all for a match that was called off. */
+  resultLine: string;
   nameOf: NameLookup;
   playerById: Map<string, AudiencePlayer>;
   teamById: Map<string, AudienceTeam>;
@@ -132,6 +142,8 @@ export function useAudienceView(): AudienceView {
         isLastOver: false,
         isHatTrickBall: false,
         isComplete: false,
+        isAbandoned: false,
+        resultLine: 'Match complete',
         nameOf,
         playerById,
         teamById,
@@ -177,6 +189,8 @@ export function useAudienceView(): AudienceView {
         match.status === 'completed' ||
         match.status === 'abandoned' ||
         match.isLocked,
+      isAbandoned: match.status === 'abandoned',
+      resultLine: resolveResultLine(match.resultText, shown.result?.text),
       nameOf,
       playerById,
       teamById,

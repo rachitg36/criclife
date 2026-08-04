@@ -36,6 +36,9 @@ export function Hero({ view }: { view: AudienceView }) {
   // under a FINAL OVER badge on a finished game. `view.isComplete` is the
   // server's word for it and has been available all along.
   const ended = result !== null || view.isComplete;
+  // Both come off the view so `TvLayout` and this one cannot drift.
+  const abandoned = view.isAbandoned;
+  const resultLine = view.resultLine;
   const chasing = innings.target !== null;
 
   return (
@@ -51,10 +54,23 @@ export function Hero({ view }: { view: AudienceView }) {
       <div className="relative flex flex-col items-center">
         {ended ? (
           <>
-            <p className="label-overline text-[var(--accent)]">Result</p>
-            <p className="mt-1 text-center text-[var(--text-display-md)] font-semibold leading-tight">
-              {result?.text ?? 'Match complete'}
+            <p
+              className={
+                abandoned
+                  ? 'label-overline text-[var(--warning)]'
+                  : 'label-overline text-[var(--accent)]'
+              }
+            >
+              {abandoned ? 'Abandoned' : 'Result'}
             </p>
+            <p className="mt-1 text-center text-[var(--text-display-md)] font-semibold leading-tight">
+              {resultLine}
+            </p>
+            {abandoned && (
+              <p className="mt-1 text-center text-[var(--text-body-sm)] text-[var(--text-secondary)]">
+                No result — the match did not finish.
+              </p>
+            )}
           </>
         ) : (
           <>

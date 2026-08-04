@@ -62,6 +62,13 @@ export type AudienceMatch = {
   venue: string | null;
   status: MatchStatus;
   isLocked: boolean;
+  /** The server's own sentence for how this match ended. `complete_match`
+      writes the result here; `abandon_match` writes the **reason** here. It is
+      the only place either one exists — the delivery log cannot imply "called
+      off for rain", and for an abandoned match the engine has no result at
+      all. */
+  resultText: string | null;
+  winnerTeamId: string | null;
   config: MatchConfig;
   teamA: AudienceTeam;
   teamB: AudienceTeam;
