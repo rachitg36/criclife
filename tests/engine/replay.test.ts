@@ -237,9 +237,12 @@ describe('deliveryToInput / replay round-tripping', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const superOverDelivery: Delivery = { ...result.delivery, inningsNo: 3 };
-    const replayed = replay('replay-test', DEFAULT_CONFIG, [superOverDelivery], [
-      { inningsNo: 3, battingTeamId: 'teamA', bowlingTeamId: 'teamB', isSuperOver: true },
-    ]);
+    const replayed = replay(
+      'replay-test',
+      DEFAULT_CONFIG,
+      [superOverDelivery],
+      [{ inningsNo: 3, battingTeamId: 'teamA', bowlingTeamId: 'teamB', isSuperOver: true }]
+    );
     expect(replayed.status).toBe('super_over');
     expect(replayed.innings[0]!.isSuperOver).toBe(true);
   });
@@ -267,5 +270,60 @@ describe('deliveryToInput / replay round-tripping', () => {
 
     const replayed = replay('replay-test', DEFAULT_CONFIG, [result.delivery], SEEDS);
     expect(replayed).toEqual(result.state);
+  });
+});
+
+/**
+ * The state every match is in between `start_innings` and the first ball —
+ * innings rows exist, the delivery log is empty — and the one nothing
+ * replayed until a real match was set up against a real database.
+ *
+ * Innings used to be created only inside the per-delivery path, so with no
+ * deliveries `replay` returned `innings: []`. The scorer pad reads
+ * `innings[currentInningsIndex]` to decide what to show, found nothing, and
+ * reported the innings as not started — while the server had already started
+ * it. Pressing "Start the innings" again inserted nothing and changed nothing.
+ * A brand-new match could not be scored at all.
+ */
+describe('replay of a started innings with no deliveries', () => {
+  it('materialises the innings the seeds describe', () => {
+    const state = replay('replay-test', DEFAULT_CONFIG, [], SEEDS);
+
+    expect(state.innings).toHaveLength(1);
+    expect(state.currentInningsIndex).toBe(0);
+    expect(state.innings[0]?.inningsNo).toBe(1);
+    expect(state.innings[0]?.battingTeamId).toBe('teamA');
+    // Nobody is in yet — this is exactly the AWAITING_OPENERS the pad wants.
+    expect(state.innings[0]?.strikerId).toBeNull();
+    expect(state.innings[0]?.bowlerId).toBeNull();
+    expect(state.innings[0]?.status).toBe('in_progress');
+  });
+
+  it('gives a fresh second innings the target the first innings actually set', () => {
+    // Why this runs after the fold, not before: `targetFor` reads the previous
+    // innings' runs, which are zero until its deliveries are applied. Seeding
+    // innings 2 up front gave it a target of 1, and the three match fixtures
+    // caught it — innings 2 ended on its first scoring shot.
+    const seeds = [
+      { inningsNo: 1, battingTeamId: 'teamA', bowlingTeamId: 'teamB' },
+      { inningsNo: 2, battingTeamId: 'teamB', bowlingTeamId: 'teamA' },
+    ];
+    const first = applyDelivery(oneBallState(), ball({ runsOffBat: 4 }));
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+
+    const state = replay('replay-test', DEFAULT_CONFIG, [first.delivery], seeds);
+
+    expect(state.innings).toHaveLength(2);
+    expect(state.innings[0]?.runs).toBe(4);
+    expect(state.innings[1]?.target).toBe(5);
+    expect(state.innings[1]?.status).toBe('in_progress');
+    expect(state.currentInningsIndex).toBe(1);
+  });
+
+  it('still returns an empty match when there are no seeds either', () => {
+    const state = replay('replay-test', DEFAULT_CONFIG, [], []);
+    expect(state.innings).toHaveLength(0);
+    expect(state.currentInningsIndex).toBe(-1);
   });
 });

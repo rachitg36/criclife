@@ -64,30 +64,36 @@ function targetFor(seed: InningsSeed, priorInnings: InningsState[]): number | nu
   return previous ? previous.runs + 1 : null;
 }
 
+/**
+ * Appends the innings a seed describes and makes it current. Shared by
+ * `replay`'s up-front pass and `ensureInningsStarted`'s per-delivery one so
+ * the two can never build an innings differently.
+ */
+function startSeededInnings(state: MatchState, seed: InningsSeed): MatchState {
+  const existingIndex = state.innings.findIndex((i) => i.inningsNo === seed.inningsNo);
+  if (existingIndex !== -1) {
+    return existingIndex === state.currentInningsIndex
+      ? state
+      : { ...state, currentInningsIndex: existingIndex };
+  }
+
+  const innings = state.innings.concat(emptyInnings(seed, targetFor(seed, state.innings)));
+  return {
+    ...state,
+    innings,
+    currentInningsIndex: innings.length - 1,
+    status: seed.isSuperOver ? 'super_over' : 'live',
+  };
+}
+
 function ensureInningsStarted(
   state: MatchState,
   delivery: Delivery,
   seeds: InningsSeed[]
 ): MatchState {
-  const existingIndex = state.innings.findIndex((i) => i.inningsNo === delivery.inningsNo);
-  if (existingIndex !== -1) {
-    if (existingIndex !== state.currentInningsIndex) {
-      return { ...state, currentInningsIndex: existingIndex };
-    }
-    return state;
-  }
-
   const seed = seeds.find((s) => s.inningsNo === delivery.inningsNo);
   if (!seed) throw new Error(`REPLAY: no innings seed for innings ${delivery.inningsNo}`);
-
-  const innings = emptyInnings(seed, targetFor(seed, state.innings));
-  const innings2 = state.innings.concat(innings);
-  return {
-    ...state,
-    innings: innings2,
-    currentInningsIndex: innings2.length - 1,
-    status: seed.isSuperOver ? 'super_over' : 'live',
-  };
+  return startSeededInnings(state, seed);
 }
 
 function ensureCrease(state: MatchState, delivery: Delivery): MatchState {
@@ -193,6 +199,27 @@ export function replay(
       );
     }
     state = result.state;
+  }
+
+  // Any innings that exists in the database but has no deliveries yet.
+  //
+  // Creation used to be entirely lazy, inside `ensureInningsStarted`, which
+  // only runs per delivery — so an innings started but not yet bowled at came
+  // back as `innings: []`. That is not an edge case, it is *every match*
+  // between `start_innings` and the first ball. The scorer pad reads
+  // `innings[currentInningsIndex]` to decide what to show, found nothing, and
+  // reported the innings as not started; pressing "Start the innings" again
+  // inserted nothing new and changed nothing. A brand-new match could not be
+  // scored at all.
+  //
+  // It happens *after* the fold, not before, and the fixtures are what said
+  // so: `targetFor` reads the previous innings' runs, which are zero until its
+  // deliveries have been applied. Seeding innings 2 up front gave it a target
+  // of 1, so it ended on the first scoring shot.
+  for (const seed of [...seeds].sort((a, b) => a.inningsNo - b.inningsNo)) {
+    if (!state.innings.some((i) => i.inningsNo === seed.inningsNo)) {
+      state = startSeededInnings(state, seed);
+    }
   }
 
   return state;
