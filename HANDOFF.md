@@ -25,6 +25,23 @@ Decisions already locked in are logged in `docs/13-OPEN-QUESTIONS.md` § A and �
 
 ## 2. Continue here — exact next step
 
+### ✅ The pad renders against a real project — 2026-08-04
+
+The scorer pad is up on `localhost:5173` against `criclife-staging`, with a
+real match, real squads and a started innings: score block, batters, bowler,
+over strip, run pad, modifiers, actions. **No ball has been recorded yet** —
+that is the next thing, and it is the moment `record_delivery` is finally
+called by a client rather than by pgTAP.
+
+Getting here took seven fixes in one sitting, and only the last was the real
+cause. Worth reading § 6.4's last seven rows together, because they are one
+story: every layer knew something the layer above it did not say. The root
+cause was `replay()` returning `innings: []` for a match with no deliveries —
+so a brand-new match could never be scored, and every blank screen traced
+back to it.
+
+---
+
 ### ✅ Sign-in works — 2026-08-03. What that unlocks, and what it does not
 
 **Somebody has signed in.** Magic link → callback → onboarding → into the app,
