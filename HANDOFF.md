@@ -85,8 +85,8 @@ all match data" button. **`purge_match_data` must be dropped before the first
 real club is invited** — deleting every match is a feature only while none of
 them matter, and it disables the append-only trigger to do it.
 
-**All 17 migrations are applied to both projects as of 2026-08-04** — 58
-functions on each. `abandon_match` exists, `start_innings` enforces one live
+**All 20 migrations are applied to both projects as of 2026-08-04**, and the
+owner's profile carries `is_super_admin` on both. `abandon_match` exists, `start_innings` enforces one live
 match per team, and a Google sign-in carries the person's picture and address
 onto their profile.
 

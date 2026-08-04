@@ -132,8 +132,10 @@ left — the first one now blocks real use:
   sign in. HANDOFF.md § 2 has the full account.
 - ~~Bring `criclife-staging` up to 15 migrations~~ — **done 2026-08-04**, both
   projects verified at 56 functions.
-- ~~Run migrations 16 and 17~~ — **done 2026-08-04**, both projects at 58
-  functions. Abandon works, and a team can only be in one live match at a time.
+- ~~Run migrations 16–20~~ — **done 2026-08-04**, both projects. Abandon works,
+  one live match per team is enforced, account-deletion requests go through an
+  RPC, and there is a super-admin-only "clear all match data" button.
+  **`purge_match_data` must be dropped before the first real club is invited.**
 - **Set the URL Configuration on whichever project the deployed site points
   at.** Site URL and Redirect URLs are both still the `http://localhost:3000`
   default on prod, which is why signing in to the live site lands on a dead
