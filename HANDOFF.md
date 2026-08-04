@@ -77,11 +77,12 @@ from this sandbox: the agent proxy returns 403 for the deployed URL, so
    the function does not exist, and Google sign-ins will not bring a picture.
    Everything else on the deployed build works without it.
 
-**⚠ A 16th migration is waiting.** `20260804120000_oauth_profile_and_abandon.sql`
-is committed but has run nowhere but the local scratch database. Paste it into
-**both** Supabase projects' SQL Editor before using Google sign-in or the
-Abandon button — until then `abandon_match` does not exist and the button will
-report so. Function count goes 56 → 58.
+**⚠ Two migrations are waiting.** `20260804120000_oauth_profile_and_abandon.sql`
+and `20260804140000_one_live_match_per_team.sql` are committed but have run
+nowhere but the local scratch database. Paste both, in order, into **both**
+Supabase projects' SQL Editor. Until the first runs, `abandon_match` does not
+exist and the button reports so; until the second, a team can be in any number
+of live matches at once. Function count goes 56 → 58.
 
 **Known, not yet done:**
 
@@ -224,7 +225,7 @@ npm install
 cp .env.example .env.local   # then fill it in — values are in § 4
 sudo service postgresql start
 sudo apt-get install -y postgresql-16-pgtap    # gone after every container restart
-bash supabase/tests/run-local.sh --seed --pgtap   # expect 237/237 "ok", 0 "not ok"
+bash supabase/tests/run-local.sh --seed --pgtap   # expect 241/241 "ok", 0 "not ok"
 npm run typecheck && npm run lint && npm run test  # expect 331/331
 npm run build && npm run size                      # expect 174.69 kB / 180 kB
 ```
@@ -302,7 +303,7 @@ Local Postgres + pgTAP (see § 5.1 for why this exists instead of `supabase star
 
 ```bash
 sudo service postgresql start
-bash supabase/tests/run-local.sh --seed --pgtap   # expect 237/237 "ok", 0 "not ok"
+bash supabase/tests/run-local.sh --seed --pgtap   # expect 241/241 "ok", 0 "not ok"
 ```
 
 (`npm run test:e2e` needs Playwright browsers, and this sandbox only has a
@@ -877,10 +878,10 @@ screen is free.
 
 | Check                                                        | Result                                                                                                                                                                                                                                                                |
 | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| pgTAP                                                        | **237/237** ("not ok": 0) across 16 files in `supabase/tests/pgtap/`                                                                                                                                                                                                  |
+| pgTAP                                                        | **241/241** ("not ok": 0) across 17 files in `supabase/tests/pgtap/`                                                                                                                                                                                                  |
 | Unit/component tests (`npm run test`)                        | **484/484** across 47 files                                                                                                                                                                                                                                           |
 | `npm run typecheck` / `npm run lint`                         | clean                                                                                                                                                                                                                                                                 |
-| `npm run build` + `npm run size`                             | audience route **177.79 kB** brotli, budget 180 kB — see § 5.13 for how little room that is                                                                                                                                                                           |
+| `npm run build` + `npm run size`                             | audience route **177.87 kB** brotli, budget 180 kB — see § 5.13 for how little room that is                                                                                                                                                                           |
 | e2e (`npm run test:e2e`, desktop/Chromium project only)      | **9 passed, 4 intentionally skipped** — with the local `channel`/`executablePath` override from § 5.1, not committed. The audience smoke test was rewritten this phase: it asserted the Phase 0 `<Placeholder>` text, which no longer exists.                         |
 | e2e, the four mobile/WebKit viewports                        | **could not run in this sandbox** — no WebKit binary at all (see § 5.1); real CI installs it fresh and is not affected                                                                                                                                                |
 | E2E flows 5/6/7 (`docs/09` § 9 — the Phase 6 acceptance bar) | **not run as actual Playwright specs** — see § 8.9. Verified instead at the unit/integration layer against a mocked RPC (`tests/lib/syncWorker.test.ts`), which is the closest this sandbox can get without a live, multi-context, network-throttled Supabase backend |

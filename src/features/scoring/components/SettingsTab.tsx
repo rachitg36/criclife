@@ -69,6 +69,19 @@ export function SettingsTab() {
             Match settings →
           </Link>
         )}
+
+        {/* Rain stops play while you are holding the pad, not while you are
+            browsing the match hub — so the way out has to be reachable from
+            in here. It is still the hub's `abandon_match`; this is a link to
+            it, not a second implementation. */}
+        {matchId && (
+          <Link
+            to={`/matches/${matchId}`}
+            className="mt-1 text-[13px] text-[var(--danger)] underline"
+          >
+            Abandon this match →
+          </Link>
+        )}
       </div>
     </div>
   );

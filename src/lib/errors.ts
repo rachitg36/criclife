@@ -76,6 +76,10 @@ const DOMAIN_CODES: Record<string, { kind: ErrorKind; message: string }> = {
     kind: 'validation',
     message: 'Both teams need a playing squad before the innings can start.',
   },
+  TEAM_BUSY: {
+    kind: 'conflict',
+    message: 'That team is already in a live match. Finish or abandon it first.',
+  },
   FORBIDDEN: {
     kind: 'permission',
     message: 'Only a manager of one of these teams can do that.',
