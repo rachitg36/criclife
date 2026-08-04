@@ -134,6 +134,14 @@ type ScorerState = {
       a genuine exception, ...) that a plain retry won't fix on its own.
       Drives the sync pill's `error` state — docs/05 § 6.3. */
   hasSyncError: boolean;
+  /** *What* went wrong, not just that something did. The sync worker has
+      always had the server's own message — `MATCH_LOCKED`, `BOWLER_LIMIT`,
+      `CONSECUTIVE_OVER`, a constraint violation, a 5xx — and the store threw
+      it away, so the pad could only ever say "⚠ sync error". A scorer whose
+      balls have stopped reaching the server needs the sentence, not the
+      symbol: it is the difference between "pick a different bowler" and
+      "your match is broken". */
+  syncErrorMessage: string | null;
   /** Set when the sync worker reports STALE_SEQ or a business-rule clash
       that only makes sense if a co-scorer scored differently while this
       device was offline. Non-null blocks the pad — docs/05 § 6.6. */
@@ -187,6 +195,12 @@ type ScorerState = {
       ball) isn't offered here; see syncWorker.ts's own comment on why. */
   resolveConflictKeepMine: () => Promise<void>;
   dismissSyncError: () => void;
+  /** Re-anchor this innings' stuck balls to the server's current seq and try
+      again. Same machinery the merge screen's "Keep both" uses — a queue
+      wedged behind a hard error and a queue wedged behind a conflict need the
+      identical thing done to them, and the scorer had a button for only one
+      of the two. */
+  retrySync: () => Promise<void>;
   /** Advanced Mode — record where the last ball went. `x`/`y` are normalised
       to -1..1 with the batter at the origin, matching what `WagonWheel` draws
       and the `shot: {x, y}` the RPC persists. */
@@ -263,6 +277,7 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
   syncedSeq: {},
   online: typeof navigator === 'undefined' || navigator.onLine,
   hasSyncError: false,
+  syncErrorMessage: null,
   conflict: null,
   starting: false,
   myProfileId: null,
@@ -632,7 +647,17 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     await retryQueuedForInnings(matchId, conflict.inningsId);
     set({ conflict: null });
   },
-  dismissSyncError: () => set({ hasSyncError: false }),
+  dismissSyncError: () => set({ hasSyncError: false, syncErrorMessage: null }),
+
+  retrySync: async () => {
+    const { matchId, matchState, inningsIdByNo } = get();
+    if (!matchId || !matchState) return;
+    const innings = currentInnings(matchState);
+    const inningsId = innings ? inningsIdByNo[innings.inningsNo] : undefined;
+    if (!inningsId) return;
+    set({ hasSyncError: false, syncErrorMessage: null });
+    await retryQueuedForInnings(matchId, inningsId);
+  },
 
   dismissShotPrompt: () => set({ shotPrompt: null }),
 
@@ -901,7 +926,7 @@ function handleSyncEvent(
           },
         });
       }
-      set({ hasSyncError: false });
+      set({ hasSyncError: false, syncErrorMessage: null });
       void refreshPendingCount(set, get);
       break;
     }
@@ -909,7 +934,7 @@ function handleSyncEvent(
       void refreshPendingCount(set, get);
       break;
     case 'error':
-      set({ hasSyncError: true });
+      set({ hasSyncError: true, syncErrorMessage: event.message });
       break;
     case 'conflict':
       set({ conflict: { inningsId: event.inningsId, pending: event.pending } });

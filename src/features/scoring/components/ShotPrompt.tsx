@@ -82,6 +82,13 @@ export function ShotPrompt() {
           stroke="var(--border-subtle)"
           strokeDasharray="2 3"
         />
+        {/* The pitch, with the two ends told apart.
+            An empty circle with a bare rectangle in it gives no clue which
+            way round it is, and the whole point of the tap is direction —
+            "please show a bat on one side of the pitch and wicket on the
+            other". Batter's end at the bottom (y positive), bowler's end at
+            the top (negative y), matching the coordinates this writes and
+            `WagonWheel` reads. */}
         <rect
           x={C - 4}
           y={C - 16}
@@ -92,6 +99,37 @@ export function ShotPrompt() {
           stroke="var(--border-subtle)"
           strokeWidth={0.5}
         />
+
+        {/* Bowler's end: three stumps and a bail line. */}
+        <g stroke="var(--text-tertiary)" strokeWidth={1} strokeLinecap="round">
+          <line x1={C - 2.5} y1={C - 20} x2={C - 2.5} y2={C - 14} />
+          <line x1={C} y1={C - 20} x2={C} y2={C - 14} />
+          <line x1={C + 2.5} y1={C - 20} x2={C + 2.5} y2={C - 14} />
+          <line x1={C - 3.5} y1={C - 20} x2={C + 3.5} y2={C - 20} />
+        </g>
+
+        {/* Batter's end: a bat, angled as a right-hander holds it. */}
+        <g transform={`translate(${C - 1} ${C + 14}) rotate(-24)`}>
+          <rect x={-2} y={-11} width={4} height={11} rx={0.6} fill="var(--text-tertiary)" />
+          <rect x={-3} y={0} width={6} height={11} rx={2} fill="var(--text-secondary)" />
+        </g>
+
+        <text
+          x={C}
+          y={C - 25}
+          textAnchor="middle"
+          className="fill-[var(--text-tertiary)] text-[7px]"
+        >
+          BOWLER
+        </text>
+        <text
+          x={C}
+          y={C + 34}
+          textAnchor="middle"
+          className="fill-[var(--text-tertiary)] text-[7px]"
+        >
+          BATTER
+        </text>
       </svg>
       <button
         type="button"

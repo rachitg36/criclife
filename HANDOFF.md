@@ -863,6 +863,29 @@ auth.uid())` via RPC, subscribes to `scoring_grants` over Realtime for
   `role="tablist"` on every tab strip, `sr-only` text on icon-only controls
   and on rank movement. No axe run, no screen-reader pass.
 
+### 5.12b Realtime still has not carried a message — and now it does not have to
+
+The audience route polls every 20s as a safety net (`store.ts`, `startPolling`),
+because every refetch on that route used to hang off a Realtime event. An
+inert-but-SUBSCRIBED socket — the exact failure migration 20260803180000's
+header describes surviving two whole phases — therefore froze the view on a
+screen that still said "live". Reported 2026-08-04 as "the live feed was not
+updating".
+
+Two things to know about it:
+
+- The poll refetches the **match row as well as the balls**.
+  `refetchAndReconcile` never looks at `matches`, so without that the poll
+  would neither notice the result nor ever stop itself.
+- It stops only on `completed`/`abandoned`, not "not live". Polling only while
+  `live` is the tempting version and it is wrong in the ordinary case: a
+  spectator opening the link before the toss would sit on a dead page for the
+  whole game. `isFinishedStatus` in `features/audience/feed.ts`, tested.
+
+This makes the audience view correct whether or not Realtime works, which is
+the right posture for a path nobody has ever seen carry a message. **It does
+not verify Realtime** — that still needs two devices and a live match.
+
 ### 5.13 A standing bundle hazard
 
 The audience route's budget is now the tightest constraint in the codebase,

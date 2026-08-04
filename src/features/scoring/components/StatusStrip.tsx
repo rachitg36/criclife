@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useWakeLock } from '@/lib/wakeLock';
 import { useUiStore } from '@/stores/uiStore';
 import { useScorerStore } from '../store';
+import { SyncErrorSheet } from './SyncErrorSheet';
 
 /** docs/05-SCORER-VIEW.md § 1/4 — 28px status strip: innings label, wake-lock
     indicator, sync pill. The wake lock itself lives here since this is the
@@ -17,6 +19,7 @@ export function StatusStrip() {
   const hasSyncError = useScorerStore((s) => s.hasSyncError);
   const keepScreenAwake = useUiStore((s) => s.keepScreenAwake);
   const awake = useWakeLock(keepScreenAwake);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const innings = matchState?.innings[matchState.currentInningsIndex];
 
@@ -49,7 +52,9 @@ export function StatusStrip() {
         online={online}
         hasSyncError={hasSyncError}
         pendingCount={pendingCount}
+        onShowError={() => setSheetOpen(true)}
       />
+      {sheetOpen && hasSyncError && <SyncErrorSheet onClose={() => setSheetOpen(false)} />}
     </div>
   );
 }
@@ -62,11 +67,13 @@ function SyncPill({
   online,
   hasSyncError,
   pendingCount,
+  onShowError,
 }: {
   revoked: boolean;
   online: boolean;
   hasSyncError: boolean;
   pendingCount: number;
+  onShowError: () => void;
 }) {
   if (revoked) {
     return <span className="font-semibold text-[var(--danger)]">⚠ rights revoked</span>;
@@ -75,7 +82,16 @@ function SyncPill({
     return <span className="text-[var(--text-tertiary)]">⚠ offline</span>;
   }
   if (hasSyncError) {
-    return <span className="font-semibold text-[var(--danger)]">⚠ sync error</span>;
+    // A button, not a label. The reason is one tap away instead of nowhere.
+    return (
+      <button
+        type="button"
+        onClick={onShowError}
+        className="press font-semibold text-[var(--danger)] underline decoration-dotted underline-offset-2"
+      >
+        ⚠ sync error — tap
+      </button>
+    );
   }
   if (pendingCount > 0) {
     return <span className="text-[var(--warning)]">⟳ {pendingCount} pending</span>;

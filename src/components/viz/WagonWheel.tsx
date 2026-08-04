@@ -78,6 +78,20 @@ export function WagonWheel({
             stroke="var(--border-subtle)"
             strokeWidth={0.5}
           />
+          {/* Stumps at the bowler's end, bat at the batter's — the same marks
+              the scorer taps against in `ShotPrompt`. Without them a wagon
+              wheel is a starburst with no orientation, and a reader cannot
+              tell a straight drive from a shot behind square. */}
+          <g stroke="var(--text-tertiary)" strokeWidth={1} strokeLinecap="round">
+            <line x1={CX - 2.5} y1={CY - 20} x2={CX - 2.5} y2={CY - 14} />
+            <line x1={CX} y1={CY - 20} x2={CX} y2={CY - 14} />
+            <line x1={CX + 2.5} y1={CY - 20} x2={CX + 2.5} y2={CY - 14} />
+            <line x1={CX - 3.5} y1={CY - 20} x2={CX + 3.5} y2={CY - 20} />
+          </g>
+          <g transform={`translate(${CX - 1} ${CY + 14}) rotate(-24)`}>
+            <rect x={-2} y={-11} width={4} height={11} rx={0.6} fill="var(--text-tertiary)" />
+            <rect x={-3} y={0} width={6} height={11} rx={2} fill="var(--text-secondary)" />
+          </g>
           {shots.map((s) => (
             <line
               key={s.key}

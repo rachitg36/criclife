@@ -10,6 +10,19 @@ import type { AudienceDelivery, NameLookup } from './types';
  * theming happen in the component.
  */
 
+/**
+ * Can this match still change?
+ *
+ * Lives here, in the pure module, because it is the stop condition for the
+ * audience route's safety-net poll and getting it wrong is invisible: too
+ * broad and a finished match is polled forever, too narrow and a spectator who
+ * opened the link before the toss watches a dead page through the whole game.
+ * The tempting form — "poll only while `live`" — is the narrow one.
+ */
+export function isFinishedStatus(status: string | undefined): boolean {
+  return status === 'completed' || status === 'abandoned';
+}
+
 export type BallAccent = 'four' | 'six' | 'wicket' | 'extra' | null;
 
 export type FeedItem =

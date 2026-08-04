@@ -7,6 +7,7 @@ import { PublicApiError, selectAll, selectMany, selectOne } from '@/lib/publicAp
 import { openChangeChannel } from '@/lib/realtime';
 import { setTeamAccent } from '@/lib/theme';
 import type { ConnectionState } from '@/components/ui/LivePill';
+import { isFinishedStatus } from './feed';
 import { detectMoments, type Moment } from './moments';
 import type {
   AudienceDelivery,
@@ -134,6 +135,26 @@ type Unsubscribe = () => void;
 let channelTeardown: Unsubscribe | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let backgroundTimer: ReturnType<typeof setTimeout> | null = null;
+/**
+ * Safety net for a Realtime socket that reports SUBSCRIBED and then never
+ * delivers anything.
+ *
+ * That is not hypothetical here: migration 20260803180000's own header
+ * records that `postgres_changes` subscriptions in Phases 5 and 6 were
+ * silently inert for two whole phases — "the channel connects, the client
+ * reports SUBSCRIBED, and no row event ever arrives. It looks healthy, which
+ * is why it survived two phases." Realtime has still never been observed
+ * carrying a message in this project. Every refetch on this route was
+ * triggered by a Realtime event, a reconnect, or the tab regaining focus, so
+ * an inert-but-healthy socket leaves the audience frozen on a screen that
+ * says "live" — reported on 2026-08-04 as "the live feed was not updating".
+ *
+ * 20s, and only while the match is actually in progress. On the free tier
+ * that is three requests a minute per spectator against a snapshot endpoint
+ * that already exists; the alternative is a view that can silently stop.
+ */
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+const POLL_MS = 20_000;
 let visibilityTeardown: Unsubscribe | null = null;
 let reconnectAttempt = 0;
 let loadAbort: AbortController | null = null;
@@ -335,6 +356,7 @@ export const useAudienceStore = create<AudienceState>((set, get) => ({
     reconnectTimer = null;
     if (backgroundTimer) clearTimeout(backgroundTimer);
     backgroundTimer = null;
+    stopPolling();
     reconnectAttempt = 0;
     setTeamAccent(null);
   },
@@ -494,6 +516,10 @@ async function refetchMatchRow(set: Setter, get: Getter): Promise<void> {
 function attachRealtime(set: Setter, get: Getter, matchId: string, gen: number): void {
   channelTeardown?.();
   channelTeardown = null;
+  // Every caller of `attachRealtime` is a point where the feed should be
+  // running, so the poll is armed from the same place rather than from four
+  // call sites that would drift apart.
+  startPolling(set, get);
 
   void (async () => {
     const { supabase } = await import('@/lib/supabase');
@@ -554,6 +580,38 @@ function attachRealtime(set: Setter, get: Getter, matchId: string, gen: number):
       void supabase.removeChannel(channel);
     };
   })();
+}
+
+/**
+ * Start (or restart) the safety-net poll. Idempotent, and a no-op once the
+ * match is over — a completed match cannot gain another ball, and polling one
+ * forever is exactly the free-tier waste this project is meant to avoid.
+ */
+function startPolling(set: Setter, get: Getter): void {
+  stopPolling();
+  pollTimer = setInterval(() => {
+    const state = get();
+    if (state.status !== 'ready') return;
+    // Paused/offline are the reconnect path's business; it refetches on
+    // recovery already. Polling on top would double the requests at the
+    // moment the network is worst.
+    if (state.connection === 'paused' || state.connection === 'offline') return;
+    if (isFinishedStatus(state.match?.status)) {
+      stopPolling();
+      return;
+    }
+    // Both, and the match row matters as much as the balls: a match that
+    // ends does so without a delivery, and `refetchAndReconcile` never looks
+    // at `matches`. Without this the poll would neither notice the result nor
+    // ever stop itself.
+    void refetchMatchRow(set, get);
+    void refetchAndReconcile(set, get, { countMissed: false });
+  }, POLL_MS);
+}
+
+function stopPolling(): void {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = null;
 }
 
 /** docs/06 § 3 — exponential backoff, then a full refetch on recovery. */
