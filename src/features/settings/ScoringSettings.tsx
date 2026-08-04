@@ -71,7 +71,7 @@ export function ScoringSettings() {
         />
         <Toggle
           label="Advanced scoring"
-          hint="Capture where each shot went, for the wagon wheel. Adds a tap per ball."
+          hint="After a scoring shot, tap the field to say where it went — for the wagon wheel. Ignore it and the ball stands anyway."
           checked={advancedScoring}
           onChange={() => setAdvancedScoring(!advancedScoring)}
         />

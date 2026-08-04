@@ -1,28 +1,22 @@
 import { useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus, MoreVertical } from 'lucide-react';
-import { Crest } from '@/components/ui/Crest';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { SkeletonText } from '@/components/ui/Skeleton';
 import { supabase } from '@/lib/supabase';
 import { PLAYER_ROLE_LABEL, TEAM_ROLE_LABEL } from '@/features/players/roleLabels';
 import { useSquad, useTeam, useTeamPermissions, type SquadRow } from './hooks';
+import { TeamHeader } from './TeamHeader';
 import type { Database } from '@/types/database';
 
 type PlayerRole = Database['public']['Enums']['player_role'];
 
-const TABS = [
-  { suffix: 'squad', label: 'Squad' },
-  { suffix: 'matches', label: 'Matches' },
-  { suffix: 'stats', label: 'Stats' },
-] as const;
-
 /** docs/11-SCREENS-AND-ROUTES.md § 3 — `/teams/:teamId` and `/teams/:teamId/squad`. */
 export function TeamSquadPage() {
   const { teamId } = useParams<{ teamId: string }>();
-  const location = useLocation();
+
   const { data: team, isLoading: teamLoading } = useTeam(teamId);
   const { data: squad, isLoading: squadLoading } = useSquad(teamId);
   const perms = useTeamPermissions(teamId);
@@ -43,68 +37,7 @@ export function TeamSquadPage() {
 
   return (
     <div className="pb-8">
-      <div
-        className="relative overflow-hidden px-4 pt-6 pb-4"
-        style={{
-          background: `linear-gradient(180deg, color-mix(in oklch, ${team.primary_color} 22%, transparent), transparent)`,
-        }}
-      >
-        <div className="flex items-center gap-4">
-          <Crest
-            logoUrl={team.logo_url}
-            shortCode={team.short_code}
-            color={team.primary_color}
-            size={64}
-          />
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-[var(--text-heading-lg)] font-bold">{team.name}</h1>
-            <div className="truncate text-[var(--text-body-sm)] text-[var(--text-secondary)]">
-              {team.city ? `${team.city} · ` : ''}
-              {team.home_ground ?? team.short_code}
-            </div>
-          </div>
-          {perms.isAdmin && (
-            <Link to={`/teams/${team.id}/settings`}>
-              <Button variant="glass" size="sm">
-                Settings
-              </Button>
-            </Link>
-          )}
-        </div>
-      </div>
-
-      <nav
-        aria-label="Team sections"
-        className="flex gap-1 border-b border-[var(--border-subtle)] px-4"
-      >
-        {TABS.map((tab) => {
-          const isSquadTab = tab.suffix === 'squad';
-          const active = isSquadTab
-            ? location.pathname === `/teams/${team.id}` ||
-              location.pathname === `/teams/${team.id}/squad`
-            : location.pathname === `/teams/${team.id}/${tab.suffix}`;
-          return (
-            <Link
-              key={tab.label}
-              to={`/teams/${team.id}/${tab.suffix}`}
-              aria-current={active ? 'page' : undefined}
-              className={
-                active
-                  ? 'relative px-3 py-2 text-[15px] font-medium text-[var(--text-primary)]'
-                  : 'relative px-3 py-2 text-[15px] font-medium text-[var(--text-secondary)]'
-              }
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
-        <Link
-          to={`/ranks?team=${team.id}`}
-          className="relative px-3 py-2 text-[15px] font-medium text-[var(--text-secondary)]"
-        >
-          Ranks
-        </Link>
-      </nav>
+      <TeamHeader team={team} isAdmin={perms.isAdmin} />
 
       <div className="px-4 pt-4">
         {perms.isManager && (

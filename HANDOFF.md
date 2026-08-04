@@ -897,8 +897,12 @@ The lesson is about the measurement, not the code: `size-limit` here is
 point reads as growth**. When it jumps by more than the diff plausibly weighs,
 diff the chunk listing against a `git stash`ed build before deleting anything.
 
-It sits at **178.83 kB of 180 kB**. Run `npm run size` before assuming a new
-screen is free.
+It sits at **179.37 kB of 180 kB** — about 600 bytes of room. The next screen
+that adds a route to `router.tsx` will very likely go over on the router entry
+alone, and the honest fix at that point is probably to stop measuring
+"everything minus a deny-list" and measure the audience route's real module
+graph instead. The deny-list has grown to thirty-odd entries and every new page
+needs a line in it, which is a maintenance tax masquerading as a budget.
 
 ### 5.9 Current verification numbers (all re-confirmed at end of Phase 6)
 

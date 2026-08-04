@@ -2,7 +2,12 @@ import { create } from 'zustand';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { haptic } from '@/lib/haptics';
-import { pendingCount as dexiePendingCount, type PendingDelivery } from '@/lib/db';
+import {
+  attachShotToPending,
+  pendingCount as dexiePendingCount,
+  type PendingDelivery,
+} from '@/lib/db';
+import { useUiStore } from '@/stores/uiStore';
 import { toEngineDelivery } from '@/lib/deliveryRow';
 import { classifyError, userMessage } from '@/lib/errors';
 import { padModeForInnings } from './padMode';
@@ -143,6 +148,11 @@ type ScorerState = {
       by this device's own actions. Dims the pad for its duration —
       docs/03 § 3.6: "Arjun is entering a wicket…", 8s. */
   softLock: { displayName: string; action: string; until: number } | null;
+  /** Advanced Mode's wagon-wheel prompt — docs/05 § 8. Set for a couple of
+      seconds after a ball that scored off the bat, cleared by a tap on the
+      field, by the next ball, or by its own timer. The ball is already
+      recorded either way; this only decides whether it carries coordinates. */
+  shotPrompt: { clientDeliveryId: string; runs: number } | null;
 
   init: (matchId: string) => Promise<void>;
   armModifier: (m: ExtraType | null) => void;
@@ -176,6 +186,11 @@ type ScorerState = {
       ball) isn't offered here; see syncWorker.ts's own comment on why. */
   resolveConflictKeepMine: () => Promise<void>;
   dismissSyncError: () => void;
+  /** Advanced Mode — record where the last ball went. `x`/`y` are normalised
+      to -1..1 with the batter at the origin, matching what `WagonWheel` draws
+      and the `shot: {x, y}` the RPC persists. */
+  attachShot: (x: number, y: number) => Promise<void>;
+  dismissShotPrompt: () => void;
 };
 
 /** Identifies "the same button" across taps — deliberately excludes
@@ -252,6 +267,7 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
   myProfileId: null,
   myDisplayName: null,
   softLock: null,
+  shotPrompt: null,
 
   init: async (matchId) => {
     set({ mode: 'LOADING', matchId, error: null });
@@ -586,6 +602,30 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     set({ conflict: null });
   },
   dismissSyncError: () => set({ hasSyncError: false }),
+
+  dismissShotPrompt: () => set({ shotPrompt: null }),
+
+  attachShot: async (x, y) => {
+    const prompt = get().shotPrompt;
+    if (!prompt) return;
+    set({ shotPrompt: null });
+    const patched = await attachShotToPending(prompt.clientDeliveryId, { x, y });
+    if (patched) return haptic('select');
+
+    // Already gone to the server. `deliveries_update_by_grant` lets a scorer
+    // with rights write this column, so a narrow UPDATE keyed on the
+    // idempotency key is honest here — it is not reversing anything, it is
+    // filling in a field the insert left null. It is also the *only* place
+    // the client touches `deliveries` directly, which is why it is this
+    // small and this specific.
+    const { error } = await supabase
+      .from('deliveries')
+      .update({ shot_x: x, shot_y: y })
+      .eq('client_delivery_id', prompt.clientDeliveryId);
+    // Silent on failure on purpose: the ball itself is safe, and the pad is
+    // not the place to explain that an optional coordinate did not stick.
+    if (!error) haptic('select');
+  },
 }));
 
 async function commitDelivery(
@@ -631,6 +671,15 @@ async function commitDelivery(
     error: null,
     lastTap: { key: tapKey, at: Date.now() },
     duplicateWarning: tapGuard === 'warn',
+    // Advanced Mode, docs/05 § 8 — "after committing a ball, a small field
+    // overlay appears; ignore it and it fades, the ball is already recorded."
+    // Only for runs off the bat: a wide has no shot, and a dot is the most
+    // common ball there is, so prompting on one would put an overlay in front
+    // of the pad most of the time for no data.
+    shotPrompt:
+      useUiStore.getState().advancedScoring && result.delivery.runsBatter > 0
+        ? { clientDeliveryId: input.clientDeliveryId, runs: result.delivery.runsBatter }
+        : null,
   });
   fireHaptic(result.delivery, input);
   applyEvents(set, get, result.events);

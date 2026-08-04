@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { Share2 } from 'lucide-react';
+import { QrCode, Share2 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { env } from '@/lib/env';
 import { useUiStore } from '@/stores/uiStore';
@@ -14,6 +14,26 @@ export function SettingsTab() {
   const { matchId } = useParams();
   const publicSlug = useScorerStore((s) => s.publicSlug);
   const [shared, setShared] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qr, setQr] = useState<string | null>(null);
+
+  // Imported inside the effect, not at module scope: `qrcode` is ~25 kB and
+  // the scorer route is the one screen that has to open instantly on a phone
+  // at a ground. Nobody who never opens this pays for it.
+  useEffect(() => {
+    if (!qrOpen || !publicSlug) return;
+    let alive = true;
+    void import('qrcode').then((m) =>
+      m.default
+        .toDataURL(`${env.VITE_PUBLIC_URL}/live/${publicSlug}`, { margin: 1, width: 320 })
+        .then((src) => {
+          if (alive) setQr(src);
+        })
+    );
+    return () => {
+      alive = false;
+    };
+  }, [qrOpen, publicSlug]);
 
   // The scorer is the one person who needs to hand out the spectator link, and
   // the only share button lived on the audience view — a screen they would
@@ -84,20 +104,42 @@ export function SettingsTab() {
         />
         <ToggleRow
           label="Advanced scoring"
-          hint="Adds a shot/pitch overlay after each ball. One extra tap."
+          hint="Tap the field after a scoring shot, for the wagon wheel. Optional every ball."
           value={advancedScoring}
           onChange={() => setAdvancedScoring(!advancedScoring)}
         />
 
         {publicSlug && (
-          <button
-            type="button"
-            onClick={() => void shareLink()}
-            className="press mt-2 flex min-h-12 items-center justify-center gap-2 rounded-[var(--r-md)] bg-[var(--accent)] text-[14px] font-semibold text-[var(--accent-fg)]"
-          >
-            <Share2 size={15} aria-hidden />
-            {shared ? 'Link copied' : 'Share the live link'}
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => void shareLink()}
+              className="press mt-2 flex min-h-12 items-center justify-center gap-2 rounded-[var(--r-md)] bg-[var(--accent)] text-[14px] font-semibold text-[var(--accent-fg)]"
+            >
+              <Share2 size={15} aria-hidden />
+              {shared ? 'Link copied' : 'Share the live link'}
+            </button>
+            {/* The QR is for the people standing in front of you. Sharing a
+                link works for the team group; a spectator who has just walked
+                up to the boundary has nothing to tap. `qrcode` is loaded on
+                demand so the pad does not carry it. */}
+            <button
+              type="button"
+              onClick={() => setQrOpen((v) => !v)}
+              aria-expanded={qrOpen}
+              className="press flex min-h-11 items-center justify-center gap-2 rounded-[var(--r-md)] border border-[var(--border-default)] text-[13px] font-medium text-[var(--text-secondary)]"
+            >
+              <QrCode size={15} aria-hidden />
+              {qrOpen ? 'Hide QR code' : 'Show a QR code'}
+            </button>
+            {qrOpen && qr && (
+              <img
+                src={qr}
+                alt="QR code for this match's live link"
+                className="mx-auto w-full max-w-[220px] rounded bg-white p-2"
+              />
+            )}
+          </>
         )}
 
         {matchId && (

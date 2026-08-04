@@ -36,7 +36,10 @@ export function LiveMatchBar() {
     )
   );
 
-  const hidden = location.pathname.startsWith('/matches');
+  // Home now leads with the live match as a full card, so the bar underneath
+  // it was the same match said twice — and the bar is the smaller, quieter of
+  // the two, which is why "the live match is very small and at the bottom".
+  const hidden = location.pathname.startsWith('/matches') || location.pathname === '/';
   const showing = !hidden && live.length > 0;
 
   // Reserve room for itself. The bar is `fixed`, so it is outside flow and

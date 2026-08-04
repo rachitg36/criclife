@@ -137,6 +137,13 @@ by any route.
 - [x] Role suggestion flow: admin suggests → player accepts/rejects
 - [x] `role_locked_by_admin` respected in the UI
 - [x] Team settings: colours, logo, member roles, ownership transfer
+- [x] `/teams/:teamId/matches` and `/teams/:teamId/stats` — 2026-08-04. Both had
+      been `<Placeholder>` routes ("ships in Phase 3", "ships in Phase 8")
+      behind tabs on the team page, so tapping either dropped you onto a
+      screen with no crest, no tabs and no way back. The crest-and-tabs header
+      is now `TeamHeader`, shared by all three. **Team stats' leaderboards are
+      squad *career* totals, not per-team** — `player_career_stats` has no team
+      dimension, and the screen says so rather than implying otherwise.
 
 **Done when:** E2E flows 2 and 3 pass — a player can change their own role, and
 a team admin provably cannot.
@@ -175,6 +182,18 @@ pad locks and B's unlocks, both seeing the map update live.
 - [x] Haptics, wake lock, handedness mirroring, accidental-tap guard
 - [x] Innings break and match-complete flows, super over
 - [x] Scorer sub-tabs: Scorecard, Map, Feed, Settings
+- [x] **Advanced Mode** (docs/05 § 8) — 2026-08-04. The toggle shipped in two
+      settings screens in this phase and **nothing read `advancedScoring`**: it
+      was set, persisted, and never consulted, so the audience view's wagon
+      wheel said "the scorer didn't use Advanced Mode" for every match ever
+      scored. It now prompts after a scoring shot, patches the coordinate onto
+      the still-queued ball (no extra request, works offline), and falls back
+      to a narrow `deliveries` UPDATE if the ball already synced. **Pitch-map
+      capture is still not built** — the same overlay would need a second
+      diagram and a second tap, and `pitch_x/y` has no reader yet.
+- [x] `/matches/:matchId/settings` — read-only, and deliberately so: config is
+      folded into the innings by `replay()` from ball 1, so nothing here can
+      change mid-match without rewriting balls already scored.
 
 **Done when:** the scroll assertion passes at all four viewports, E2E flow 1
 passes, and a real 20-over match can be scored end to end on a phone.
@@ -322,7 +341,14 @@ global ranks as ghost numbers.
 - [x] **Share the spectator link from the match hub**, as a share sheet and as
       a QR code — the link existed from Phase 7 and there was no way to get at
       it short of reading `public_slug` out of the database. The QR is the
-      point at the ground: print it, tape it up, no typing.
+      point at the ground: print it, tape it up, no typing. Also on the
+      scorer's own Settings tab, which is where the person holding the phone
+      looks for it.
+- [x] `/settings/profile` — the first row of the Settings list, and a
+      `<Placeholder>` until 2026-08-04. Name, handle, email and photo, plus a
+      link out to the player record; role editing stays on
+      `/players/:id/edit`, because docs/03 § 2.3 gives only the player
+      themself that right and duplicating the screen would duplicate the rule.
 - [~] a11y: skip link, `<main>` landmarks with focus targets, `role="tablist"`
       on every tab strip, `sr-only` text on icon-only controls and on rank
       movement. **No axe run, no screen-reader pass, no keyboard-scoring

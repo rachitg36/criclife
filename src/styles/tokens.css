@@ -42,6 +42,11 @@
   --wicket: #f43f5e;
   --extra: #fbbf24;
   --success: #34d399;
+  /* Foreground for a filled `--success` button. Deliberately dark in *both*
+     themes and never overridden below: `--success` itself is the same mint in
+     light and dark, so `--text-inverse` (which flips to white in light) would
+     drop a filled success button to ~1.9:1. */
+  --success-fg: #05261a;
   --warning: #fbbf24;
   --danger: #f43f5e;
   --info: #38bdf8;

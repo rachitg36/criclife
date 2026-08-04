@@ -131,7 +131,12 @@ export function DataSettings() {
           type="button"
           disabled={busy || !userId}
           onClick={() => void exportData()}
-          className="press mt-3 inline-flex items-center gap-2 rounded-[var(--r-full)] bg-[var(--accent)] px-4 py-2 text-[var(--text-body-sm)] font-semibold text-[var(--accent-fg)] disabled:opacity-50"
+          // `--success`, not `--accent`. This screen's other two buttons are
+          // both destructive and red, and the accent is user-chosen — with the
+          // rose accent picked, "Download export" rendered in the same red as
+          // "Delete your account", which is exactly the wrong signal for the
+          // one safe action here.
+          className="press mt-3 inline-flex items-center gap-2 rounded-[var(--r-full)] bg-[var(--success)] px-4 py-2 text-[var(--text-body-sm)] font-semibold text-[var(--success-fg)] disabled:opacity-50"
         >
           <Download size={15} aria-hidden />
           Download export

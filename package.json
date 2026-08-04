@@ -141,7 +141,14 @@
         "!dist/assets/AboutSettings-*.js",
         "!dist/assets/DataSettings-*.js",
         "!dist/assets/HomePage-*.js",
-        "!dist/assets/vendor-qrcode-*.js"
+        "!dist/assets/MatchListRow-*.js",
+        "!dist/assets/MatchSettingsPage-*.js",
+        "!dist/assets/ProfileSettings-*.js",
+        "!dist/assets/TeamHeader-*.js",
+        "!dist/assets/TeamMatchesPage-*.js",
+        "!dist/assets/TeamStatsPage-*.js",
+        "!dist/assets/vendor-qrcode-*.js",
+        "!dist/assets/qr-code-*.js"
       ],
       "limit": "180 kB"
     }

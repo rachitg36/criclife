@@ -53,7 +53,7 @@ export function HomePage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="relative space-y-3 px-4 pt-6"
+        className="relative space-y-3 px-4 pt-4"
       >
         {isLoading ? (
           <div className="panel p-5">
@@ -156,7 +156,16 @@ function MatchCard({ match, tone }: { match: MatchRow; tone: 'live' | 'upcoming'
   const subtitle = tone === 'finished' ? (match.result_text ?? when) : when;
 
   return (
-    <div className="panel p-4">
+    // A live match gets a lit border. It is the one thing on this screen that
+    // is happening right now, and a card identical to "Next up" three rows
+    // down does not say so.
+    <div
+      className={
+        tone === 'live'
+          ? 'panel border border-[var(--live)] p-4 shadow-[var(--glow-md)]'
+          : 'panel p-4'
+      }
+    >
       <Link to={`/matches/${match.id}`} className="block">
         <div className="mb-2 flex items-center justify-between">
           <span className="label-overline">

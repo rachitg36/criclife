@@ -49,6 +49,12 @@ const NewTeamPage = lazy(() =>
 const TeamSquadPage = lazy(() =>
   import('@/features/teams/TeamSquadPage').then((m) => ({ default: m.TeamSquadPage }))
 );
+const TeamMatchesPage = lazy(() =>
+  import('@/features/teams/TeamMatchesPage').then((m) => ({ default: m.TeamMatchesPage }))
+);
+const TeamStatsPage = lazy(() =>
+  import('@/features/teams/TeamStatsPage').then((m) => ({ default: m.TeamStatsPage }))
+);
 const AddPlayerPage = lazy(() =>
   import('@/features/teams/AddPlayerPage').then((m) => ({ default: m.AddPlayerPage }))
 );
@@ -66,6 +72,9 @@ const ClaimPlayerPage = lazy(() =>
 );
 const MatchesPage = lazy(() =>
   import('@/features/matches/MatchesPage').then((m) => ({ default: m.MatchesPage }))
+);
+const MatchSettingsPage = lazy(() =>
+  import('@/features/matches/MatchSettingsPage').then((m) => ({ default: m.MatchSettingsPage }))
 );
 const NewMatchPage = lazy(() =>
   import('@/features/matches/NewMatchPage').then((m) => ({ default: m.NewMatchPage }))
@@ -123,8 +132,8 @@ export const router = createBrowserRouter([
         children: [
           { path: '/teams/:teamId', element: <TeamSquadPage /> },
           { path: '/teams/:teamId/squad', element: <TeamSquadPage /> },
-          { path: '/teams/:teamId/matches', ...stub('Team matches', 3) },
-          { path: '/teams/:teamId/stats', ...stub('Team stats', 8) },
+          { path: '/teams/:teamId/matches', element: <TeamMatchesPage /> },
+          { path: '/teams/:teamId/stats', element: <TeamStatsPage /> },
           { path: '/players/:playerId', element: <PlayerProfilePage /> },
           { path: '/matches/:matchId', element: <MatchHubPage /> },
         ],
@@ -199,7 +208,7 @@ export const router = createBrowserRouter([
               { path: '/matches/:matchId/setup', element: <MatchSetupPage /> },
               { path: '/matches/:matchId/rights', element: <ScoringRightsMapPage /> },
               { path: '/redeem-grant/:token', element: <RedeemGrantPage /> },
-              { path: '/matches/:matchId/settings', ...stub('Match settings', 4) },
+              { path: '/matches/:matchId/settings', element: <MatchSettingsPage /> },
               { path: '/matches/:matchId/review', element: <ReviewTrayPage /> },
 
               /* Settings (Phase 9, appearance ships in Phase 0) */
@@ -210,7 +219,13 @@ export const router = createBrowserRouter([
                   return { Component: m.SettingsIndex };
                 },
               },
-              { path: '/settings/profile', ...stub('Your profile', 3) },
+              {
+                path: '/settings/profile',
+                lazy: async () => {
+                  const m = await import('@/features/settings/ProfileSettings');
+                  return { Component: m.ProfileSettings };
+                },
+              },
               {
                 path: '/settings/appearance',
                 lazy: async () => {

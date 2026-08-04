@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { cn } from '@/lib/cn';
 import { useScorerStore } from '../store';
+import { ShotPrompt } from './ShotPrompt';
 
 const GRID: (number | '7+')[] = [0, 1, 2, 3, 4, 6, 5, '7+'];
 const MORE_VALUES = [7, 8, 9, 10];
@@ -60,6 +61,12 @@ export function RunPad() {
           </div>
         </div>
       )}
+
+      {/* Sits inside the pad's own box, not over the whole screen: the score,
+          the over strip and UNDO all have to stay readable while this is up —
+          the ball is already committed, and undoing it is a more likely next
+          action than placing the shot. */}
+      <ShotPrompt />
     </div>
   );
 }

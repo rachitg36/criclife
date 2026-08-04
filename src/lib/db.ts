@@ -143,6 +143,34 @@ export async function inningsIdsWithPending(matchId: string): Promise<string[]> 
   return [...firstSeenAt.entries()].sort((a, b) => a[1] - b[1]).map(([id]) => id);
 }
 
+/**
+ * Attach a wagon-wheel coordinate to a ball that has already been committed.
+ *
+ * Advanced Mode (docs/05 § 8) captures the shot *after* the ball is recorded —
+ * the pad must never make a scorer wait, so the score moves on the tap and the
+ * overlay is an afterthought that can be ignored. That leaves two cases:
+ *
+ * - the ball is still in the outbox → patch the payload in place, and the
+ *   coordinates ride along on the same `record_deliveries_batch` call. No
+ *   extra request, and it works with no signal at all, which is the case that
+ *   matters at a village ground.
+ * - the ball has already synced → return false, and let the caller decide.
+ *
+ * `status === 'syncing'` counts as gone: the RPC may already be in flight with
+ * the old payload, and patching it would silently do nothing.
+ */
+export async function attachShotToPending(
+  clientDeliveryId: string,
+  shot: { x: number; y: number }
+): Promise<boolean> {
+  const row = await db.pendingDeliveries.get(clientDeliveryId);
+  if (!row || row.status !== 'queued') return false;
+  await db.pendingDeliveries.update(clientDeliveryId, {
+    payload: { ...row.payload, shot },
+  });
+  return true;
+}
+
 /** Housekeeping: drop synced rows older than 24h. Never touches unsynced work. */
 export async function pruneSynced(olderThanMs = 24 * 60 * 60 * 1000): Promise<number> {
   const cutoff = Date.now() - olderThanMs;
