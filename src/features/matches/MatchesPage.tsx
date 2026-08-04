@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Crest } from '@/components/ui/Crest';
 import { LivePill } from '@/components/ui/LivePill';
-import { formatMatchDay } from '@/lib/format';
+import { formatMatchDateTime } from '@/lib/format';
 import { SkeletonText } from '@/components/ui/Skeleton';
 import type { MatchStatus } from '@/engine/types';
 import { useMatches, type Match } from './hooks';
@@ -112,8 +112,11 @@ function MatchListRow({ match, withYear }: { match: MatchRow; withYear: boolean 
             {match.team_a.short_code} v {match.team_b.short_code}
           </p>
           <p className="truncate text-[var(--text-body-sm)] text-[var(--text-secondary)]">
+            {/* Time as well as the day: several matches a weekend is normal,
+                and "4 Aug" alone cannot tell the morning game from the
+                afternoon one. The year still only appears on Finished. */}
             {match.scheduled_at
-              ? formatMatchDay(new Date(match.scheduled_at), withYear)
+              ? formatMatchDateTime(new Date(match.scheduled_at), withYear)
               : (match.title ?? match.venue ?? 'Match')}
           </p>
         </div>
