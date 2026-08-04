@@ -60,7 +60,7 @@ export function Hero({ view }: { view: AudienceView }) {
           <>
             <div className="flex items-center gap-2">
               <span className="text-[var(--text-heading-md)] font-semibold tracking-[0.04em] text-[var(--accent)]">
-                {battingTeam?.shortCode ?? '—'}
+                {battingTeam?.name ?? '—'}
               </span>
               {view.isLastOver && (
                 <span className="rounded-[var(--r-full)] bg-[var(--accent)] px-2 py-0.5 text-[10px] font-bold tracking-[0.1em] text-[var(--accent-fg)]">
@@ -91,8 +91,8 @@ export function Hero({ view }: { view: AudienceView }) {
 
         {previousInnings && (
           <p className="mt-3 text-[var(--text-body-sm)] tabular-nums text-[var(--text-tertiary)]">
-            {view.teamById.get(previousInnings.battingTeamId)?.shortCode ?? '—'}{' '}
-            {previousInnings.runs}-{previousInnings.wickets} (
+            {view.teamById.get(previousInnings.battingTeamId)?.name ?? '—'} {previousInnings.runs}-
+            {previousInnings.wickets} (
             {oversDisplay(previousInnings.legalBalls, config.ballsPerOver)})
           </p>
         )}

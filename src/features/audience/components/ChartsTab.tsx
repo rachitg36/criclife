@@ -61,7 +61,10 @@ export default function ChartsTab({ view }: { view: AudienceView }) {
 
   if (!charts || !match) return null;
 
-  const teamLabel = (teamId: string) => view.teamById.get(teamId)?.shortCode ?? '—';
+  // Names in the chart legends and titles — there is room, and "Manhattan —
+  // Köln" says more than "Manhattan — TM2". The per-ball feed keeps short
+  // codes, where a row is a few characters wide.
+  const teamLabel = (teamId: string) => view.teamById.get(teamId)?.name ?? '—';
 
   return (
     <div className="flex flex-col gap-3 px-3 py-3">

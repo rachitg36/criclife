@@ -66,7 +66,7 @@ export function WinProbabilityBar({
         aria-valuenow={pct}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`${battingTeam?.shortCode ?? 'Batting side'} ${pct}%`}
+        aria-label={`${battingTeam?.name ?? 'Batting side'} ${pct}%`}
       >
         <div
           className="h-full rounded-[var(--r-full)] bg-[var(--accent)] transition-[width] duration-[var(--dur-slow)] ease-[var(--ease-out)]"
@@ -76,10 +76,10 @@ export function WinProbabilityBar({
 
       <div className="mt-1 flex items-center justify-between text-[11px] tabular-nums">
         <span className="font-semibold text-[var(--accent)]">
-          {battingTeam?.shortCode ?? '—'} {pct}%
+          {battingTeam?.name ?? '—'} {pct}%
         </span>
         <span className="text-[var(--text-tertiary)]">
-          {bowlingTeam?.shortCode ?? '—'} {100 - pct}%
+          {bowlingTeam?.name ?? '—'} {100 - pct}%
         </span>
       </div>
 

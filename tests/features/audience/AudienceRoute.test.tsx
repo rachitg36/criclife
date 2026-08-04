@@ -204,7 +204,13 @@ describe('AudienceRoute — the public live scoreboard', () => {
     renderRoute();
 
     // 4 runs for 0 — projected by replaying one boundary through the engine.
-    await screen.findByText('MUM');
+    // The hero names the batting side in full — "Mumbai", not "MUM". A
+    // spectator arriving on a link should not have to decode a three-letter
+    // code, and the short codes stay where space is tight (the ball feed, the
+    // crests, the TV layout).
+    // findAll: the batting side is named in the hero *and* in the win
+    // probability bar, which is the point — both used to say "MUM".
+    await screen.findAllByText('Mumbai');
     const hero = await screen.findByLabelText('4');
     expect(hero).toBeInTheDocument();
     expect(screen.getByText('0.1 / 20 overs')).toBeInTheDocument();
@@ -225,7 +231,13 @@ describe('AudienceRoute — the public live scoreboard', () => {
   it('queues no moments for balls that were already in the first load', async () => {
     vi.stubGlobal('fetch', mockFetch());
     renderRoute();
-    await screen.findByText('MUM');
+    // The hero names the batting side in full — "Mumbai", not "MUM". A
+    // spectator arriving on a link should not have to decode a three-letter
+    // code, and the short codes stay where space is tight (the ball feed, the
+    // crests, the TV layout).
+    // findAll: the batting side is named in the hero *and* in the win
+    // probability bar, which is the point — both used to say "MUM".
+    await screen.findAllByText('Mumbai');
     // The boundary above is history, not something that just happened — a
     // spectator opening the link ten overs late must not see ten celebrations.
     expect(useAudienceStore.getState().momentQueue).toEqual([]);
@@ -234,17 +246,31 @@ describe('AudienceRoute — the public live scoreboard', () => {
   it('switches to the scorecard tab', async () => {
     vi.stubGlobal('fetch', mockFetch());
     renderRoute();
-    await screen.findByText('MUM');
+    // The hero names the batting side in full — "Mumbai", not "MUM". A
+    // spectator arriving on a link should not have to decode a three-letter
+    // code, and the short codes stay where space is tight (the ball feed, the
+    // crests, the TV layout).
+    // findAll: the batting side is named in the hero *and* in the win
+    // probability bar, which is the point — both used to say "MUM".
+    await screen.findAllByText('Mumbai');
 
     await userEvent.click(screen.getByRole('tab', { name: 'Scorecard' }));
     await waitFor(() => expect(screen.getByText('Extras')).toBeInTheDocument());
-    expect(screen.getByText('Mumbai')).toBeInTheDocument();
+    // Still named after the tab switch — getAll because the hero above the
+    // tabs names the batting side too.
+    expect(screen.getAllByText('Mumbai').length).toBeGreaterThan(0);
   });
 
   it('labels the win-probability bar as an estimate, never as fact', async () => {
     vi.stubGlobal('fetch', mockFetch());
     renderRoute();
-    await screen.findByText('MUM');
+    // The hero names the batting side in full — "Mumbai", not "MUM". A
+    // spectator arriving on a link should not have to decode a three-letter
+    // code, and the short codes stay where space is tight (the ball feed, the
+    // crests, the TV layout).
+    // findAll: the batting side is named in the hero *and* in the win
+    // probability bar, which is the point — both used to say "MUM".
+    await screen.findAllByText('Mumbai');
     expect(screen.getByText('estimate')).toBeInTheDocument();
     // First innings: a par comparison, not a win probability.
     expect(screen.getByText('Par comparison')).toBeInTheDocument();
@@ -261,7 +287,13 @@ describe('AudienceRoute — the public live scoreboard', () => {
   it('tears the Realtime channel down when the route unmounts', async () => {
     vi.stubGlobal('fetch', mockFetch());
     const { unmount } = renderRoute();
-    await screen.findByText('MUM');
+    // The hero names the batting side in full — "Mumbai", not "MUM". A
+    // spectator arriving on a link should not have to decode a three-letter
+    // code, and the short codes stay where space is tight (the ball feed, the
+    // crests, the TV layout).
+    // findAll: the batting side is named in the hero *and* in the win
+    // probability bar, which is the point — both used to say "MUM".
+    await screen.findAllByText('Mumbai');
     await waitFor(() => expect(useAudienceStore.getState().connection).toBe('live'));
     unmount();
     expect(removeChannel).toHaveBeenCalled();
