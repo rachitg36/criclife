@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
+import { Share2 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { env } from '@/lib/env';
 import { useUiStore } from '@/stores/uiStore';
+import { useScorerStore } from '../store';
 
 /** docs/05-SCORER-VIEW.md § 7 — theme, haptics, handedness. Match config's
     "live-editable fields only" isn't built here: docs doesn't say which
@@ -8,6 +12,30 @@ import { useUiStore } from '@/stores/uiStore';
     route — linking to it avoids duplicating that decision. */
 export function SettingsTab() {
   const { matchId } = useParams();
+  const publicSlug = useScorerStore((s) => s.publicSlug);
+  const [shared, setShared] = useState(false);
+
+  // The scorer is the one person who needs to hand out the spectator link, and
+  // the only share button lived on the audience view — a screen they would
+  // have to leave the pad to reach. Native share sheet where there is one, so
+  // it lands in WhatsApp in two taps; clipboard everywhere else.
+  async function shareLink() {
+    if (!publicSlug) return;
+    const url = `${env.VITE_PUBLIC_URL}/live/${publicSlug}`;
+    const title = 'Watch live on CricLife';
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title, url });
+        return;
+      } catch {
+        // Cancelled, or the sheet refused. Fall through to the clipboard
+        // rather than leaving the scorer with nothing.
+      }
+    }
+    await navigator.clipboard?.writeText(url);
+    setShared(true);
+    setTimeout(() => setShared(false), 2000);
+  }
   const scorerHand = useUiStore((s) => s.scorerHand);
   const setScorerHand = useUiStore((s) => s.setScorerHand);
   const hapticsEnabled = useUiStore((s) => s.hapticsEnabled);
@@ -60,6 +88,17 @@ export function SettingsTab() {
           value={advancedScoring}
           onChange={() => setAdvancedScoring(!advancedScoring)}
         />
+
+        {publicSlug && (
+          <button
+            type="button"
+            onClick={() => void shareLink()}
+            className="press mt-2 flex min-h-12 items-center justify-center gap-2 rounded-[var(--r-md)] bg-[var(--accent)] text-[14px] font-semibold text-[var(--accent-fg)]"
+          >
+            <Share2 size={15} aria-hidden />
+            {shared ? 'Link copied' : 'Share the live link'}
+          </button>
+        )}
 
         {matchId && (
           <Link

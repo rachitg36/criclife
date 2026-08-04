@@ -79,6 +79,9 @@ type ScorerState = {
   /** Display names, so the result can say who won. See `resultText`. */
   teamAName: string | null;
   teamBName: string | null;
+  /** The spectator link's slug. The scorer is the person who needs to send
+      it, and had no way to reach it without leaving the pad. */
+  publicSlug: string | null;
   teamBId: string | null;
   config: MatchConfig | null;
   matchState: MatchState | null;
@@ -221,6 +224,7 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
   teamAId: null,
   teamAName: null,
   teamBName: null,
+  publicSlug: null,
   teamBId: null,
   config: null,
   matchState: null,
@@ -390,6 +394,7 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
 
     set({
       teamAId: match.team_a_id,
+      publicSlug: match.public_slug,
       teamAName: teamName(match.team_a),
       teamBName: teamName(match.team_b),
       teamBId: match.team_b_id,
