@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 import { Crest } from '@/components/ui/Crest';
 import { SkeletonText } from '@/components/ui/Skeleton';
@@ -76,7 +77,18 @@ export function MatchHubPage() {
   }
 
   return (
-    <div className="px-4 pt-6 pb-8">
+    <div className="px-4 pt-4 pb-8">
+      {/* This route is public-read, so it renders outside the authed shell and
+          gets no tab bar — there was no way off it but the browser's back
+          button. Reported as "no way to go back to main screen from here". */}
+      <Link
+        to="/matches"
+        className="press -ml-1 mb-4 inline-flex items-center gap-1 text-[var(--text-body-sm)] font-semibold text-[var(--text-secondary)]"
+      >
+        <ChevronLeft size={16} aria-hidden />
+        Matches
+      </Link>
+
       <div className="mb-6 flex items-center justify-center gap-6">
         <TeamBadge team={teamA} />
         <span className="text-[var(--text-tertiary)]">vs</span>
