@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Download, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/features/auth/authContext';
+import { classifyError, userMessage } from '@/lib/errors';
 
 /**
  * `/settings/data` — docs/12 Phase 9's "Data export, account deletion".
@@ -23,8 +24,34 @@ export function DataSettings() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [confirmText, setConfirmText] = useState('');
+  const [purgeText, setPurgeText] = useState('');
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const userId = session?.user.id ?? null;
+
+  useEffect(() => {
+    if (!userId) return;
+    void supabase
+      .from('profiles')
+      .select('is_super_admin')
+      .eq('id', userId)
+      .single()
+      .then(({ data }) => setIsSuperAdmin(data?.is_super_admin === true));
+  }, [userId]);
+
+  async function purgeMatches() {
+    setBusy(true);
+    setMessage(null);
+    const { data, error } = await supabase.rpc('purge_match_data', { p_confirm: 'DELETE' });
+    setBusy(false);
+    setPurgeText('');
+    if (error) return setMessage(userMessage(classifyError(error)));
+    const summary = data as { matches?: number; deliveries?: number } | null;
+    setMessage(
+      `Cleared ${summary?.matches ?? 0} matches and ${summary?.deliveries ?? 0} balls. ` +
+        'Reload to see the change.'
+    );
+  }
 
   async function exportData() {
     if (!userId) return;
@@ -100,6 +127,44 @@ export function DataSettings() {
           Download export
         </button>
       </section>
+
+      {/* Pre-production only. Once real matches exist, deleting them all is
+          not a feature — it is an incident, and `purge_match_data` is meant to
+          be dropped before the first club is invited. Shown only to a super
+          admin, and the server demands the same typed phrase again. */}
+      {isSuperAdmin && (
+        <section className="panel rounded-[var(--r-lg)] border border-[var(--danger)] p-4">
+          <h2 className="text-[var(--text-heading-sm)] font-semibold text-[var(--danger)]">
+            Clear all match data
+          </h2>
+          <p className="mt-1 text-[var(--text-body-sm)] text-[var(--text-secondary)]">
+            Deletes every match, ball, scorecard, stat and ranking — a clean slate for testing.
+            Teams, players and squads are kept, so you can replay fixtures against the same sides.
+            <strong className="text-[var(--danger)]">
+              {' '}
+              This cannot be undone, and it removes other people&apos;s matches too.
+            </strong>{' '}
+            It exists only until the app goes into production.
+          </p>
+          <label className="mt-3 block text-[12px] text-[var(--text-secondary)]">
+            Type <span className="font-mono font-semibold">DELETE</span> to confirm
+            <input
+              value={purgeText}
+              onChange={(e) => setPurgeText(e.target.value)}
+              className="mt-1 w-full rounded-[var(--r-sm)] border border-[var(--border-default)] bg-[var(--surface-1)] px-2 py-1.5 text-[var(--text-body-sm)]"
+            />
+          </label>
+          <button
+            type="button"
+            disabled={busy || purgeText !== 'DELETE'}
+            onClick={() => void purgeMatches()}
+            className="press mt-3 inline-flex items-center gap-2 rounded-[var(--r-full)] bg-[var(--danger)] px-4 py-2 text-[var(--text-body-sm)] font-semibold text-[var(--text-inverse)] disabled:opacity-40"
+          >
+            <Trash2 size={15} aria-hidden />
+            {busy ? 'Clearing…' : 'Clear all match data'}
+          </button>
+        </section>
+      )}
 
       <section className="panel rounded-[var(--r-lg)] border border-[var(--danger)] p-4">
         <h2 className="text-[var(--text-heading-sm)] font-semibold text-[var(--danger)]">

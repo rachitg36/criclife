@@ -75,6 +75,12 @@ from this sandbox: the agent proxy returns 403 for the deployed URL, so
    only reason the deployed site's sign-in has ever failed.
 2. ~~Migration 16 has not run on staging~~ — done 2026-08-04, both projects.
 
+**⚠ Migration 18** (`20260804160000_purge_match_data.sql`) is committed and has
+run nowhere but the local scratch database. It adds the pre-production "clear
+all match data" button. **`purge_match_data` must be dropped before the first
+real club is invited** — deleting every match is a feature only while none of
+them matter, and it disables the append-only trigger to do it.
+
 **All 17 migrations are applied to both projects as of 2026-08-04** — 58
 functions on each. `abandon_match` exists, `start_innings` enforces one live
 match per team, and a Google sign-in carries the person's picture and address
