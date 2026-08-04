@@ -49,7 +49,7 @@ export function AppLayout() {
         className="mx-auto w-full flex-1"
         style={{
           maxWidth: 'var(--content-max)',
-          paddingBottom: 'calc(var(--tabbar-h) + var(--safe-b) + 16px)',
+          paddingBottom: 'calc(var(--tabbar-h) + var(--safe-b) + var(--live-bar-h) + 16px)',
         }}
       >
         <Outlet />

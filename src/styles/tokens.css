@@ -103,6 +103,10 @@
 
   /* ── Layout ─────────────────────────────────────────────── */
   --tabbar-h: 56px;
+  /* Set by LiveMatchBar while it is on screen, so AppLayout can reserve room
+     for it. It floats above the tab bar, and nothing else knew it was there —
+     it covered the bottom of every authed screen while a match was live. */
+  --live-bar-h: 0px;
   --content-max: 1080px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);

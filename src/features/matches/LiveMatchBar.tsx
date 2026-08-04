@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { Radio } from 'lucide-react';
 import { useMyTeams } from '@/features/teams/hooks';
@@ -36,7 +37,19 @@ export function LiveMatchBar() {
   );
 
   const hidden = location.pathname.startsWith('/matches');
-  if (hidden || live.length === 0) return null;
+  const showing = !hidden && live.length > 0;
+
+  // Reserve room for itself. The bar is `fixed`, so it is outside flow and
+  // covered the bottom of whatever was beneath it — AppLayout reads this var
+  // rather than importing anything that would drag supabase into the eager
+  // chunk (CLAUDE.md rule 9, which this component already had to respect).
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--live-bar-h', showing ? '52px' : '0px');
+    return () => root.style.setProperty('--live-bar-h', '0px');
+  }, [showing]);
+
+  if (!showing) return null;
 
   const match = live[0] as unknown as { id: string; title: string | null };
   const more = live.length - 1;

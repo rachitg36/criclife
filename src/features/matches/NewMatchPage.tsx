@@ -78,8 +78,12 @@ export function NewMatchPage() {
     navigate(`/matches/${data.id}/setup`);
   }
 
+  // `min-h-full`, not `min-h-[100dvh]`. AppLayout's <main> already reserves
+  // room for the tab bar below its children; a child forced to a full viewport
+  // height pushes its own bottom row to the viewport edge, which is *behind*
+  // that bar. The Back/Next buttons were half-hidden by it.
   return (
-    <div className="flex min-h-[100dvh] flex-col px-4 pt-4 pb-8">
+    <div className="flex min-h-full flex-col px-4 pt-4 pb-8">
       <div className="mb-4">
         <div className="mb-2 flex gap-1">
           {STEP_LABELS.map((label, i) => (
