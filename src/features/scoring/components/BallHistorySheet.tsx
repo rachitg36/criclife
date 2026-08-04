@@ -87,7 +87,24 @@ export function BallHistorySheet() {
               <span className="tabular-nums text-[var(--text-secondary)]">
                 {delivery.overNo}.{delivery.ballInOver}
               </span>
-              <span className="font-semibold tabular-nums">{ballLabel(delivery)}</span>
+              {/* Same tokens the run pad uses, so a four is the same blue and
+                  a six the same purple wherever a scorer looks. The history
+                  read every ball in one colour, which made scanning back for a
+                  boundary or a wicket a matter of reading each row. */}
+              <span
+                className={cn(
+                  'min-w-8 rounded-[var(--r-sm)] px-1.5 py-0.5 text-center font-semibold tabular-nums',
+                  delivery.isWicket
+                    ? 'bg-[var(--wicket)] text-white'
+                    : delivery.isBoundaryFour
+                      ? 'bg-[var(--run-four)] text-white'
+                      : delivery.isBoundarySix
+                        ? 'bg-[var(--run-six)] text-white'
+                        : 'text-[var(--text-primary)]'
+                )}
+              >
+                {ballLabel(delivery)}
+              </span>
               <span className="text-[11px] text-[var(--text-tertiary)]">
                 {!id ? 'syncing…' : delivery.isWicket ? 'not editable here' : 'edit'}
               </span>
