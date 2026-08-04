@@ -1,8 +1,23 @@
+import { lazy, Suspense } from 'react';
 import { NavLink, Outlet } from 'react-router';
 import { motion } from 'motion/react';
 import { Home, Shield, PlusCircle, TrendingUp, Menu } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { haptic } from '@/lib/haptics';
+
+/**
+ * Lazy, and it has to be. This layout is a static import in the router, so a
+ * plain import here drags `useMatches` → `@/lib/supabase` into the eager
+ * chunk — measured at **225 kB** against the audience route's 180 kB budget
+ * (CLAUDE.md rule 9). `/live` never renders this layout, so behind a lazy
+ * boundary the cost is charged to the authed routes that actually use it.
+ *
+ * No fallback: a bar that is not there yet should show nothing, not a
+ * skeleton bouncing above the tab bar on every navigation.
+ */
+const LiveMatchBar = lazy(() =>
+  import('@/features/matches/LiveMatchBar').then((m) => ({ default: m.LiveMatchBar }))
+);
 
 type Tab = {
   to: string;
@@ -39,6 +54,10 @@ export function AppLayout() {
       >
         <Outlet />
       </main>
+
+      <Suspense fallback={null}>
+        <LiveMatchBar />
+      </Suspense>
 
       <nav
         aria-label="Main"

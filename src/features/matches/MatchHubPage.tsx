@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { Crest } from '@/components/ui/Crest';
 import { SkeletonText } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/features/auth/authContext';
 import { useTeamPermissions } from '@/features/teams/hooks';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
+import { classifyError, userMessage } from '@/lib/errors';
 import { useMatch } from './hooks';
 
 /**
@@ -18,6 +22,9 @@ export function MatchHubPage() {
   const { session } = useAuth();
   const permsA = useTeamPermissions(match?.team_a_id);
   const permsB = useTeamPermissions(match?.team_b_id);
+  const queryClient = useQueryClient();
+  const [abandoning, setAbandoning] = useState(false);
+  const [abandonError, setAbandonError] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -43,6 +50,29 @@ export function MatchHubPage() {
     logo_url: string | null;
     primary_color: string;
   };
+
+  async function abandon() {
+    // `window.prompt` rather than a bespoke sheet: this is a rare, deliberate
+    // action and a modal for it is not worth the bundle on the route that
+    // shares a chunk with the audience budget. Cancel returns null and must
+    // abort, which is different from an empty reason.
+    const reason = window.prompt('Why is this match being abandoned? (e.g. Rain)');
+    if (reason === null) return;
+
+    setAbandoning(true);
+    setAbandonError(null);
+    const { error } = await supabase.rpc('abandon_match', {
+      p_match_id: match!.id,
+      p_reason: reason.trim() || null,
+    });
+    setAbandoning(false);
+    if (error) {
+      setAbandonError(userMessage(classifyError(error)));
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ['match', matchId] });
+    await queryClient.invalidateQueries({ queryKey: ['matches'] });
+  }
 
   return (
     <div className="px-4 pt-6 pb-8">
@@ -114,6 +144,34 @@ export function MatchHubPage() {
           Review tray
         </Button>
       </Link>
+
+      {/* Rain, a lost ball, or a match started by mistake. Not a deletion —
+          `deliveries` is append-only, so everything scored is kept and the
+          match is simply closed with a reason. Only offered while there is
+          something to abandon. */}
+      {isManager && match.status !== 'completed' && match.status !== 'abandoned' && (
+        <div className="mt-8">
+          {abandonError && (
+            <p role="alert" className="mb-2 text-center text-[var(--danger)]">
+              {abandonError}
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={abandoning}
+            className="press w-full py-2 text-center text-[var(--text-body-sm)] text-[var(--danger)] disabled:opacity-60"
+            onClick={() => void abandon()}
+          >
+            {abandoning ? 'Abandoning…' : 'Abandon match'}
+          </button>
+        </div>
+      )}
+
+      {match.status === 'abandoned' && (
+        <p className="mt-8 text-center text-[var(--text-body-sm)] text-[var(--text-secondary)]">
+          Match abandoned{match.result_text ? ` — ${match.result_text}` : ''}.
+        </p>
+      )}
     </div>
   );
 }

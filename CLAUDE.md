@@ -130,6 +130,10 @@ left — the first one now blocks real use:
   sign in. HANDOFF.md § 2 has the full account.
 - ~~Bring `criclife-staging` up to 15 migrations~~ — **done 2026-08-04**, both
   projects verified at 56 functions.
+- **Run migration 16** (`20260804120000_oauth_profile_and_abandon.sql`) on both
+  projects. It carries a Google picture and address onto the profile, and adds
+  `abandon_match`. Until it runs, the Abandon button reports that the function
+  does not exist. Function count goes 56 → 58.
 - **Set the URL Configuration on whichever project the deployed site points
   at.** Site URL and Redirect URLs are both still the `http://localhost:3000`
   default on prod, which is why signing in to the live site lands on a dead

@@ -1180,6 +1180,12 @@ export type Database = {
         Args: { p_match_id: string };
         Returns: Json;
       };
+      /* Hand-added, like refinalize_match above: `supabase gen types` needs
+         Docker and this sandbox has none. Regenerate when that changes. */
+      abandon_match: {
+        Args: { p_match_id: string; p_reason?: string | null };
+        Returns: Database['public']['Tables']['matches']['Row'];
+      };
       complete_match: {
         Args: {
           p_match_id: string | null;
