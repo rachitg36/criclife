@@ -92,6 +92,24 @@ export async function erroredCount(matchId: string): Promise<number> {
   return db.pendingDeliveries.where('[matchId+status]').equals([matchId, 'error']).count();
 }
 
+/**
+ * The most recent `lastError` still sitting in this match's outbox.
+ *
+ * `syncErrorMessage` in the store is in memory, so a reload — or an installed
+ * PWA being backgrounded long enough to be killed — loses the one sentence
+ * explaining why balls stopped going up. The queue has held it durably all
+ * along; nothing read it. For a scorer at a ground trying to tell someone what
+ * is wrong, surviving a reload is most of the value.
+ */
+export async function lastQueueError(matchId: string): Promise<string | null> {
+  const rows = await db.pendingDeliveries.where('matchId').equals(matchId).toArray();
+  const withError = rows.filter((r) => r.lastError);
+  if (withError.length === 0) return null;
+  // Newest first: an old failure that has since been superseded is noise.
+  withError.sort((a, b) => b.createdAt - a.createdAt);
+  return withError[0]!.lastError ?? null;
+}
+
 /** Balls the server refused (e.g. scoring rights revoked while offline). */
 export async function rejectedDeliveries(matchId: string): Promise<PendingDelivery[]> {
   return db.pendingDeliveries.where('[matchId+status]').equals([matchId, 'rejected']).toArray();

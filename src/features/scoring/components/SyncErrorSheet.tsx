@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import { lastQueueError } from '@/lib/db';
 import { useScorerStore } from '../store';
 
 /**
@@ -26,8 +28,26 @@ import { useScorerStore } from '../store';
  * one. Dismiss only hides the sheet; the queue is untouched.
  */
 export function SyncErrorSheet({ onClose }: { onClose: () => void }) {
-  const message = useScorerStore((s) => s.syncErrorMessage);
+  const liveMessage = useScorerStore((s) => s.syncErrorMessage);
+  const matchId = useScorerStore((s) => s.matchId);
   const pendingCount = useScorerStore((s) => s.pendingCount);
+  const [storedMessage, setStoredMessage] = useState<string | null>(null);
+
+  // The in-memory message does not survive a reload, and a scorer whose app
+  // was killed in their pocket is exactly the person who needs to read it.
+  // The outbox has kept `lastError` durably all along.
+  useEffect(() => {
+    if (!matchId) return;
+    let alive = true;
+    void lastQueueError(matchId).then((m) => {
+      if (alive) setStoredMessage(m);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [matchId]);
+
+  const message = liveMessage ?? storedMessage;
   const retrySync = useScorerStore((s) => s.retrySync);
   const dismissSyncError = useScorerStore((s) => s.dismissSyncError);
 

@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { haptic } from '@/lib/haptics';
 import {
   attachShotToPending,
+  erroredCount as dexieErroredCount,
   pendingCount as dexiePendingCount,
   type PendingDelivery,
 } from '@/lib/db';
@@ -898,7 +899,13 @@ async function refreshPendingCount(
   const matchId = get().matchId;
   if (!matchId) return;
   const n = await dexiePendingCount(matchId);
-  set({ pendingCount: n });
+  // `hasSyncError` was in-memory only, so a reload dropped it: the pill went
+  // back to "N pending" while the outbox still held balls that had failed and
+  // would keep failing. The queue is the durable record of that, and after a
+  // reload it is the only one. Never clears the flag here — a live 'synced'
+  // event does that, and this runs often enough to race it.
+  const errored = await dexieErroredCount(matchId);
+  set({ pendingCount: n, ...(errored > 0 ? { hasSyncError: true } : {}) });
 }
 
 function handleSyncEvent(
