@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Download, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/authContext';
 import { classifyError, userMessage } from '@/lib/errors';
 
@@ -21,6 +22,7 @@ import { classifyError, userMessage } from '@/lib/errors';
  */
 export function DataSettings() {
   const { session } = useAuth();
+  const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [confirmText, setConfirmText] = useState('');
@@ -49,11 +51,16 @@ export function DataSettings() {
     // value of a failure here is the server's exact words, and "something went
     // wrong" has already cost one round trip.
     if (error) return setMessage(`Purge failed: ${error.message}`);
+
+    // Everything cached is stale — this deleted matches, innings, stats and
+    // rankings at once, so there is no useful subset to invalidate. Anything
+    // narrower left the match list showing rows that no longer exist until a
+    // manual reload, which reads as a purge that half-worked.
+    queryClient.clear();
+    await queryClient.invalidateQueries();
+
     const summary = data as { matches?: number; deliveries?: number } | null;
-    setMessage(
-      `Cleared ${summary?.matches ?? 0} matches and ${summary?.deliveries ?? 0} balls. ` +
-        'Reload to see the change.'
-    );
+    setMessage(`Cleared ${summary?.matches ?? 0} matches and ${summary?.deliveries ?? 0} balls.`);
   }
 
   async function exportData() {
