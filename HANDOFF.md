@@ -73,16 +73,12 @@ from this sandbox: the agent proxy returns 403 for the deployed URL, so
    `https://criclife.geminirachit.workers.dev/**`, or sign-in lands on
    whatever Site URL says — see the URL Configuration table below. This is the
    only reason the deployed site's sign-in has ever failed.
-2. Migration 16 has not run on staging, so **Abandon match** will report that
-   the function does not exist, and Google sign-ins will not bring a picture.
-   Everything else on the deployed build works without it.
+2. ~~Migration 16 has not run on staging~~ — done 2026-08-04, both projects.
 
-**⚠ Two migrations are waiting.** `20260804120000_oauth_profile_and_abandon.sql`
-and `20260804140000_one_live_match_per_team.sql` are committed but have run
-nowhere but the local scratch database. Paste both, in order, into **both**
-Supabase projects' SQL Editor. Until the first runs, `abandon_match` does not
-exist and the button reports so; until the second, a team can be in any number
-of live matches at once. Function count goes 56 → 58.
+**All 17 migrations are applied to both projects as of 2026-08-04** — 58
+functions on each. `abandon_match` exists, `start_innings` enforces one live
+match per team, and a Google sign-in carries the person's picture and address
+onto their profile.
 
 **Known, not yet done:**
 

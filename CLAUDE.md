@@ -6,12 +6,13 @@ stats and rankings. React 19 + Vite + Supabase. Runs entirely on free tiers.
 **Current state: Phases 0–8 complete, Phase 9 partly done** — engine, data layer, teams/players,
 match setup, the scorer pad, offline sync, the public audience view, and stats
 and rankings. Phase 9 (admin, polish, launch) is roughly half done — every
-roadmap bullet is marked `[x]`, `[~]` or `[ ]`. Both Supabase projects now carry
-all 15 migrations, someone has signed in, and the scorer pad runs against real
-data — but **the deployed Worker is still the Phase 7 build pointing at prod**,
-whose URL Configuration was never set, so the live site's sign-in is broken.
-Read `HANDOFF.md` for the full picture — including how to bring a fresh
-container back up (not just `npm install`).
+roadmap bullet is marked `[x]`, `[~]` or `[ ]`. **A full match has been scored
+on a phone against real hosted Postgres** (2026-08-04): both Supabase projects
+carry all 17 migrations, the deployed build points at staging, and the engine,
+the scoring RPCs, the offline queue and the sync worker have all run for real.
+Realtime is the one path still never exercised. Read `HANDOFF.md` for the full
+picture — including how to bring a fresh container back up (not just
+`npm install`).
 
 ## Commands
 
@@ -65,12 +66,13 @@ output and it is tempting to skip. Don't. A wrong engine poisons every screen.
 
 Current: Phases 0–8 done → next: finish Phase 9.
 
-**2026-08-04:** the app now works end to end against a real Supabase project
-as far as the scorer pad — but **no ball has been scored yet**, and that is
-the next action. HANDOFF.md § 2 opens with the exact steps. Nine faults were
-found and fixed the day the app first met real data, and every one of them was
-a lower layer knowing something the screen did not say; HANDOFF § 6.4's last
-nine rows are worth reading together before adding anything new.
+**2026-08-04:** a full match was scored end to end on a phone. Getting there
+took about fifteen fixes in two days, and every single one was the same shape:
+a lower layer knew exactly what was wrong and the screen showed nothing, or a
+guess. HANDOFF § 6.4's last dozen rows read as one story and are worth reading
+together before adding anything new. The remaining known gaps are Realtime
+(never carried a message), Home (still the Phase 0 placeholder), and uploading
+your own profile picture (needs a Storage bucket).
 
 ## Layout
 
@@ -130,10 +132,8 @@ left — the first one now blocks real use:
   sign in. HANDOFF.md § 2 has the full account.
 - ~~Bring `criclife-staging` up to 15 migrations~~ — **done 2026-08-04**, both
   projects verified at 56 functions.
-- **Run migration 16** (`20260804120000_oauth_profile_and_abandon.sql`) on both
-  projects. It carries a Google picture and address onto the profile, and adds
-  `abandon_match`. Until it runs, the Abandon button reports that the function
-  does not exist. Function count goes 56 → 58.
+- ~~Run migrations 16 and 17~~ — **done 2026-08-04**, both projects at 58
+  functions. Abandon works, and a team can only be in one live match at a time.
 - **Set the URL Configuration on whichever project the deployed site points
   at.** Site URL and Redirect URLs are both still the `http://localhost:3000`
   default on prod, which is why signing in to the live site lands on a dead
