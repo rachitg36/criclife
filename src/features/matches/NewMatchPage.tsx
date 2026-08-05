@@ -9,6 +9,7 @@ import type { MatchConfig } from '@/engine/types';
 import { useAllTeams, useMyTeams, type Team } from '@/features/teams/hooks';
 import type { Json } from '@/types/database';
 import { defaultMatchTitle, toDateTimeLocal } from './newMatchDefaults';
+import { useMatches } from '@/features/matches/hooks';
 
 type ProfileKey = keyof typeof RULES_PROFILES | 'custom';
 
@@ -203,8 +204,21 @@ function TeamsStep({
 }) {
   const [search, setSearch] = useState('');
   const { data: allTeams } = useAllTeams(search);
+  const { data: matches } = useMatches();
   
-  const filteredMyTeams = myTeams.filter(t => t.id !== teamA?.id && t.id !== teamB?.id);
+  const liveMatchTeams = new Set<string>();
+  if (matches) {
+    for (const m of matches) {
+      if (m.status === 'live' || m.status === 'innings_break' || m.status === 'super_over') {
+        liveMatchTeams.add((m as any).team_a_id);
+        liveMatchTeams.add((m as any).team_b_id);
+      }
+    }
+  }
+  
+  const isAvailable = (t: Team) => !liveMatchTeams.has(t.id) && t.id !== teamA?.id && t.id !== teamB?.id;
+
+  const filteredMyTeams = myTeams.filter(isAvailable);
   const rawOptions = search.trim()
     ? (allTeams ?? [])
     : [
@@ -212,7 +226,7 @@ function TeamsStep({
         ...(allTeams ?? []).filter((at) => !filteredMyTeams.some((mt) => mt.id === at.id)),
       ];
       
-  const options = rawOptions.filter(t => t.id !== teamA?.id && t.id !== teamB?.id);
+  const options = rawOptions.filter(isAvailable);
 
   const handleSelect = (team: Team) => {
     if (!teamA) {

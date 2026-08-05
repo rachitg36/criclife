@@ -1,6 +1,14 @@
 import { formatBowlingFigures, economyRate } from '@/lib/format';
 import { useScorerStore } from '../store';
 
+const BallIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-[#e23b3b] shrink-0">
+    <circle cx="12" cy="12" r="10" />
+    <path d="M8 3 Q11 12 8 21" stroke="#fff" strokeWidth="1" fill="none" />
+    <path d="M16 3 Q13 12 16 21" stroke="#fff" strokeWidth="1" fill="none" />
+  </svg>
+);
+
 /** docs/05-SCORER-VIEW.md § 1 — 36px bowler row: O-M-R-W and economy. */
 export function BowlerRow() {
   const matchState = useScorerStore((s) => s.matchState);
@@ -30,10 +38,12 @@ export function BowlerRow() {
 
   return (
     <div className="flex h-9 shrink-0 items-center justify-between border-b border-[var(--border-subtle)] px-3 text-[13px] tabular-nums">
-      <span className="truncate font-medium">
-        {name}{' '}
-        <span className="text-[var(--text-secondary)]">
-          {formatBowlingFigures(
+      <div className="flex items-center gap-1.5 min-w-0 mr-3">
+        <BallIcon />
+        <span className="truncate font-medium">
+          {name}{' '}
+          <span className="text-[var(--text-secondary)]">
+            {formatBowlingFigures(
             bowler.legalBalls,
             bowler.maidens,
             bowler.runsConceded,
@@ -42,6 +52,7 @@ export function BowlerRow() {
           )}
         </span>
       </span>
+      </div>
       <span className="shrink-0 text-[var(--text-secondary)]">
         ECON {econ === null ? '–' : econ.toFixed(2)}
       </span>

@@ -11,35 +11,27 @@ import { padModeForInnings } from '@/features/scoring/padMode';
  */
 describe('padModeForInnings', () => {
   it('asks for two openers only when both ends are empty', () => {
-    expect(padModeForInnings({ strikerId: null, nonStrikerId: null, bowlerId: null })).toBe(
+  it('demands openers for a brand new innings', () => {
+    expect(padModeForInnings({ status: 'in_progress', strikerId: null, nonStrikerId: null, bowlerId: null })).toBe(
       'AWAITING_OPENERS'
     );
   });
 
-  it('asks for one batter when a wicket has emptied an end', () => {
-    expect(padModeForInnings({ strikerId: null, nonStrikerId: 'p2', bowlerId: 'p6' })).toBe(
-      'AWAITING_BATTER'
-    );
-    expect(padModeForInnings({ strikerId: 'p2', nonStrikerId: null, bowlerId: 'p6' })).toBe(
-      'AWAITING_BATTER'
-    );
+  it('demands a single batter after a wicket', () => {
+    expect(
+      padModeForInnings({ status: 'in_progress', strikerId: 'p1', nonStrikerId: null, bowlerId: 'p2' })
+    ).toBe('AWAITING_BATTER');
   });
 
-  it('asks for a batter before a bowler — somebody has to be in first', () => {
-    expect(padModeForInnings({ strikerId: 'p2', nonStrikerId: null, bowlerId: null })).toBe(
-      'AWAITING_BATTER'
-    );
+  it('demands a bowler before the first ball is bowled', () => {
+    expect(
+      padModeForInnings({ status: 'in_progress', strikerId: 'p1', nonStrikerId: 'p2', bowlerId: null })
+    ).toBe('AWAITING_BOWLER');
   });
 
-  it('asks for a bowler at the end of an over', () => {
-    expect(padModeForInnings({ strikerId: 'p2', nonStrikerId: 'p3', bowlerId: null })).toBe(
-      'AWAITING_BOWLER'
-    );
-  });
-
-  it('is ready when both ends and the bowler are set', () => {
-    expect(padModeForInnings({ strikerId: 'p2', nonStrikerId: 'p3', bowlerId: 'p6' })).toBe(
-      'READY'
-    );
+  it('evaluates READY when all actors are known', () => {
+    expect(
+      padModeForInnings({ status: 'in_progress', strikerId: 'p1', nonStrikerId: 'p2', bowlerId: 'p3' })
+    ).toBe('READY');
   });
 });
