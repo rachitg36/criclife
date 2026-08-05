@@ -13,10 +13,12 @@ import type { PadMode } from './store';
  * Both ends empty is the start of an innings. One end empty is a wicket.
  */
 export function padModeForInnings(innings: {
+  status: string;
   strikerId: string | null;
   nonStrikerId: string | null;
   bowlerId: string | null;
 }): PadMode {
+  if (innings.status === 'completed') return 'INNINGS_BREAK';
   if (innings.strikerId === null && innings.nonStrikerId === null) return 'AWAITING_OPENERS';
   if (innings.strikerId === null || innings.nonStrikerId === null) return 'AWAITING_BATTER';
   if (innings.bowlerId === null) return 'AWAITING_BOWLER';
