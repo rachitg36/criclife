@@ -203,11 +203,15 @@ function TeamsStep({
 }) {
   const [search, setSearch] = useState('');
   const { data: allTeams } = useAllTeams(search);
-  const options = search.trim()
+  
+  const filteredMyTeams = myTeams.filter(t => t.id !== teamA?.id && t.id !== teamB?.id);
+  const rawOptions = search.trim()
     ? (allTeams ?? [])
-    : myTeams.length > 0
-      ? myTeams
+    : filteredMyTeams.length > 0
+      ? filteredMyTeams
       : (allTeams ?? []);
+      
+  const options = rawOptions.filter(t => t.id !== teamA?.id && t.id !== teamB?.id);
 
   const handleSelect = (team: Team) => {
     if (!teamA) {
