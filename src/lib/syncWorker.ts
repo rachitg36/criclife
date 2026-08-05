@@ -46,7 +46,7 @@ export function subscribeSyncEvents(matchId: string, handler: Listener): () => v
   return () => listeners.get(matchId)?.delete(handler);
 }
 
-const draining = new Set<string>();
+const draining = new Map<string, Promise<void>>();
 const backoffMs = new Map<string, number>();
 const retryTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const periodicTimers = new Map<string, ReturnType<typeof setInterval>>();
@@ -103,19 +103,19 @@ export function attachSyncWorker(matchId: string): () => void {
 }
 
 export function kickSync(matchId: string): void {
-  // A drain is fire-and-forget by design (docs/05 § 6.1 — never awaited by
-  // the caller), so any failure here — including one this module didn't
-  // anticipate — must not become an unhandled rejection. Leaving the
-  // affected rows queued and retrying on the next tick/online event is
-  // always safe; losing track of the failure mode entirely is not.
-  drainMatch(matchId).catch((err: unknown) => {
-    draining.delete(matchId);
-    emit(matchId, {
-      type: 'error',
-      clientDeliveryId: null,
-      message: err instanceof Error ? err.message : 'Sync failed unexpectedly',
+  if (draining.has(matchId)) return;
+  const p = drainMatch(matchId)
+    .catch((err: unknown) => {
+      emit(matchId, {
+        type: 'error',
+        clientDeliveryId: null,
+        message: err instanceof Error ? err.message : 'Sync failed unexpectedly',
+      });
+    })
+    .finally(() => {
+      draining.delete(matchId);
     });
-  });
+  draining.set(matchId, p);
 }
 
 /** Writes the ball durably, then kicks a drain attempt. Never awaited by
@@ -149,10 +149,8 @@ function parseCode(message: string): string {
 }
 
 async function drainMatch(matchId: string): Promise<void> {
-  if (draining.has(matchId)) return;
   if (typeof navigator !== 'undefined' && !navigator.onLine) return;
 
-  draining.add(matchId);
   emit(matchId, { type: 'drainStart' });
   try {
     const inningsIds = await inningsIdsWithPending(matchId);
@@ -161,7 +159,6 @@ async function drainMatch(matchId: string): Promise<void> {
     }
     backoffMs.delete(matchId); // a fully clean pass resets backoff
   } finally {
-    draining.delete(matchId);
     emit(matchId, { type: 'drainEnd' });
   }
 }
@@ -364,10 +361,14 @@ export async function flushInnings(matchId: string, inningsId: string): Promise<
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
     return (await unresolvedForInnings(matchId, inningsId)).length === 0;
   }
-  // One pass is enough in the ordinary case (a single ball, well under the
-  // batch cap). A pass that leaves something behind means a real error, and
-  // hammering it here would just delay telling the scorer.
-  await drainInnings(matchId, inningsId);
+  while (draining.has(matchId)) {
+    await draining.get(matchId);
+  }
+  
+  if ((await unresolvedForInnings(matchId, inningsId)).length > 0) {
+    kickSync(matchId);
+    await draining.get(matchId);
+  }
   return (await unresolvedForInnings(matchId, inningsId)).length === 0;
 }
 
