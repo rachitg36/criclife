@@ -83,59 +83,20 @@ export function LoginPage() {
             </p>
           </div>
 
-          {status === 'sent' ? (
-            <div className="rounded-[var(--r-md)] border border-[var(--border-subtle)] bg-[var(--surface-2)] p-4 text-center">
-              <Mail size={24} className="mx-auto mb-2 text-[var(--accent)]" aria-hidden />
-              <p className="text-[var(--text-body-sm)]">
-                Check <strong className="text-[var(--text-primary)]">{email}</strong> for a sign-in
-                link.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleMagicLink} className="space-y-3">
-              <label htmlFor="login-email" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="login-email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-12 w-full rounded-[var(--r-md)] border border-[var(--border-default)] bg-[var(--surface-2)] px-4 text-[15px] text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
-              />
-              <Button
-                type="submit"
-                variant="primary"
-                size="lg"
-                fullWidth
-                disabled={status === 'sending' || !email}
-              >
-                {status === 'sending' ? 'Sending…' : 'Send magic link'}
-              </Button>
-            </form>
-          )}
-
           {errorMessage && (
-            <p role="alert" className="mt-3 text-[var(--text-body-sm)] text-[var(--wicket)]">
+            <p role="alert" className="mb-4 mt-3 text-[var(--text-body-sm)] text-[var(--wicket)]">
               {errorMessage}
             </p>
           )}
 
-          {googleEnabled && (
-            <>
-              <div className="my-4 flex items-center gap-3">
-                <div className="h-px flex-1 bg-[var(--border-subtle)]" />
-                <span className="text-[var(--text-body-sm)] text-[var(--text-tertiary)]">or</span>
-                <div className="h-px flex-1 bg-[var(--border-subtle)]" />
-              </div>
-
-              <Button variant="secondary" size="lg" fullWidth onClick={handleGoogle}>
-                Continue with Google
-              </Button>
-            </>
+          {googleEnabled ? (
+            <Button variant="primary" size="lg" fullWidth onClick={handleGoogle}>
+              Continue with Google
+            </Button>
+          ) : (
+            <p className="text-center text-[var(--text-body-sm)] text-[var(--text-secondary)]">
+              Sign-in is currently misconfigured on this environment.
+            </p>
           )}
         </motion.div>
       </div>
