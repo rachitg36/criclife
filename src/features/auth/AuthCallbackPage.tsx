@@ -71,7 +71,40 @@ export function AuthCallbackPage() {
     };
   }, []);
 
-  if (!loading && session) return <Navigate to="/onboarding" replace />;
+  const [targetPath, setTargetPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    let alive = true;
+
+    async function checkProfile() {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', session!.user.id)
+          .maybeSingle();
+
+        if (!alive) return;
+        if (data?.display_name && data.display_name.trim().length > 0) {
+          setTargetPath('/');
+        } else {
+          setTargetPath('/onboarding');
+        }
+      } catch {
+        if (!alive) return;
+        setTargetPath('/onboarding');
+      }
+    }
+
+    void checkProfile();
+
+    return () => {
+      alive = false;
+    };
+  }, [session]);
+
+  if (!loading && session && targetPath) return <Navigate to={targetPath} replace />;
 
   // Either error needs no waiting — the answer is already in hand.
   const known = initial.error ?? exchangeError;
