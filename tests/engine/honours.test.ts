@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildHonours, winningSidePlayers } from '@/engine/honours';
+import { buildHonours, playerOfTheMatch, winningSidePlayers } from '@/engine/honours';
 import type { InningsState } from '@/engine/types';
 
 /**
@@ -29,9 +29,12 @@ function innings(over: Partial<InningsState>): InningsState {
 }
 
 const bat = (runs: number, position: number, out = true) =>
-  ({ runs, position, status: out ? 'out' : 'not_out' }) as unknown as never;
+  ({ runs, position, balls: runs, status: out ? 'out' : 'not_out' }) as unknown as never;
 const bowl = (wickets: number, runsConceded: number) =>
-  ({ wickets, runsConceded }) as unknown as never;
+  ({ wickets, runsConceded, legalBalls: 24 }) as unknown as never;
+/** A batter with a stated balls-faced, for the tempo comparisons. */
+const fast = (runs: number, balls: number) =>
+  ({ runs, balls, position: 1, status: 'not_out' }) as unknown as never;
 
 describe('buildHonours', () => {
   it('finds the top score and marks it not out', () => {
@@ -102,5 +105,80 @@ describe('winningSidePlayers', () => {
       'A'
     );
     expect(list.filter((id) => id === 'a1')).toHaveLength(1);
+  });
+});
+
+/**
+ * Player of the match.
+ *
+ * **There is no ICC rule.** Checked on 2026-08-05: neither the Laws nor the
+ * playing conditions define the award — internationally it is decided
+ * subjectively by a panel after the game, with no points system and no
+ * requirement that the winner be on the winning side. So these tests pin
+ * *CricLife's* arithmetic, and the screens that show it say as much.
+ */
+describe('playerOfTheMatch', () => {
+  it('prefers a match-winning innings over a modest one', () => {
+    const pom = playerOfTheMatch(
+      [
+        innings({
+          runs: 100,
+          legalBalls: 120,
+          batters: { p1: bat(80, 1, false), p2: bat(10, 2) } as never,
+        }),
+      ],
+      'A'
+    );
+    expect(pom?.playerId).toBe('p1');
+    expect(pom?.summary).toContain('80*');
+  });
+
+  it('rates the same runs higher when they came faster', () => {
+    const quick = playerOfTheMatch(
+      [innings({ runs: 60, legalBalls: 120, batters: { p1: fast(30, 15) } as never })],
+      'A'
+    );
+    const slow = playerOfTheMatch(
+      [innings({ runs: 60, legalBalls: 120, batters: { p1: fast(30, 50) } as never })],
+      'A'
+    );
+    expect(quick!.points).toBeGreaterThan(slow!.points);
+  });
+
+  it('can pick a bowler over a batter — wickets carry real weight', () => {
+    const pom = playerOfTheMatch(
+      [
+        innings({
+          runs: 90,
+          legalBalls: 120,
+          batters: { p1: bat(28, 1) } as never,
+          bowlers: { b1: bowl(4, 12) } as never,
+        }),
+      ],
+      'A'
+    );
+    expect(pom?.playerId).toBe('b1');
+    expect(pom?.summary).toContain('4-12');
+  });
+
+  it('ignores super overs, like every other honour here', () => {
+    const pom = playerOfTheMatch(
+      [
+        innings({ runs: 60, legalBalls: 120, batters: { p1: bat(50, 1) } as never }),
+        innings({
+          inningsNo: 3,
+          isSuperOver: true,
+          runs: 25,
+          legalBalls: 6,
+          batters: { p9: bat(25, 1) } as never,
+        }),
+      ],
+      'A'
+    );
+    expect(pom?.playerId).toBe('p1');
+  });
+
+  it('returns nothing when no ball has been bowled', () => {
+    expect(playerOfTheMatch([innings({ legalBalls: 0 })], null)).toBeNull();
   });
 });

@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router';
-import { buildHonours, winningSidePlayers } from '@/engine';
+import { buildHonours, playerOfTheMatch, winningSidePlayers } from '@/engine';
 import { WinCelebration, type Celebrant } from '@/components/ui/WinCelebration';
 import { shortName } from '@/lib/format';
 import { useScorerStore } from '../store';
@@ -20,6 +20,8 @@ export function MatchOverScreen() {
   const teamAId = useScorerStore((s) => s.teamAId);
   const teamAName = useScorerStore((s) => s.teamAName);
   const teamBName = useScorerStore((s) => s.teamBName);
+  const teamAColor = useScorerStore((s) => s.teamAColor);
+  const teamBColor = useScorerStore((s) => s.teamBColor);
   const squadA = useScorerStore((s) => s.squadA);
   const squadB = useScorerStore((s) => s.squadB);
   const { matchId } = useParams();
@@ -35,10 +37,10 @@ export function MatchOverScreen() {
     const p = squad.find((x) => x.id === id);
     return p ? shortName(p.full_name) : 'Player';
   };
-  // The colour is the winners' own. `teams.primary_color` is not on this
-  // store — only names are — so fall back to the accent rather than fetching
-  // a team row just to tint one screen.
-  const teamColor = 'var(--accent)';
+  // The winners' own colour, the same one the audience view celebrates in.
+  // The match query already selected the whole team row; the store simply
+  // never kept it.
+  const teamColor = (winnerId === teamAId ? teamAColor : teamBColor) ?? 'var(--accent)';
 
   const honours = matchState
     ? buildHonours(matchState.innings)
@@ -72,6 +74,8 @@ export function MatchOverScreen() {
     );
   }
 
+  const pom = matchState ? playerOfTheMatch(matchState.innings, winnerId) : null;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <WinCelebration
@@ -80,6 +84,9 @@ export function MatchOverScreen() {
         teamColor={teamColor}
         headline={text}
         players={players}
+        {...(pom
+          ? { playerOfTheMatch: { name: playerName(pom.playerId), summary: pom.summary } }
+          : {})}
       />
       <div className="shrink-0 px-5 pb-4">
         <PublishButton onClick={() => navigate(`/matches/${matchId}`)} />

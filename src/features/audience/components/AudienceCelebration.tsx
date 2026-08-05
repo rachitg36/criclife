@@ -1,4 +1,4 @@
-import { buildHonours, winningSidePlayers } from '@/engine';
+import { buildHonours, playerOfTheMatch, winningSidePlayers } from '@/engine';
 import { WinCelebration, type Celebrant } from '@/components/ui/WinCelebration';
 import type { AudienceView } from '../useAudienceView';
 
@@ -33,6 +33,8 @@ export function AudienceCelebration({ view }: { view: AudienceView }) {
     note: noteFor(id),
   }));
 
+  const pom = playerOfTheMatch(state.innings, winnerId);
+
   return (
     <div className="mx-3 my-3 overflow-hidden rounded-[var(--r-lg)] border border-[var(--border-subtle)]">
       <WinCelebration
@@ -40,6 +42,9 @@ export function AudienceCelebration({ view }: { view: AudienceView }) {
         teamColor={team?.primaryColor ?? 'var(--accent)'}
         headline={view.resultLine}
         players={players}
+        {...(pom
+          ? { playerOfTheMatch: { name: view.nameOf(pom.playerId), summary: pom.summary } }
+          : {})}
       />
     </div>
   );

@@ -37,6 +37,7 @@ export function WinCelebration({
   headline,
   subline,
   players,
+  playerOfTheMatch,
   compact = false,
 }: {
   teamName: string;
@@ -45,6 +46,10 @@ export function WinCelebration({
   headline: string;
   subline?: string | undefined;
   players: Celebrant[];
+  /** CricLife's own pick, labelled as such. There is no ICC rule for this —
+      internationally it is a panel's subjective call after the game — so the
+      screen must not imply otherwise. */
+  playerOfTheMatch?: { name: string; summary: string } | undefined;
   /** The scorer's shell cannot scroll (rule 2), so it gets the shorter one. */
   compact?: boolean;
 }) {
@@ -86,6 +91,30 @@ export function WinCelebration({
           <p className="mt-1 max-w-sm text-[13px] text-[var(--text-secondary)]">{subline}</p>
         )}
       </motion.div>
+
+      {playerOfTheMatch && (
+        <motion.div
+          initial={calm ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: calm ? 0 : 0.2, duration: 0.35 }}
+          className="relative mt-3 rounded-[var(--r-md)] border px-3 py-2"
+          style={{
+            borderColor: `color-mix(in oklch, ${teamColor} 45%, transparent)`,
+            background: `color-mix(in oklch, ${teamColor} 14%, transparent)`,
+          }}
+        >
+          <p className="label-overline text-[var(--text-tertiary)]">Player of the match</p>
+          <p className="mt-0.5 text-[17px] font-bold text-[var(--text-primary)]">
+            {playerOfTheMatch.name}
+          </p>
+          <p className="text-[12px] text-[var(--text-secondary)] tabular-nums">
+            {playerOfTheMatch.summary}
+          </p>
+          {/* Said out loud, because it is not an official award and pretending
+              otherwise would make every disagreement look like a bug. */}
+          <p className="mt-1 text-[10px] text-[var(--text-tertiary)]">CricLife’s pick</p>
+        </motion.div>
+      )}
 
       {players.length > 0 && (
         <motion.div

@@ -88,6 +88,12 @@ type ScorerState = {
   /** Display names, so the result can say who won. See `resultText`. */
   teamAName: string | null;
   teamBName: string | null;
+  /** `teams.primary_color`, for the win celebration. The match query already
+      selects the whole team row; only the names were ever kept, so the pad
+      celebrated in the app accent while the audience view used the winners'
+      own colour. Same moment, two different screens — worth the two fields. */
+  teamAColor: string | null;
+  teamBColor: string | null;
   /** The spectator link's slug. The scorer is the person who needs to send
       it, and had no way to reach it without leaving the pad. */
   publicSlug: string | null;
@@ -243,6 +249,14 @@ function teamName(row: unknown): string | null {
   return t?.short_code ?? t?.name ?? null;
 }
 
+/** `teams.primary_color` is `not null` in the schema, but the aliased join
+    comes back as `SelectQueryError` to the generated types, so this reads it
+    the same defensive way `teamName` does. */
+function teamColor(row: unknown): string | null {
+  const t = row as { primary_color?: string } | null;
+  return t?.primary_color ?? null;
+}
+
 function currentInnings(state: MatchState) {
   return state.innings[state.currentInningsIndex] ?? null;
 }
@@ -263,6 +277,8 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
   teamAId: null,
   teamAName: null,
   teamBName: null,
+  teamAColor: null,
+  teamBColor: null,
   publicSlug: null,
   teamBId: null,
   config: null,
@@ -465,6 +481,8 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
       publicSlug: match.public_slug,
       teamAName: teamName(match.team_a),
       teamBName: teamName(match.team_b),
+      teamAColor: teamColor(match.team_a),
+      teamBColor: teamColor(match.team_b),
       teamBId: match.team_b_id,
       config,
       matchState,
