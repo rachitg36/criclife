@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Crest } from '@/components/ui/Crest';
 import { supabase } from '@/lib/supabase';
@@ -28,8 +29,11 @@ export function NewMatchPage() {
   const { data: myTeams } = useMyTeams();
   const [step, setStep] = useState(0);
 
-  const [teamAId, setTeamAId] = useState('');
-  const [teamBId, setTeamBId] = useState('');
+  const [teamA, setTeamA] = useState<Team | null>(null);
+  const [teamB, setTeamB] = useState<Team | null>(null);
+  
+  const teamAId = teamA?.id ?? '';
+  const teamBId = teamB?.id ?? '';
 
   const [profileKey, setProfileKey] = useState<ProfileKey>('t20');
   const [config, setConfig] = useState<MatchConfig>(RULES_PROFILES.t20);
@@ -68,8 +72,8 @@ export function NewMatchPage() {
   // while the field is untouched (`titleTouched`), so it never overwrites
   // something typed.
   const suggestedTitle = defaultMatchTitle(
-    myTeams?.find((t) => t.id === teamAId)?.short_code,
-    myTeams?.find((t) => t.id === teamBId)?.short_code,
+    teamA?.short_code,
+    teamB?.short_code,
     new Date()
   );
 
@@ -122,10 +126,10 @@ export function NewMatchPage() {
         {step === 0 && (
           <TeamsStep
             myTeams={myTeams ?? []}
-            teamAId={teamAId}
-            teamBId={teamBId}
-            onTeamA={setTeamAId}
-            onTeamB={setTeamBId}
+            teamA={teamA}
+            teamB={teamB}
+            onTeamA={setTeamA}
+            onTeamB={setTeamB}
           />
         )}
         {step === 1 && (
@@ -186,16 +190,16 @@ export function NewMatchPage() {
 
 function TeamsStep({
   myTeams,
-  teamAId,
-  teamBId,
+  teamA,
+  teamB,
   onTeamA,
   onTeamB,
 }: {
   myTeams: Team[];
-  teamAId: string;
-  teamBId: string;
-  onTeamA: (id: string) => void;
-  onTeamB: (id: string) => void;
+  teamA: Team | null;
+  teamB: Team | null;
+  onTeamA: (team: Team | null) => void;
+  onTeamB: (team: Team | null) => void;
 }) {
   const [search, setSearch] = useState('');
   const { data: allTeams } = useAllTeams(search);
@@ -205,59 +209,98 @@ function TeamsStep({
       ? myTeams
       : (allTeams ?? []);
 
+  const handleSelect = (team: Team) => {
+    if (!teamA) {
+      onTeamA(team);
+      setSearch('');
+    } else if (!teamB) {
+      onTeamB(team);
+      setSearch('');
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search all teams"
-        className="h-11 w-full rounded-[var(--r-md)] border border-[var(--border-default)] bg-[var(--surface-1)] px-3 text-[15px] outline-none focus:border-[var(--accent)]"
-      />
-      <TeamPicker label="Team A" options={options} selectedId={teamAId} onSelect={onTeamA} />
-      <TeamPicker label="Team B" options={options} selectedId={teamBId} onSelect={onTeamB} />
-      {teamAId && teamBId && teamAId === teamBId && (
+      {/* Banner */}
+      {(teamA || teamB) && (
+        <div className="panel flex items-center justify-between p-3 gap-2 bg-[var(--surface-2)]">
+          <div className="flex-1 min-w-0">
+            {teamA ? (
+              <div className="flex items-center gap-2">
+                <Crest logoUrl={teamA.logo_url} shortCode={teamA.short_code} color={teamA.primary_color} size={24} />
+                <span className="font-semibold truncate text-[15px]">{teamA.name}</span>
+                <button
+                  type="button"
+                  onClick={() => onTeamA(null)}
+                  className="p-1 text-[var(--danger)] active:bg-[var(--surface-3)] rounded-full"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ) : (
+              <span className="text-[var(--text-tertiary)] italic">Choose team A...</span>
+            )}
+          </div>
+          
+          <span className="text-[14px] font-bold text-[var(--text-secondary)] px-2 shrink-0">v</span>
+          
+          <div className="flex-1 min-w-0 flex justify-end">
+            {teamB ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onTeamB(null)}
+                  className="p-1 text-[var(--danger)] active:bg-[var(--surface-3)] rounded-full"
+                >
+                  <X size={16} />
+                </button>
+                <span className="font-semibold truncate text-[15px] text-right">{teamB.name}</span>
+                <Crest logoUrl={teamB.logo_url} shortCode={teamB.short_code} color={teamB.primary_color} size={24} />
+              </div>
+            ) : (
+              <span className="text-[var(--text-tertiary)] italic">Choose opponent...</span>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {teamA?.id === teamB?.id && teamA !== null && (
         <p className="text-[var(--danger)]">A team can't play itself.</p>
       )}
-    </div>
-  );
-}
 
-function TeamPicker({
-  label,
-  options,
-  selectedId,
-  onSelect,
-}: {
-  label: string;
-  options: Team[];
-  selectedId: string;
-  onSelect: (id: string) => void;
-}) {
-  return (
-    <div>
-      <div className="label-overline mb-2">{label}</div>
-      <ul className="space-y-2">
-        {options.map((team) => (
-          <li key={team.id}>
-            <button
-              type="button"
-              onClick={() => onSelect(team.id)}
-              className={
-                selectedId === team.id
-                  ? 'panel flex w-full items-center gap-3 border-[var(--accent)] p-3 text-left'
-                  : 'panel flex w-full items-center gap-3 p-3 text-left'
-              }
-            >
-              <Crest
-                logoUrl={team.logo_url}
-                shortCode={team.short_code}
-                color={team.primary_color}
-              />
-              <span className="min-w-0 flex-1 truncate">{team.name}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      {(!teamA || !teamB) && (
+        <>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search all teams"
+            className="h-11 w-full rounded-[var(--r-md)] border border-[var(--border-default)] bg-[var(--surface-1)] px-3 text-[15px] outline-none focus:border-[var(--accent)]"
+          />
+          <div>
+            <div className="label-overline mb-2">
+              {!teamA ? 'Select Team A' : 'Select Opponent'}
+            </div>
+            <ul className="space-y-2">
+              {options.map((team) => (
+                <li key={team.id}>
+                  <button
+                    type="button"
+                    onClick={() => handleSelect(team)}
+                    className="panel flex w-full items-center gap-3 p-3 text-left press"
+                  >
+                    <Crest
+                      logoUrl={team.logo_url}
+                      shortCode={team.short_code}
+                      color={team.primary_color}
+                    />
+                    <span className="min-w-0 flex-1 truncate">{team.name}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
     </div>
   );
 }
