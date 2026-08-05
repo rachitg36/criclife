@@ -36,10 +36,24 @@ export function isFinishedStatus(status: string | undefined): boolean {
  */
 export function resolveResultLine(
   serverText: string | null | undefined,
-  engineText: string | null | undefined
+  engineText: string | null | undefined,
+  nameOfTeam?: (teamId: string) => string
 ): string {
-  return serverText ?? engineText ?? 'Match complete';
+  const text = serverText ?? engineText ?? 'Match complete';
+  // **Never print a raw id.** The engine's own sentence carries team *ids*,
+  // and a match completed by an older build stored one of those in
+  // `result_text` — so the audience hero read
+  // "Result e10f0fed-5e25-4d8c-adb4-b6cba16ba9f4 won by 1 wicket". Fixing the
+  // write path stops new ones; this stops the ones already in the database,
+  // and costs one regex.
+  if (!nameOfTeam) return text;
+  return text.replace(UUID, (id) => {
+    const name = nameOfTeam(id);
+    return name && name !== id ? name : 'The winners';
+  });
 }
+
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 
 export type BallAccent = 'four' | 'six' | 'wicket' | 'extra' | null;
 

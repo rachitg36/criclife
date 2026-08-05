@@ -69,6 +69,10 @@ export type AudienceMatch = {
       all. */
   resultText: string | null;
   winnerTeamId: string | null;
+  /** Decided once by `complete_match` and stored. Read, never recomputed —
+      recomputing would let a change to the weights rewrite who won a match
+      played months ago. */
+  playerOfMatchId: string | null;
   config: MatchConfig;
   teamA: AudienceTeam;
   teamB: AudienceTeam;

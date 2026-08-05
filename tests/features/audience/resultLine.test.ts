@@ -42,3 +42,30 @@ describe('audience result line', () => {
     expect(resolveResultLine(null, null)).toBe('Match complete');
   });
 });
+
+describe('resolveResultLine — ids that reached the database', () => {
+  const nameOfTeam = (id: string) =>
+    id === 'e10f0fed-5e25-4d8c-adb4-b6cba16ba9f4' ? 'Cologne' : id;
+
+  it('substitutes a team name for a stored uuid', () => {
+    // A match completed by a build that wrote the engine's own sentence put a
+    // raw id in `result_text`, and the hero printed it: "Result
+    // e10f0fed-5e25-4d8c-adb4-b6cba16ba9f4 won by 1 wicket". Fixing the write
+    // path stops new ones; this repairs the rows already stored.
+    expect(
+      resolveResultLine('e10f0fed-5e25-4d8c-adb4-b6cba16ba9f4 won by 1 wicket', null, nameOfTeam)
+    ).toBe('Cologne won by 1 wicket');
+  });
+
+  it('falls back to a readable phrase when the id is not a team we know', () => {
+    expect(resolveResultLine('11111111-2222-3333-4444-555555555555 won', null, nameOfTeam)).toBe(
+      'The winners won'
+    );
+  });
+
+  it('leaves an ordinary sentence completely alone', () => {
+    expect(resolveResultLine('Bonn won by 4 wickets', null, nameOfTeam)).toBe(
+      'Bonn won by 4 wickets'
+    );
+  });
+});

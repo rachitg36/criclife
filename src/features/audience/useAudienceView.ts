@@ -47,6 +47,11 @@ export type AudienceView = {
   isLastOver: boolean;
   isHatTrickBall: boolean;
   isComplete: boolean;
+  /** The winner, from the match row — durable, and independent of whether
+      this client's replay produced an engine result. */
+  winnerTeamId: string | null;
+  /** The stored pick, never recomputed. See `AudienceMatch.playerOfMatchId`. */
+  playerOfMatchId: string | null;
   /** Called off rather than played out. Deliberately separate from
       `isComplete`, which both states share — a spectator needs to know the
       difference between "your side lost" and "nobody won". */
@@ -144,6 +149,8 @@ export function useAudienceView(): AudienceView {
         isHatTrickBall: false,
         isComplete: false,
         isAbandoned: false,
+        winnerTeamId: null,
+        playerOfMatchId: null,
         resultLine: 'Match complete',
         nameOf,
         playerById,
@@ -194,7 +201,13 @@ export function useAudienceView(): AudienceView {
         match.status === 'abandoned' ||
         match.isLocked,
       isAbandoned: match.status === 'abandoned',
-      resultLine: resolveResultLine(match.resultText, shown.result?.text),
+      winnerTeamId: match.winnerTeamId,
+      playerOfMatchId: match.playerOfMatchId,
+      resultLine: resolveResultLine(
+        match.resultText,
+        shown.result?.text,
+        (id) => teamById.get(id)?.name ?? id
+      ),
       nameOf,
       playerById,
       teamById,

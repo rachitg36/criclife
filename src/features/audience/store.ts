@@ -48,6 +48,7 @@ type SnapshotRow = {
   result_type: string | null;
   result_text: string | null;
   winner_team_id: string | null;
+  player_of_match_id: string | null;
   team_a_id: string;
   team_b_id: string;
   team_a: TeamRow;
@@ -224,7 +225,7 @@ const MATCH_QUERY =
   // result. Neither was ever fetched, so the audience hero fell back to a bare
   // "Match complete" for both: a match called off for rain said nothing about
   // rain, and a finished match did not say who won.
-  'result_type,result_text,winner_team_id,' +
+  'result_type,result_text,winner_team_id,player_of_match_id,' +
   'team_a:teams!matches_team_a_id_fkey(id,name,short_code,primary_color,secondary_color,logo_url),' +
   'team_b:teams!matches_team_b_id_fkey(id,name,short_code,primary_color,secondary_color,logo_url),' +
   'innings(id,innings_no,batting_team_id,bowling_team_id,is_super_over,status,target,revised_target,revised_overs)';
@@ -318,6 +319,7 @@ export const useAudienceStore = create<AudienceState>((set, get) => ({
         isLocked: matchRow.is_locked,
         resultText: matchRow.result_text,
         winnerTeamId: matchRow.winner_team_id,
+        playerOfMatchId: matchRow.player_of_match_id,
         config,
         teamA: toTeam(matchRow.team_a),
         teamB: toTeam(matchRow.team_b),
@@ -514,6 +516,7 @@ async function refetchMatchRow(set: Setter, get: Getter): Promise<void> {
       is_locked: boolean;
       result_text: string | null;
       winner_team_id: string | null;
+      player_of_match_id: string | null;
     }>(`matches?id=eq.${match.id}&select=status,is_locked,result_text,winner_team_id`);
     if (gen !== generation || !row) return;
     // The result arrives on this row, not on a delivery — a match that is
@@ -526,6 +529,7 @@ async function refetchMatchRow(set: Setter, get: Getter): Promise<void> {
         isLocked: row.is_locked,
         resultText: row.result_text,
         winnerTeamId: row.winner_team_id,
+        playerOfMatchId: row.player_of_match_id,
       },
     });
   } catch {

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { haptic } from '@/lib/haptics';
+import { playCue } from '@/lib/sound';
 import {
   attachShotToPending,
   erroredCount as dexieErroredCount,
@@ -28,6 +29,7 @@ import {
   computeMatchResult,
   createInitialMatchState,
   replay,
+  playerOfTheMatch,
   resolveTiedSuperOvers,
   setBowler,
   setNewBatter,
@@ -267,6 +269,40 @@ function modeAfterPick(state: MatchState): PadMode {
   return innings ? padModeForInnings(innings) : 'READY';
 }
 
+/**
+ * The result of a finished match, from its state alone.
+ *
+ * Extracted so `init` can rebuild it. It was computed *only* on the ball that
+ * ended the match, and `init` set `mode: 'MATCH_OVER'` without it — so closing
+ * the app and reopening a finished match, or a spectator arriving late, got a
+ * screen that knew the match was over and not who had won. That is why the win
+ * celebration "did not happen visually": nothing was wrong with the
+ * celebration, it simply had no winner to celebrate.
+ */
+function resultFor(state: MatchState, teamAId: string, teamBId: string): MatchResult | null {
+  const played = state.innings.filter((i) => i.status !== 'in_progress');
+  if (played.length < 2) return null;
+  const last = played[played.length - 1]!;
+  const innings1 = state.innings.find((i) => i.inningsNo === last.inningsNo - 1);
+  const innings2 = state.innings.find((i) => i.inningsNo === last.inningsNo);
+  if (!innings1 || !innings2) return null;
+
+  if (last.inningsNo <= 2) {
+    return computeMatchResult(innings1, innings2, effectiveConfigFor(state, innings2));
+  }
+  const superOverPairs = Math.floor((last.inningsNo - 2) / 2);
+  return resolveTiedSuperOvers(
+    state.innings,
+    teamAId,
+    teamBId,
+    superOverPairs >= DEFAULT_MAX_SUPER_OVER_ATTEMPTS
+  );
+}
+
+function effectiveConfigFor(state: MatchState, innings: { isSuperOver: boolean }) {
+  return innings.isSuperOver ? superOverConfig(state.config) : state.config;
+}
+
 function effectiveConfig(state: MatchState) {
   const innings = currentInnings(state);
   return innings?.isSuperOver ? superOverConfig(state.config) : state.config;
@@ -462,8 +498,16 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
     }
 
     const innings = currentInnings(matchState);
+    // Rebuilt on every load, not only on the ball that ended the match —
+    // otherwise reopening a finished match shows "match over" and no winner,
+    // and the celebration has nothing to celebrate.
+    const rebuiltResult =
+      match.is_locked || matchState.status === 'completed' || match.status === 'completed'
+        ? resultFor(matchState, match.team_a_id, match.team_b_id)
+        : null;
+
     let mode: PadMode = 'READY';
-    if (match.is_locked || matchState.status === 'completed') {
+    if (match.is_locked || matchState.status === 'completed' || match.status === 'completed') {
       mode = 'MATCH_OVER';
     } else if (!innings) {
       // Not AWAITING_OPENERS. There is no innings to pick openers *for*, and
@@ -493,6 +537,7 @@ export const useScorerStore = create<ScorerState>((set, get) => ({
       squadA,
       squadB,
       mode,
+      matchResult: rebuiltResult,
       error: null,
     });
 
@@ -865,10 +910,30 @@ async function commitDelivery(
   void refreshPendingCount(set, get);
 }
 
+/**
+ * Haptics and sound together — they answer the same question ("what just
+ * happened?") through two channels, and splitting them let one of them rot:
+ * the Sound toggle shipped in Phase 5 and nothing ever played. Both respect
+ * their own setting; neither is on the pad's critical path.
+ */
 function fireHaptic(delivery: Delivery, input: DeliveryInput) {
-  if (input.wicket) return haptic('wicket');
-  if (delivery.isBoundaryFour || delivery.isBoundarySix) return haptic('boundary');
+  if (input.wicket) {
+    playCue('wicket');
+    return haptic('wicket');
+  }
+  if (delivery.isBoundarySix) {
+    playCue('six');
+    return haptic('boundary');
+  }
+  if (delivery.isBoundaryFour) {
+    playCue('boundary');
+    return haptic('boundary');
+  }
+  // Nothing for a dot. It is the most common ball there is, and a tone on
+  // every one of them over a live match is the fastest way to get the sound
+  // turned off for good.
   if (delivery.runsTotal === 0) return haptic('dot');
+  playCue('run');
   return haptic('runs');
 }
 
@@ -1006,6 +1071,13 @@ async function handleInningsComplete(
   // persists the sentence.
   const nameForTeam = (id: string) =>
     (id === teamAId ? get().teamAName : get().teamBName) ?? 'The winners';
+  // **Written once, here, and never recomputed.** `matches.player_of_match_id`
+  // and this RPC parameter have both existed since Phase 4; the client simply
+  // never sent anything. Recomputing per client meant that changing the
+  // weights would retroactively rewrite who won past matches — "old matches
+  // should never change their player of the match", and the only way to
+  // guarantee that is to store the answer at the moment it is decided.
+  const pom = playerOfTheMatch(matchState.innings, result.winnerTeamId);
   await supabase.rpc('complete_match', {
     p_match_id: matchId,
     p_result_type: result.type,
@@ -1013,6 +1085,7 @@ async function handleInningsComplete(
     p_win_margin_runs: result.marginRuns,
     p_win_margin_wickets: result.marginWickets,
     p_result_text: resultText(result, nameForTeam),
+    p_player_of_match_id: pom?.playerId ?? null,
   });
 }
 

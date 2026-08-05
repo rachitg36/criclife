@@ -16,7 +16,12 @@ import type { AudienceView } from '../useAudienceView';
  */
 export function AudienceCelebration({ view }: { view: AudienceView }) {
   const state = view.matchState;
-  const winnerId = state?.result?.winnerTeamId ?? null;
+  // **The server's winner first.** `matchState.result` only exists if this
+  // client's replay happened to produce one, and it does not for a match that
+  // was completed server-side or replayed from a partial log — so the
+  // celebration silently never appeared. `matches.winner_team_id` is written
+  // by `complete_match` and is the durable answer.
+  const winnerId = view.winnerTeamId ?? state?.result?.winnerTeamId ?? null;
   if (!state || !winnerId || view.isAbandoned) return null;
 
   const team = view.teamById.get(winnerId);
@@ -33,7 +38,19 @@ export function AudienceCelebration({ view }: { view: AudienceView }) {
     note: noteFor(id),
   }));
 
-  const pom = playerOfTheMatch(state.innings, winnerId);
+  // The **stored** pick wins. `complete_match` decided it once, at the moment
+  // the match ended; recomputing here would mean a later change to the weights
+  // silently rewrote who won a match played months ago. Falling back to the
+  // computation only covers matches finished before it was ever stored.
+  const storedPom = view.playerOfMatchId;
+  const computed = storedPom ? null : playerOfTheMatch(state.innings, winnerId);
+  const pomId = storedPom ?? computed?.playerId ?? null;
+  const pomSummary = storedPom
+    ? [honours.topScore, honours.bestBowling]
+        .filter((h) => h?.playerId === storedPom)
+        .map((h) => h!.figures)
+        .join(' · ')
+    : (computed?.summary ?? '');
 
   return (
     <div className="mx-3 my-3 overflow-hidden rounded-[var(--r-lg)] border border-[var(--border-subtle)]">
@@ -42,9 +59,7 @@ export function AudienceCelebration({ view }: { view: AudienceView }) {
         teamColor={team?.primaryColor ?? 'var(--accent)'}
         headline={view.resultLine}
         players={players}
-        {...(pom
-          ? { playerOfTheMatch: { name: view.nameOf(pom.playerId), summary: pom.summary } }
-          : {})}
+        {...(pomId ? { playerOfTheMatch: { name: view.nameOf(pomId), summary: pomSummary } } : {})}
       />
     </div>
   );
