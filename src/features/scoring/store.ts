@@ -248,7 +248,16 @@ function checkTapGuard(state: ScorerState, key: string): TapGuardResult {
 /** The embedded team join, which the generated types cannot express. */
 function teamName(row: unknown): string | null {
   const t = row as { short_code?: string; name?: string } | null;
-  return t?.short_code ?? t?.name ?? null;
+  // **The name, not the short code.** This preferred `short_code`, so every
+  // screen fed by it read "GYD" where it meant "Gully Yodhas" — the win
+  // celebration's headline, the batting/bowling labels on the pad, and worst
+  // of all the result sentence written into `matches.result_text`, which is
+  // then what every spectator sees forever.
+  //
+  // Same complaint as the "TM1 v TM2" match rows, in a place that fix missed.
+  // Short codes belong on crests, which have room for three characters and
+  // nothing else; anywhere with room for a name should use one.
+  return t?.name ?? t?.short_code ?? null;
 }
 
 /** `teams.primary_color` is `not null` in the schema, but the aliased join
