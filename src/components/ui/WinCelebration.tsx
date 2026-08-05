@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { useUiStore } from '@/stores/uiStore';
 
@@ -27,7 +28,7 @@ import { useUiStore } from '@/stores/uiStore';
  *   partially. Same rule the moment overlays follow. Somebody who has asked for
  *   less movement is not asking for slower confetti.
  */
-const PIECES = 26;
+const PIECES = 34;
 
 export type Celebrant = { id: string; name: string; note?: string | undefined };
 
@@ -158,31 +159,72 @@ export function WinCelebration({
 }
 
 /**
- * Thirty rectangles falling. Positions are derived from the index — a fixed
- * spread rather than a random one — so this stays a pure render and a replayed
- * match celebrates identically every time.
+ * Rectangles falling through the card.
+ *
+ * **Two things were wrong the first time, and the second one hid the first.**
+ *
+ * The pieces animated to `y: '110vh'` — a *viewport* height — inside a card
+ * that on the audience view is a few hundred pixels tall with
+ * `overflow: hidden`. They cleared the card in a couple of frames and spent
+ * the rest of the animation clipped, so the whole effect was a flicker at the
+ * top edge. `110%` is the container, which is what was meant.
+ *
+ * And it started on mount. On the audience view the card sits below the hero,
+ * so on a finished match the confetti had already run and finished by the time
+ * anybody scrolled down to it. Reported exactly that way: "confetti did not
+ * come when seeing the old match". It now waits until the card is actually on
+ * screen.
+ *
+ * Positions still come from the index rather than `Math.random`, so the render
+ * stays pure and a replayed match celebrates identically every time.
  */
 function Confetti({ color }: { color: string }) {
+  const [started, setStarted] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    // No IntersectionObserver (old Safari, jsdom): just play. Missing the
+    // celebration is worse than playing it slightly early.
+    if (typeof IntersectionObserver === 'undefined') {
+      setStarted(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setStarted(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.25 }
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      {Array.from({ length: PIECES }, (_, i) => {
-        const left = ((i * 37) % 100) + (i % 3);
-        const delay = (i % 7) * 0.12;
-        const drift = i % 2 === 0 ? 16 : -16;
-        // Alternating between the team's colour and the accent keeps it from
-        // reading as a single flat sheet, without introducing a new palette.
-        const fill = i % 3 === 0 ? 'var(--accent)' : color;
-        return (
-          <motion.span
-            key={i}
-            className="absolute block h-2.5 w-1.5 rounded-[1px]"
-            style={{ left: `${left}%`, top: '-6%', background: fill }}
-            initial={{ y: 0, x: 0, rotate: 0, opacity: 1 }}
-            animate={{ y: '110vh', x: drift, rotate: 540, opacity: [1, 1, 0] }}
-            transition={{ duration: 2.4 + (i % 5) * 0.3, delay, ease: 'easeIn' }}
-          />
-        );
-      })}
+    <div ref={ref} aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      {started &&
+        Array.from({ length: PIECES }, (_, i) => {
+          const left = ((i * 37) % 100) + (i % 3);
+          const delay = (i % 7) * 0.12;
+          const drift = i % 2 === 0 ? 16 : -16;
+          // Alternating between the team's colour and the accent keeps it from
+          // reading as a single flat sheet, without introducing a new palette.
+          const fill = i % 3 === 0 ? 'var(--accent)' : color;
+          return (
+            <motion.span
+              key={i}
+              className="absolute block h-3 w-1.5 rounded-[1px]"
+              style={{ left: `${left}%`, top: '-8%', background: fill }}
+              initial={{ y: 0, x: 0, rotate: 0, opacity: 1 }}
+              animate={{ y: '115%', x: drift, rotate: 540, opacity: [1, 1, 0] }}
+              transition={{ duration: 2.2 + (i % 5) * 0.3, delay, ease: 'easeIn' }}
+            />
+          );
+        })}
     </div>
   );
 }
