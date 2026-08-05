@@ -11,6 +11,7 @@ import { formatMatchDateTime } from '@/lib/format';
 import { useMyTeams } from '@/features/teams/hooks';
 import { useMatches } from '@/features/matches/hooks';
 import { groupMatches, mineOnly, resumeAction } from '@/features/matches/matchGroups';
+import { useAuth } from '@/features/auth/authContext';
 
 /**
  * Home. docs/11-SCREENS-AND-ROUTES.md § 2.
@@ -27,6 +28,7 @@ import { groupMatches, mineOnly, resumeAction } from '@/features/matches/matchGr
  * world-readable, so an unfiltered "your matches" is other people's.
  */
 export function HomePage() {
+  const { session } = useAuth();
   const { data, isLoading } = useMatches();
   const { data: myTeams } = useMyTeams();
 
@@ -45,7 +47,12 @@ export function HomePage() {
       <Aurora />
 
       <header className="relative flex items-center justify-between px-4 pt-4">
-        <span className="font-display text-[17px] font-bold tracking-tight">CricLife</span>
+        <div>
+          <div className="font-display text-[17px] font-bold tracking-tight">CricLife</div>
+          {session?.user.email && (
+            <div className="text-[11px] text-[var(--text-tertiary)]">{session.user.email}</div>
+          )}
+        </div>
         <ThemeToggle compact />
       </header>
 

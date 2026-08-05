@@ -141,6 +141,13 @@ export function ProfileSettings() {
         )}
       </section>
 
+      <section className="panel rounded-[var(--r-lg)] p-4">
+        <h2 className="text-[var(--text-heading-sm)] font-semibold mb-3">Account Actions</h2>
+        <Button variant="secondary" fullWidth hapticKind="select" onClick={() => supabase.auth.signOut()}>
+          Sign Out
+        </Button>
+      </section>
+
       <section className="panel overflow-hidden rounded-[var(--r-lg)] p-0">
         <h2 className="px-4 pt-4 text-[var(--text-heading-sm)] font-semibold">
           Your player record
