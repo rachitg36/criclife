@@ -179,26 +179,36 @@ export function WinCelebration({
  * stays pure and a replayed match celebrates identically every time.
  */
 function Confetti({ color }: { color: string }) {
-  const [started, setStarted] = useState(false);
+  // Null until measured. **The distance has to be a pixel number.**
+  //
+  // `y: '115%'` in motion is a percentage of *the element's own height*, the
+  // same as a CSS transform — so twelve-pixel pieces moved twelve pixels.
+  // Starting above the card at `top: -8%`, they never entered the frame at
+  // all: strictly worse than the `110vh` it replaced, which at least
+  // travelled. Measuring the container is the only version that is right in
+  // both the tall scorer pad and the short audience card.
+  const [fallTo, setFallTo] = useState<number | null>(null);
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
+    const start = () => setFallTo(node.offsetHeight + 48);
+
     // No IntersectionObserver (old Safari, jsdom): just play. Missing the
     // celebration is worse than playing it slightly early.
     if (typeof IntersectionObserver === 'undefined') {
-      setStarted(true);
+      start();
       return;
     }
     const io = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
-          setStarted(true);
+          start();
           io.disconnect();
         }
       },
-      { threshold: 0.25 }
+      { threshold: 0.15 }
     );
     io.observe(node);
     return () => io.disconnect();
@@ -206,7 +216,7 @@ function Confetti({ color }: { color: string }) {
 
   return (
     <div ref={ref} aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      {started &&
+      {fallTo !== null &&
         Array.from({ length: PIECES }, (_, i) => {
           const left = ((i * 37) % 100) + (i % 3);
           const delay = (i % 7) * 0.12;
@@ -220,7 +230,7 @@ function Confetti({ color }: { color: string }) {
               className="absolute block h-3 w-1.5 rounded-[1px]"
               style={{ left: `${left}%`, top: '-8%', background: fill }}
               initial={{ y: 0, x: 0, rotate: 0, opacity: 1 }}
-              animate={{ y: '115%', x: drift, rotate: 540, opacity: [1, 1, 0] }}
+              animate={{ y: fallTo, x: drift, rotate: 540, opacity: [1, 1, 0] }}
               transition={{ duration: 2.2 + (i % 5) * 0.3, delay, ease: 'easeIn' }}
             />
           );
