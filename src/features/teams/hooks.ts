@@ -59,7 +59,10 @@ export function useAllTeams(search: string) {
     queryFn: async () => {
       let query = supabase.from('teams').select('*').eq('is_archived', false).order('created_at', { ascending: false });
       if (search.trim()) query = query.ilike('name', `%${search.trim()}%`);
-      const { data, error } = await query.limit(30);
+      
+      const searchLimit = search.trim() ? 30 : 5;
+      const { data, error } = await query.limit(searchLimit);
+      
       if (error) throw error;
       return data;
     },
