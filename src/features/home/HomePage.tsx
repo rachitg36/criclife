@@ -125,6 +125,10 @@ export function HomePage() {
           subtitle="Leaderboards and season records"
         />
       </section>
+      
+      <div className="mt-8 pb-4 text-center text-[11px] text-[var(--text-tertiary)] opacity-60">
+        Build {__APP_BUILD__}
+      </div>
     </div>
   );
 }
