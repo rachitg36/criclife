@@ -207,9 +207,10 @@ function TeamsStep({
   const filteredMyTeams = myTeams.filter(t => t.id !== teamA?.id && t.id !== teamB?.id);
   const rawOptions = search.trim()
     ? (allTeams ?? [])
-    : filteredMyTeams.length > 0
-      ? filteredMyTeams
-      : (allTeams ?? []);
+    : [
+        ...filteredMyTeams,
+        ...(allTeams ?? []).filter((at) => !filteredMyTeams.some((mt) => mt.id === at.id)),
+      ];
       
   const options = rawOptions.filter(t => t.id !== teamA?.id && t.id !== teamB?.id);
 
